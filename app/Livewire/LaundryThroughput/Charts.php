@@ -19,7 +19,6 @@ class Charts extends Component
         'revenue' => [],
         'orderStatus' => [],
         'driverPerformance' => [],
-        'topServices' => [],
     ];
 
     public float $totalCurrentMonthCarpets = 0;
@@ -94,7 +93,6 @@ class Charts extends Component
         $this->chartData['revenue']['yearly'] = $this->getRevenueData('year', 5);
         $this->chartData['orderStatus'] = $this->getOrderStatusData();
         $this->chartData['driverPerformance'] = $this->getDriverPerformanceData();
-        $this->chartData['topServices'] = $this->getTopServicesData();
     }
 
     private function getThroughputData(string $period, int $count): array
@@ -105,7 +103,6 @@ class Charts extends Component
             'year' => Carbon::now()->subYears($count)->startOfYear(),
         };
 
-        // FIX: Use alias in GROUP BY and construct the raw string to avoid binding issues.
         $trunc_sql = "DATE_TRUNC('$period', updated_at)";
 
         $data = OrderCarpet::query()
@@ -126,14 +123,14 @@ class Charts extends Component
             $date = Carbon::parse($item->period_start);
             return [
                 'label' => match ($period) {
-                    'week' => 'W' . $date->weekOfYear . ' ' . $date->format('y'),
+                    'week' => 'W'.$date->weekOfYear.' '.$date->format('y'),
                     'month' => $date->format('M Y'),
                     'year' => $date->format('Y'),
                 },
                 'full_name' => match ($period) {
-                    'week' => $date->format('d.m') . ' - ' . $date->endOfWeek()->format('d.m.Y'),
+                    'week' => $date->format('d.m').' - '.$date->endOfWeek()->format('d.m.Y'),
                     'month' => $date->format('F Y'),
-                    'year' => 'Rok ' . $date->format('Y'),
+                    'year' => 'Rok '.$date->format('Y'),
                 },
                 'value' => (int) $item->total_processed,
                 'completed_count' => (int) $item->completed_count,
@@ -173,7 +170,6 @@ class Charts extends Component
             'year' => Carbon::now()->subYears($count)->startOfYear(),
         };
 
-        // FIX: Use alias in GROUP BY and construct the raw string to avoid binding issues.
         $trunc_sql = "DATE_TRUNC('$period', updated_at)";
 
         $data = Order::query()
@@ -191,7 +187,7 @@ class Charts extends Component
             $date = Carbon::parse($item->period_start);
             return [
                 'label' => match ($period) {
-                    'week' => 'W' . $date->weekOfYear . ' ' . $date->format('y'),
+                    'week' => 'W'.$date->weekOfYear.' '.$date->format('y'),
                     'month' => $date->format('M Y'),
                     'year' => $date->format('Y'),
                 },
@@ -230,21 +226,7 @@ class Charts extends Component
             ->orderBy('order_count', 'desc')
             ->limit(5)
             ->get()
-            ->map(fn($item) => ['label' => $item->driver_name, 'value' => (int) $item->order_count])
-            ->toArray();
-    }
-
-    private function getTopServicesData(): array
-    {
-        return DB::table('carpet_services')
-            ->join('services', 'carpet_services.service_id', '=', 'services.id')
-            ->select('services.name as service_name', DB::raw('COUNT(carpet_services.id) as service_count'))
-            ->where('carpet_services.created_at', '>=', Carbon::now()->startOfMonth())
-            ->groupBy('service_name')
-            ->orderBy('service_count', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(fn($item) => ['label' => $item->service_name, 'value' => (int) $item->service_count])
+            ->map(fn ($item) => ['label' => $item->driver_name, 'value' => (int) $item->order_count])
             ->toArray();
     }
 
@@ -273,7 +255,7 @@ class Charts extends Component
         if (count($monthlyData) >= 2) {
             $lastTwo = array_slice($monthlyData, -2);
             $change = $lastTwo[1]['value'] - $lastTwo[0]['value'];
-            $this->monthlyTrend = $change > 0 ? "Wzrost o {$change}" : ($change < 0 ? "Spadek o " . abs($change) : 'Bez zmian');
+            $this->monthlyTrend = $change > 0 ? "Wzrost o {$change}" : ($change < 0 ? "Spadek o ".abs($change) : 'Bez zmian');
         }
 
         $yearlyData = $this->chartData['throughput']['yearly'] ?? [];
@@ -281,7 +263,7 @@ class Charts extends Component
             $lastTwo = array_slice($yearlyData, -2);
             $changePercent = $lastTwo[0]['value'] > 0 ?
                 (($lastTwo[1]['value'] - $lastTwo[0]['value']) / $lastTwo[0]['value']) * 100 : ($lastTwo[1]['value'] > 0 ? 100 : 0);
-            $this->yearlyChange = ($changePercent >= 0 ? '+' : '') . round($changePercent, 1) . '%';
+            $this->yearlyChange = ($changePercent >= 0 ? '+' : '').round($changePercent, 1).'%';
         }
     }
 
