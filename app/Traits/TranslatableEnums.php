@@ -2,6 +2,8 @@
 
 namespace App\Traits;
 
+use App\ActionService\EnumTranslationService;
+
 trait TranslatableEnums
 {
     /**
@@ -11,7 +13,7 @@ trait TranslatableEnums
     {
         $className = class_basename(static::class);
         $enumKey = strtolower($className);
-        
+
         return "enums.{$enumKey}.{$this->value}";
     }
 
@@ -21,13 +23,13 @@ trait TranslatableEnums
     public function label(): string
     {
         $translationKey = $this->getTranslationKey();
-        
+
         $translated = __($translationKey);
-        
+
         if ($translated === $translationKey) {
             return $this->getFormattedValue();
         }
-        
+
         return $translated;
     }
 
@@ -37,6 +39,20 @@ trait TranslatableEnums
     public function getFormattedValue(): string
     {
         return ucfirst(str_replace(['_', '-'], ' ', $this->value));
+    }
+
+    public function getLabel(): string
+    {
+        return EnumTranslationService::translate($this);
+    }
+
+    public static function getLabels(): array
+    {
+        $labels = [];
+        foreach (static::cases() as $case) {
+            $labels[$case->value] = $case->getLabel();
+        }
+        return $labels;
     }
 
     /**
