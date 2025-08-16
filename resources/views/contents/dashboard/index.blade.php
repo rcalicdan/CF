@@ -6,6 +6,6 @@
         @include('contents.dashboard.partials.main-content')
         @include('contents.dashboard.partials.quick-actions')
         @livewire('laundry-throughput.charts')
-              @livewire('processing-costs.charts')
+        @livewire('processing-costs.charts')   
     </div>
 </x-layouts.app>
