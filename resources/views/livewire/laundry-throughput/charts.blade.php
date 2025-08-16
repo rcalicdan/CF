@@ -10,22 +10,14 @@
                     dywanów</p>
             </div>
             <div class="flex gap-2 sm:gap-3 w-full sm:w-auto">
-                <button @click="$wire.refreshData()" :disabled="loading"
-                    class="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200 whitespace-nowrap">
-                    <svg x-show="!loading" class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
+                <button @click="$wire.refreshData()"
+                    class="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap">
+                    <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
                         </path>
                     </svg>
-                    <svg x-show="loading" class="animate-spin w-4 h-4 mr-1 sm:mr-2" fill="none" viewBox="0 0 24 24">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-                            class="opacity-25"></circle>
-                        <path fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            class="opacity-75"></path>
-                    </svg>
-                    <span x-text="loading ? 'Odświeżanie...' : 'Odśwież'" class="truncate"></span>
+                    <span class="truncate">Odśwież</span>
                 </button>
             </div>
         </div>
@@ -288,34 +280,13 @@
             </div>
         </div>
     </div>
-
-    <!-- Loading Overlay -->
-    <div x-show="loading" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 shadow-xl">
-            <div class="flex items-center space-x-3">
-                <svg class="animate-spin w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-                        class="opacity-25"></circle>
-                    <path fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        class="opacity-75"></path>
-                </svg>
-                <span class="text-gray-700 font-medium">Ładowanie danych...</span>
-            </div>
-        </div>
-    </div>
 </div>
 
 
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     function laundryChartsComponent() {
         return {
             activeTab: @entangle('activeTab'),
-            loading: false,
             chartType: 'bar',
             mainChart: null,
             statusBreakdownChart: null,
@@ -328,14 +299,10 @@
 
             initCharts() {
                 this.$nextTick(() => {
-                    if (this.getCurrentData().length > 0 || this.statusBreakdownData.length > 0) {
-                        this.createMainChart();
-                        this.createStatusBreakdownChart();
-                        this.createCompletionRateChart();
-                        this.createAverageAreaChart();
-                    } else {
-                         console.log("No initial data available for charts.");
-                    }
+                    this.createMainChart();
+                    this.createStatusBreakdownChart();
+                    this.createCompletionRateChart();
+                    this.createAverageAreaChart();
 
                     window.addEventListener('resize', () => {
                         this.recreateCharts();
@@ -344,15 +311,12 @@
             },
 
             switchTab(tab) {
-                this.loading = true;
                 this.$wire.set('activeTab', tab).then(() => {
-                    this.loading = false;
                     this.$nextTick(() => {
                         this.recreateCharts();
                     });
                 }).catch(error => {
-                     console.error("Error switching tab:", error);
-                     this.loading = false;
+                    console.error("Error switching tab:", error);
                 });
             },
 
@@ -362,19 +326,15 @@
             },
 
             updateCharts(eventData) {
-                console.log('Received update-charts event:', eventData); 
                 if (eventData && eventData.data) {
                     this.weeklyData = eventData.data.weekly || [];
                     this.monthlyData = eventData.data.monthly || [];
                     this.yearlyData = eventData.data.yearly || [];
                     this.statusBreakdownData = eventData.data.statusBreakdown || [];
-
-                    this.$nextTick(() => {
-                        this.recreateCharts();
-                    });
+                    this.$nextTick(() => this.recreateCharts());
                 } else {
-                     console.warn("Received update-charts event with no valid data:", eventData);
-                     this.recreateCharts(); 
+                    console.warn("Received update-charts event with no valid data:", eventData);
+                    this.recreateCharts();
                 }
             },
 
@@ -387,7 +347,6 @@
                     case 'yearly':
                         return this.yearlyData && Array.isArray(this.yearlyData) ? this.yearlyData : [];
                     default:
-                        console.warn(`Unknown activeTab value: ${this.activeTab}`);
                         return [];
                 }
             },
@@ -411,13 +370,12 @@
             },
 
             getTrendBadgeClass() {
-                 const trend = this.getTrendText().toLowerCase();
-                 if (trend.includes('rosnący') || trend.includes('wzrost') || trend.includes('+')) {
-                     return 'bg-green-100 text-green-800';
-                 } else if (trend.includes('malejący') || trend.includes('spadek') || trend.includes('-')) {
-                     return 'bg-red-100 text-red-800';
-                 }
-                 return 'bg-blue-100 text-blue-800'; 
+                const trend = this.getTrendText().toLowerCase();
+                if (trend.includes('rosnący') || trend.includes('wzrost') || trend.includes('+'))
+                return 'bg-green-100 text-green-800';
+                if (trend.includes('malejący') || trend.includes('spadek') || trend.includes('-'))
+                return 'bg-red-100 text-red-800';
+                return 'bg-blue-100 text-blue-800';
             },
 
             getCompletionRateText() {
@@ -437,7 +395,6 @@
                 if (this[chartName]) {
                     try {
                         this[chartName].destroy();
-                        console.log(`Destroyed chart: ${chartName}`);
                     } catch (e) {
                         console.warn(`Error destroying ${chartName}:`, e);
                     }
@@ -446,10 +403,10 @@
             },
 
             destroyCharts() {
-                 this.destroyChart('mainChart');
-                 this.destroyChart('statusBreakdownChart');
-                 this.destroyChart('completionRateChart');
-                 this.destroyChart('averageAreaChart');
+                this.destroyChart('mainChart');
+                this.destroyChart('statusBreakdownChart');
+                this.destroyChart('completionRateChart');
+                this.destroyChart('averageAreaChart');
             },
 
             recreateCharts() {
@@ -465,8 +422,7 @@
             getChartConfig() {
                 const data = this.getCurrentData();
                 if (!data || !Array.isArray(data) || data.length === 0) {
-                    console.log("No data available for main chart, showing empty state config.");
-                    return this.getEmptyChartConfig();
+                    return this.getEmptyChartConfig('Brak danych do wyświetlenia');
                 }
 
                 const colors = {
@@ -516,16 +472,19 @@
                                             fontSize: '10px'
                                         }
                                     }
-                                }
+                                },
+                                markers: {
+                                    size: 3,
+                                    hover: {
+                                        size: 5
+                                    }
+                                } // Smaller markers on mobile for line charts
                             }
                         }]
                     },
                     series: [{
                         name: 'Przetworzone dywany',
-                        data: data.map(item => {
-                             const val = parseInt(item.value, 10);
-                             return isNaN(val) ? 0 : val;
-                        })
+                        data: data.map(item => parseInt(item.value, 10) || 0)
                     }],
                     xaxis: {
                         categories: data.map(item => item.label || ''),
@@ -542,7 +501,7 @@
                                 fontWeight: 500
                             },
                             rotate: -45,
-                            rotateAlways: window.innerWidth < 768 
+                            rotateAlways: window.innerWidth < 768
                         }
                     },
                     yaxis: {
@@ -567,9 +526,6 @@
                         borderColor: '#F3F4F6',
                         strokeDashArray: 5,
                         padding: {
-                            top: 0,
-                            right: 0,
-                            bottom: 0,
                             left: 10
                         }
                     },
@@ -580,36 +536,36 @@
                             fontFamily: 'Inter, sans-serif'
                         },
                         y: {
-                            formatter: (value, { series, seriesIndex, dataPointIndex, w }) => {
+                            formatter: (value, {
+                                dataPointIndex
+                            }) => {
                                 const item = data[dataPointIndex];
                                 if (!item) return `${value} dywanów przetworzonych`;
-
                                 let tooltipText = `${value} dywanów przetworzonych`;
-
-                                if (item.completed_count !== undefined && item.completed_count !== null) {
-                                    tooltipText += `<br/>Ukończonych: ${item.completed_count}`;
-                                }
-                                if (item.completion_rate !== undefined && item.completion_rate !== null) {
-                                    tooltipText += `<br/>Wskaźnik ukończenia: ${item.completion_rate}%`;
-                                }
-                                if (item.avg_area !== undefined && item.avg_area !== null) {
-                                    tooltipText += `<br/>Średnia powierzchnia: ${item.avg_area} m²`;
-                                }
-                                if (item.total_area !== undefined && item.total_area !== null) {
-                                    tooltipText += `<br/>Całkowita powierzchnia: ${item.total_area} m²`;
-                                }
+                                if (item.completed_count !== undefined) tooltipText +=
+                                    `<br/>Ukończonych: ${item.completed_count}`;
+                                if (item.completion_rate !== undefined) tooltipText +=
+                                    `<br/>Wskaźnik ukończenia: ${item.completion_rate}%`;
+                                if (item.avg_area !== undefined) tooltipText +=
+                                    `<br/>Średnia powierzchnia: ${item.avg_area} m²`;
+                                if (item.total_area !== undefined) tooltipText +=
+                                    `<br/>Całkowita powierzchnia: ${item.total_area} m²`;
                                 return tooltipText;
                             }
                         },
                         x: {
-                            formatter: (value, { dataPointIndex }) => {
-                                const item = data[dataPointIndex];
-                                return item ? (item.full_name || value) : value;
-                            }
+                            formatter: (value, {
+                                dataPointIndex
+                            }) => data[dataPointIndex]?.full_name || value
                         }
                     },
                     dataLabels: {
                         enabled: false
+                    },
+                    noData: {
+                        text: 'Brak danych do wyświetlenia',
+                        align: 'center',
+                        verticalAlign: 'middle'
                     }
                 };
 
@@ -655,28 +611,23 @@
                 return baseConfig;
             },
 
-            getEmptyChartConfig() {
+            getEmptyChartConfig(message) {
                 return {
                     chart: {
-                        type: 'line', 
+                        type: 'line',
                         height: '100%',
                         toolbar: {
                             show: false
                         }
                     },
-                    series: [{
-                        name: 'Przetworzone dywany',
-                        data: []
-                    }],
+                    series: [],
                     xaxis: {
                         categories: []
                     },
                     noData: {
-                        text: 'Brak danych do wyświetlenia',
+                        text: message,
                         align: 'center',
                         verticalAlign: 'middle',
-                        offsetX: 0,
-                        offsetY: 0,
                         style: {
                             color: '#6B7280',
                             fontSize: '14px',
@@ -687,32 +638,22 @@
             },
 
             createMainChart() {
-            
                 const element = document.querySelector("#main-chart");
                 if (element) {
-                    const config = this.getChartConfig();
-                    console.log("Creating main chart with config:", config); 
-                    if (config.series && config.series[0] && Array.isArray(config.series[0].data) && config.series[0].data.length > 0) {
-                         this.destroyChart('mainChart'); 
-                         this.mainChart = new ApexCharts(element, config);
-                         this.mainChart.render().catch(error => {
-                              console.error("Error rendering main chart:", error);
-                              element.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500">Błąd ładowania wykresu</div>';
-                         });
-                    } else {
-                         this.destroyChart('mainChart');
-                         element.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500">Brak danych do wyświetlenia</div>';
-                    }
-                } else {
-                     console.warn("Main chart container element (#main-chart) not found.");
+                    this.destroyChart('mainChart');
+                    this.mainChart = new ApexCharts(element, this.getChartConfig());
+                    this.mainChart.render().catch(error => {
+                        console.error("Error rendering main chart:", error);
+                        element.innerHTML =
+                            '<div class="h-full flex items-center justify-center text-gray-500">Błąd ładowania wykresu</div>';
+                    });
                 }
             },
 
             updateMainChart() {
                 if (this.mainChart) {
-                    const config = this.getChartConfig();
-                    this.mainChart.updateOptions(config, false, true, true).catch(error => {
-                         console.error("Error updating main chart:", error);
+                    this.mainChart.updateOptions(this.getChartConfig(), false, true, true).catch(error => {
+                        console.error("Error updating main chart:", error);
                     });
                 } else {
                     this.createMainChart();
@@ -720,38 +661,29 @@
             },
 
             createStatusBreakdownChart() {
-                 if (this.activeTab !== 'monthly') {
-                      console.log("Not creating status breakdown chart, not on monthly tab.");
-                      return;
-                 }
-                 if (!this.statusBreakdownData || !Array.isArray(this.statusBreakdownData) || this.statusBreakdownData.length === 0) {
-                      console.log("No data for status breakdown chart.");
-                      const element = document.querySelector("#status-breakdown-chart");
-                      if(element) element.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500">Brak danych statusu</div>';
-                      return;
-                 }
+                if (this.activeTab !== 'monthly') {
+                    this.destroyChart('statusBreakdownChart');
+                    return;
+                }
+                const element = document.querySelector("#status-breakdown-chart");
+                if (!element) return;
+
+                if (!this.statusBreakdownData || this.statusBreakdownData.length === 0) {
+                    this.destroyChart('statusBreakdownChart');
+                    const emptyConfig = this.getEmptyChartConfig('Brak danych statusu');
+                    emptyConfig.chart.type = 'donut';
+                    this.statusBreakdownChart = new ApexCharts(element, emptyConfig);
+                    this.statusBreakdownChart.render();
+                    return;
+                }
 
                 const config = {
                     chart: {
                         type: 'donut',
                         height: '100%',
-                        fontFamily: 'Inter, sans-serif',
-                        responsive: [{
-                            breakpoint: 768,
-                            options: {
-                                chart: {
-                                    height: 240
-                                },
-                                legend: {
-                                    position: 'bottom'
-                                }
-                            }
-                        }]
+                        fontFamily: 'Inter, sans-serif'
                     },
-                    series: this.statusBreakdownData.map(item => {
-                         const val = parseInt(item.value, 10);
-                         return isNaN(val) ? 0 : val;
-                    }),
+                    series: this.statusBreakdownData.map(item => parseInt(item.value, 10) || 0),
                     labels: this.statusBreakdownData.map(item => item.label || 'Nieznany'),
                     colors: this.statusBreakdownData.map((_, index) => this.getStatusColor(index)),
                     plotOptions: {
@@ -763,13 +695,8 @@
                                     total: {
                                         show: true,
                                         label: 'Łącznie',
-                                        formatter: () => {
-                                            const total = this.statusBreakdownData.reduce((sum, item) => {
-                                                const val = parseInt(item.value, 10);
-                                                return sum + (isNaN(val) ? 0 : val);
-                                            }, 0);
-                                            return `${total} dywanów`;
-                                        },
+                                        formatter: () =>
+                                            `${this.statusBreakdownData.reduce((sum, item) => sum + (parseInt(item.value, 10) || 0), 0)} dywanów`,
                                         style: {
                                             fontSize: '14px',
                                             fontWeight: 600
@@ -786,59 +713,76 @@
                         markers: {
                             width: 10,
                             height: 10
-                        },
-                         responsive: [{
-                              breakpoint: 768,
-                              options: {
-                                   legend: {
-                                        position: 'bottom'
-                                   }
-                              }
-                         }]
+                        }
                     },
                     tooltip: {
                         y: {
-                            formatter: (value, { dataPointIndex }) => {
+                            formatter: (value, {
+                                dataPointIndex
+                            }) => {
                                 const item = this.statusBreakdownData[dataPointIndex];
-                                if (!item) return `${value} dywanów`;
-
                                 let tooltip = `${value} dywanów`;
-                                if (item.avg_area !== undefined && item.avg_area !== null) {
-                                    tooltip += `<br/>Średnia powierzchnia: ${item.avg_area} m²`;
-                                }
+                                if (item?.avg_area) tooltip += `<br/>Średnia powierzchnia: ${item.avg_area} m²`;
                                 return tooltip;
                             }
                         }
                     },
                     dataLabels: {
                         enabled: true,
-                        formatter: (val) => `${isNaN(val) ? 0 : val.toFixed(1)}%`,
+                        formatter: (val) => `${val.toFixed(1)}%`,
                         style: {
                             fontSize: '10px',
                             fontWeight: 600
                         }
-                    }
+                    },
+                    responsive: [{
+                        breakpoint: 768,
+                        options: {
+                            chart: {
+                                height: 240
+                            },
+                            legend: {
+                                position: 'bottom'
+                            },
+                            plotOptions: {
+                                pie: {
+                                    donut: {
+                                        labels: {
+                                            total: {
+                                                style: {
+                                                    fontSize: '12px'
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            dataLabels: {
+                                style: {
+                                    fontSize: '9px'
+                                }
+                            }
+                        }
+                    }]
                 };
 
-                const element = document.querySelector("#status-breakdown-chart");
-                if (element) {
-                     this.destroyChart('statusBreakdownChart');
-                     this.statusBreakdownChart = new ApexCharts(element, config);
-                     this.statusBreakdownChart.render().catch(error => {
-                          console.error("Error rendering status breakdown chart:", error);
-                          element.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500">Błąd ładowania wykresu statusu</div>';
-                     });
-                }
+                this.destroyChart('statusBreakdownChart');
+                this.statusBreakdownChart = new ApexCharts(element, config);
+                this.statusBreakdownChart.render().catch(error => console.error(
+                    "Error rendering status breakdown chart:", error));
             },
 
             createCompletionRateChart() {
+                const element = document.querySelector("#completion-rate-chart");
+                if (!element) return;
                 const data = this.getCurrentData();
-                 if (!data || !Array.isArray(data) || data.length === 0) {
-                      console.log("No data for completion rate chart.");
-                      const element = document.querySelector("#completion-rate-chart");
-                      if(element) element.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500">Brak danych wskaźnika</div>';
-                      return;
-                 }
+                if (!data || data.length === 0) {
+                    this.destroyChart('completionRateChart');
+                    this.completionRateChart = new ApexCharts(element, this.getEmptyChartConfig(
+                        'Brak danych wskaźnika'));
+                    this.completionRateChart.render();
+                    return;
+                }
 
                 const config = {
                     chart: {
@@ -847,23 +791,12 @@
                         toolbar: {
                             show: false
                         },
-                        fontFamily: 'Inter, sans-serif',
-                        responsive: [{
-                            breakpoint: 768,
-                            options: {
-                                chart: {
-                                    height: 200
-                                }
-                            }
-                        }]
+                        fontFamily: 'Inter, sans-serif'
                     },
                     series: [{
                         name: 'Wskaźnik ukończenia',
-                        data: data.map(item => {
-                             const rate = parseFloat(item.completion_rate);
-                             if (isNaN(rate)) return 0;
-                             return Math.max(0, Math.min(100, rate));
-                        })
+                        data: data.map(item => Math.max(0, Math.min(100, parseFloat(item.completion_rate) ||
+                            0)))
                     }],
                     xaxis: {
                         categories: data.map(item => item.label || ''),
@@ -883,12 +816,12 @@
                             }
                         },
                         title: {
-                             text: 'Procent (%)',
-                             style: {
-                                 color: '#6B7280',
-                                 fontSize: '10px',
-                                 fontWeight: 500
-                             }
+                            text: 'Procent (%)',
+                            style: {
+                                color: '#6B7280',
+                                fontSize: '10px',
+                                fontWeight: 500
+                            }
                         }
                     },
                     colors: ['#10B981'],
@@ -919,28 +852,57 @@
                         y: {
                             formatter: (value) => `${Math.round(value)}%`
                         }
-                    }
+                    },
+                    responsive: [{
+                        breakpoint: 768,
+                        options: {
+                            chart: {
+                                height: 200
+                            },
+                            xaxis: {
+                                labels: {
+                                    style: {
+                                        fontSize: '9px'
+                                    }
+                                }
+                            },
+                            yaxis: {
+                                labels: {
+                                    style: {
+                                        fontSize: '9px'
+                                    }
+                                },
+                                title: {
+                                    style: {
+                                        fontSize: '9px'
+                                    }
+                                }
+                            },
+                            markers: {
+                                size: 3
+                            }
+                        }
+                    }]
                 };
 
-                const element = document.querySelector("#completion-rate-chart");
-                if (element) {
-                     this.destroyChart('completionRateChart');
-                     this.completionRateChart = new ApexCharts(element, config);
-                     this.completionRateChart.render().catch(error => {
-                          console.error("Error rendering completion rate chart:", error);
-                          element.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500">Błąd ładowania wykresu wskaźnika</div>';
-                     });
-                }
+                this.destroyChart('completionRateChart');
+                this.completionRateChart = new ApexCharts(element, config);
+                this.completionRateChart.render().catch(error => console.error("Error rendering completion rate chart:",
+                    error));
             },
 
             createAverageAreaChart() {
+                const element = document.querySelector("#average-area-chart");
+                if (!element) return;
                 const data = this.getCurrentData();
-                 if (!data || !Array.isArray(data) || data.length === 0) {
-                      console.log("No data for average area chart.");
-                      const element = document.querySelector("#average-area-chart");
-                      if(element) element.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500">Brak danych powierzchni</div>';
-                      return;
-                 }
+                if (!data || data.length === 0) {
+                    this.destroyChart('averageAreaChart');
+                    const emptyConfig = this.getEmptyChartConfig('Brak danych powierzchni');
+                    emptyConfig.chart.type = 'bar';
+                    this.averageAreaChart = new ApexCharts(element, emptyConfig);
+                    this.averageAreaChart.render();
+                    return;
+                }
 
                 const config = {
                     chart: {
@@ -949,22 +911,11 @@
                         toolbar: {
                             show: false
                         },
-                        fontFamily: 'Inter, sans-serif',
-                        responsive: [{
-                            breakpoint: 768,
-                            options: {
-                                chart: {
-                                    height: 200
-                                }
-                            }
-                        }]
+                        fontFamily: 'Inter, sans-serif'
                     },
                     series: [{
                         name: 'Średnia powierzchnia',
-                        data: data.map(item => {
-                             const area = parseFloat(item.avg_area);
-                             return isNaN(area) ? 0 : area;
-                        })
+                        data: data.map(item => parseFloat(item.avg_area) || 0)
                     }],
                     xaxis: {
                         categories: data.map(item => item.label || ''),
@@ -982,12 +933,12 @@
                             }
                         },
                         title: {
-                             text: 'Powierzchnia (m²)',
-                             style: {
-                                 color: '#6B7280',
-                                 fontSize: '10px',
-                                 fontWeight: 500
-                             }
+                            text: 'Powierzchnia (m²)',
+                            style: {
+                                color: '#6B7280',
+                                fontSize: '10px',
+                                fontWeight: 500
+                            }
                         }
                     },
                     colors: ['#F59E0B'],
@@ -1009,20 +960,41 @@
                     },
                     dataLabels: {
                         enabled: false
-                    }
+                    },
+                    responsive: [{
+                        breakpoint: 768,
+                        options: {
+                            chart: {
+                                height: 200
+                            },
+                            xaxis: {
+                                labels: {
+                                    style: {
+                                        fontSize: '9px'
+                                    }
+                                }
+                            },
+                            yaxis: {
+                                labels: {
+                                    style: {
+                                        fontSize: '9px'
+                                    }
+                                },
+                                title: {
+                                    style: {
+                                        fontSize: '9px'
+                                    }
+                                }
+                            }
+                        }
+                    }]
                 };
 
-                const element = document.querySelector("#average-area-chart");
-                if (element) {
-                     this.destroyChart('averageAreaChart');
-                     this.averageAreaChart = new ApexCharts(element, config);
-                     this.averageAreaChart.render().catch(error => {
-                          console.error("Error rendering average area chart:", error);
-                          element.innerHTML = '<div class="h-full flex items-center justify-center text-gray-500">Błąd ładowania wykresu powierzchni</div>';
-                     });
-                }
+                this.destroyChart('averageAreaChart');
+                this.averageAreaChart = new ApexCharts(element, config);
+                this.averageAreaChart.render().catch(error => console.error("Error rendering average area chart:",
+                    error));
             }
         }
     }
 </script>
-@endpush

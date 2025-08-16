@@ -239,457 +239,454 @@
     </div>
 </div>
 
-@push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-    <script>
-        function chartsComponent() {
-            return {
-                activeTab: @entangle('activeTab'),
-                loading: false,
-                chartType: 'line',
-                mainChart: null,
-                costTypesChart: null,
-                weeklyData: @json($chartData['weekly'] ?? [], JSON_UNESCAPED_UNICODE),
-                monthlyData: @json($chartData['monthly'] ?? [], JSON_UNESCAPED_UNICODE),
-                yearlyData: @json($chartData['yearly'] ?? [], JSON_UNESCAPED_UNICODE),
-                costTypesData: @json($chartData['costTypes'] ?? [], JSON_UNESCAPED_UNICODE),
+<script>
+    function chartsComponent() {
+        return {
+            activeTab: @entangle('activeTab'),
+            loading: false,
+            chartType: 'line',
+            mainChart: null,
+            costTypesChart: null,
+            weeklyData: @json($chartData['weekly'] ?? [], JSON_UNESCAPED_UNICODE),
+            monthlyData: @json($chartData['monthly'] ?? [], JSON_UNESCAPED_UNICODE),
+            yearlyData: @json($chartData['yearly'] ?? [], JSON_UNESCAPED_UNICODE),
+            costTypesData: @json($chartData['costTypes'] ?? [], JSON_UNESCAPED_UNICODE),
 
-                initCharts() {
+            initCharts() {
+                this.$nextTick(() => {
+                    this.createMainChart();
+                    this.createCostTypesChart();
+                    window.addEventListener('resize', () => {
+                        this.recreateCharts();
+                    });
+                });
+            },
+
+            switchTab(tab) {
+                this.loading = true;
+                this.$wire.set('activeTab', tab).then(() => {
+                    this.loading = false;
                     this.$nextTick(() => {
-                        this.createMainChart();
-                        this.createCostTypesChart();
-                        window.addEventListener('resize', () => {
-                            this.recreateCharts();
-                        });
+                        this.recreateCharts();
                     });
-                },
+                });
+            },
 
-                switchTab(tab) {
-                    this.loading = true;
-                    this.$wire.set('activeTab', tab).then(() => {
-                        this.loading = false;
-                        this.$nextTick(() => {
-                            this.recreateCharts();
-                        });
-                    });
-                },
+            toggleChartType(type) {
+                this.chartType = type;
+                this.updateMainChart();
+            },
 
-                toggleChartType(type) {
-                    this.chartType = type;
-                    this.updateMainChart();
-                },
-
-                updateCharts(data) {
-                    if (data && data.data) {
-                        this.weeklyData = data.data.weekly || [];
-                        this.monthlyData = data.data.monthly || [];
-                        this.yearlyData = data.data.yearly || [];
-                        this.costTypesData = data.data.costTypes || [];
-                        this.$nextTick(() => {
-                            this.recreateCharts();
-                        });
-                    }
-                },
-
-                recreateCharts() {
-                    this.destroyCharts();
+            updateCharts(data) {
+                if (data && data.data) {
+                    this.weeklyData = data.data.weekly || [];
+                    this.monthlyData = data.data.monthly || [];
+                    this.yearlyData = data.data.yearly || [];
+                    this.costTypesData = data.data.costTypes || [];
                     this.$nextTick(() => {
-                        this.createMainChart();
-                        this.createCostTypesChart();
+                        this.recreateCharts();
                     });
-                },
-
-                destroyCharts() {
-                    if (this.mainChart) {
-                        this.mainChart.destroy();
-                        this.mainChart = null;
-                    }
-                    if (this.costTypesChart) {
-                        this.costTypesChart.destroy();
-                        this.costTypesChart = null;
-                    }
-                },
-
-                getCurrentData() {
-                    switch (this.activeTab) {
-                        case 'weekly':
-                            return this.weeklyData || [];
-                        case 'monthly':
-                            return this.monthlyData || [];
-                        case 'yearly':
-                            return this.yearlyData || [];
-                        default:
-                            return [];
-                    }
-                },
-
-                getChartTitle() {
-                    const titles = {
-                        'weekly': 'Koszty tygodniowe',
-                        'monthly': 'Koszty miesieczne',
-                        'yearly': 'Koszty roczne'
-                    };
-                    return titles[this.activeTab] || 'Koszty';
-                },
-
-                getTrendText() {
-                    const trends = {
-                        'weekly': '{{ $weeklyTrend ?? 'Stabilne' }}',
-                        'monthly': '{{ $monthlyTrend ?? 'Stabilne' }}',
-                        'yearly': '{{ $yearlyChange ?? '0%' }}'
-                    };
-                    return trends[this.activeTab] || 'Brak danych';
-                },
-
-                getTrendBadgeClass() {
-                    const trend = this.getTrendText();
-                    if (trend.includes('rosnacy') || trend.includes('+')) {
-                        return 'bg-green-100 text-green-800';
-                    } else if (trend.includes('malejacy') || trend.includes('-')) {
-                        return 'bg-red-100 text-red-800';
-                    }
-                    return 'bg-blue-100 text-blue-800';
-                },
-
-                getCostTypeColor(index) {
-                    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
-                    return colors[index % colors.length];
-                },
-
-                getChartConfig() {
-                    const data = this.getCurrentData();
-                    if (!data || data.length === 0) {
-                        return this.getEmptyChartConfig();
-                    }
-
-                    const colors = {
-                        'weekly': ['#3B82F6'],
-                        'monthly': ['#10B981'],
-                        'yearly': ['#8B5CF6']
-                    };
-
-                    const baseConfig = {
-                        chart: {
-                            type: this.chartType,
-                            height: '100%',
-                            toolbar: {
-                                show: false
-                            },
-                            foreColor: '#6B7280',
-                            fontFamily: 'Inter, sans-serif',
-                            animations: {
-                                enabled: true,
-                                easing: 'easeinout',
-                                speed: 800
-                            },
-                            dropShadow: {
-                                enabled: true,
-                                color: colors[this.activeTab][0],
-                                top: 18,
-                                left: 7,
-                                blur: 10,
-                                opacity: 0.1
-                            },
-                            responsive: [{
-                                breakpoint: 768,
-                                options: {
-                                    chart: {
-                                        height: 240
-                                    },
-                                    xaxis: {
-                                        labels: {
-                                            style: {
-                                                fontSize: '10px'
-                                            }
-                                        }
-                                    },
-                                    yaxis: {
-                                        labels: {
-                                            style: {
-                                                fontSize: '10px'
-                                            }
-                                        }
-                                    }
-                                }
-                            }]
-                        },
-                        series: [{
-                            name: 'Koszty',
-                            data: data.map(item => item.value || 0)
-                        }],
-                        xaxis: {
-                            categories: data.map(item => item.label || ''),
-                            axisBorder: {
-                                show: false
-                            },
-                            axisTicks: {
-                                show: false
-                            },
-                            labels: {
-                                style: {
-                                    colors: '#9CA3AF',
-                                    fontSize: '12px',
-                                    fontWeight: 500
-                                },
-                                rotate: -45,
-                                rotateAlways: true
-                            }
-                        },
-                        yaxis: {
-                            labels: {
-                                formatter: (value) => this.formatCurrency(value),
-                                style: {
-                                    colors: '#9CA3AF',
-                                    fontSize: '12px'
-                                }
-                            }
-                        },
-                        colors: colors[this.activeTab],
-                        grid: {
-                            borderColor: '#F3F4F6',
-                            strokeDashArray: 5,
-                            padding: {
-                                top: 0,
-                                right: 0,
-                                bottom: 0,
-                                left: 10
-                            }
-                        },
-                        tooltip: {
-                            theme: 'light',
-                            style: {
-                                fontSize: '12px',
-                                fontFamily: 'Inter, sans-serif'
-                            },
-                            y: {
-                                formatter: (value, {
-                                    series,
-                                    seriesIndex,
-                                    dataPointIndex,
-                                    w
-                                }) => {
-                                    let tooltipText = this.formatCurrency(value);
-                                    const item = data[dataPointIndex];
-                                    if (item && item.processed_count !== undefined && item.avg_cost_per_carpet !==
-                                        undefined) {
-                                        tooltipText += `<br/>Liczba dywanów: ${item.processed_count}`;
-                                        tooltipText +=
-                                            `<br/>Średni koszt/dywan: ${this.formatCurrency(item.avg_cost_per_carpet)}`;
-                                    }
-                                    return tooltipText;
-                                }
-                            },
-                            x: {
-                                formatter: (value, {
-                                    dataPointIndex
-                                }) => {
-                                    const item = data[dataPointIndex];
-                                    return item ? item.full_name : value;
-                                }
-                            }
-                        },
-                        dataLabels: {
-                            enabled: false
-                        },
-                        legend: {
-                            position: 'top',
-                            horizontalAlign: 'right',
-                            fontSize: '12px',
-                            onItemClick: {
-                                toggleDataSeries: false
-                            }
-                        }
-                    };
-
-                    if (this.chartType === 'line') {
-                        baseConfig.stroke = {
-                            curve: 'smooth',
-                            width: 3,
-                            lineCap: 'round'
-                        };
-                        baseConfig.markers = {
-                            size: 4,
-                            colors: ['#fff'],
-                            strokeColors: colors[this.activeTab][0],
-                            strokeWidth: 2,
-                            hover: {
-                                size: 6
-                            }
-                        };
-                    } else if (this.chartType === 'bar') {
-                        baseConfig.plotOptions = {
-                            bar: {
-                                borderRadius: 6,
-                                columnWidth: '50%',
-                                borderRadiusApplication: 'end'
-                            }
-                        };
-                    }
-
-                    if (this.activeTab === 'yearly' && this.chartType === 'line') {
-                        baseConfig.chart.type = 'area';
-                        baseConfig.fill = {
-                            type: 'gradient',
-                            gradient: {
-                                shadeIntensity: 1,
-                                opacityFrom: 0.4,
-                                opacityTo: 0.1,
-                                stops: [0, 100]
-                            }
-                        };
-                    }
-
-                    return baseConfig;
-                },
-
-                getEmptyChartConfig() {
-                    return {
-                        chart: {
-                            type: 'line',
-                            height: '100%',
-                            toolbar: {
-                                show: false
-                            }
-                        },
-                        series: [{
-                            name: 'Koszty',
-                            data: []
-                        }],
-                        xaxis: {
-                            categories: []
-                        },
-                        noData: {
-                            text: 'Brak danych do wyswietlenia',
-                            align: 'center',
-                            verticalAlign: 'middle',
-                            offsetX: 0,
-                            offsetY: 0,
-                            style: {
-                                color: '#6B7280',
-                                fontSize: '14px',
-                                fontFamily: 'Inter, sans-serif'
-                            }
-                        }
-                    };
-                },
-
-                createMainChart() {
-                    const element = document.querySelector("#main-chart");
-                    if (element) {
-                        this.mainChart = new ApexCharts(element, this.getChartConfig());
-                        this.mainChart.render();
-                    }
-                },
-
-                updateMainChart() {
-                    if (this.mainChart) {
-                        const config = this.getChartConfig();
-                        this.mainChart.updateOptions(config, true, true);
-                    } else {
-                        this.createMainChart();
-                    }
-                },
-
-                createCostTypesChart() {
-                    if (!this.costTypesData || this.costTypesData.length === 0) return;
-                    const config = {
-                        chart: {
-                            type: 'donut',
-                            height: '100%',
-                            fontFamily: 'Inter, sans-serif',
-                            responsive: [{
-                                breakpoint: 768,
-                                options: {
-                                    chart: {
-                                        height: 240
-                                    },
-                                    legend: {
-                                        position: 'bottom'
-                                    }
-                                }
-                            }]
-                        },
-                        series: this.costTypesData.map(item => item.value || 0),
-                        labels: this.costTypesData.map(item => item.label || 'Nieznany'),
-                        colors: this.costTypesData.map((_, index) => this.getCostTypeColor(index)),
-                        plotOptions: {
-                            pie: {
-                                donut: {
-                                    size: '70%',
-                                    labels: {
-                                        show: true,
-                                        total: {
-                                            show: true,
-                                            label: 'Lacznie',
-                                            formatter: () => this.formatCurrency(
-                                                this.costTypesData.reduce((sum, item) => sum + (item.value || 0), 0)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        legend: {
-                            show: true,
-                            position: 'right',
-                            fontSize: '12px',
-                            markers: {
-                                width: 10,
-                                height: 10
-                            }
-                        },
-                        tooltip: {
-                            y: {
-                                formatter: (value) => this.formatCurrency(value)
-                            }
-                        },
-                        dataLabels: {
-                            enabled: true,
-                            formatter: (val) => `${val.toFixed(1)}%`,
-                            style: {
-                                fontSize: '10px'
-                            }
-                        }
-                    };
-                    const element = document.querySelector("#cost-types-chart");
-                    if (element) {
-                        this.costTypesChart = new ApexCharts(element, config);
-                        this.costTypesChart.render();
-                    }
-                },
-
-                formatCurrency(value) {
-                    if (!value || isNaN(value)) return '0 zl';
-                    return new Intl.NumberFormat('pl-PL', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                    }).format(value) + ' zl';
                 }
+            },
+
+            recreateCharts() {
+                this.destroyCharts();
+                this.$nextTick(() => {
+                    this.createMainChart();
+                    this.createCostTypesChart();
+                });
+            },
+
+            destroyCharts() {
+                if (this.mainChart) {
+                    this.mainChart.destroy();
+                    this.mainChart = null;
+                }
+                if (this.costTypesChart) {
+                    this.costTypesChart.destroy();
+                    this.costTypesChart = null;
+                }
+            },
+
+            getCurrentData() {
+                switch (this.activeTab) {
+                    case 'weekly':
+                        return this.weeklyData || [];
+                    case 'monthly':
+                        return this.monthlyData || [];
+                    case 'yearly':
+                        return this.yearlyData || [];
+                    default:
+                        return [];
+                }
+            },
+
+            getChartTitle() {
+                const titles = {
+                    'weekly': 'Koszty tygodniowe',
+                    'monthly': 'Koszty miesieczne',
+                    'yearly': 'Koszty roczne'
+                };
+                return titles[this.activeTab] || 'Koszty';
+            },
+
+            getTrendText() {
+                const trends = {
+                    'weekly': '{{ $weeklyTrend ?? 'Stabilne' }}',
+                    'monthly': '{{ $monthlyTrend ?? 'Stabilne' }}',
+                    'yearly': '{{ $yearlyChange ?? '0%' }}'
+                };
+                return trends[this.activeTab] || 'Brak danych';
+            },
+
+            getTrendBadgeClass() {
+                const trend = this.getTrendText();
+                if (trend.includes('rosnacy') || trend.includes('+')) {
+                    return 'bg-green-100 text-green-800';
+                } else if (trend.includes('malejacy') || trend.includes('-')) {
+                    return 'bg-red-100 text-red-800';
+                }
+                return 'bg-blue-100 text-blue-800';
+            },
+
+            getCostTypeColor(index) {
+                const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+                return colors[index % colors.length];
+            },
+
+            getChartConfig() {
+                const data = this.getCurrentData();
+                if (!data || data.length === 0) {
+                    return this.getEmptyChartConfig();
+                }
+
+                const colors = {
+                    'weekly': ['#3B82F6'],
+                    'monthly': ['#10B981'],
+                    'yearly': ['#8B5CF6']
+                };
+
+                const baseConfig = {
+                    chart: {
+                        type: this.chartType,
+                        height: '100%',
+                        toolbar: {
+                            show: false
+                        },
+                        foreColor: '#6B7280',
+                        fontFamily: 'Inter, sans-serif',
+                        animations: {
+                            enabled: true,
+                            easing: 'easeinout',
+                            speed: 800
+                        },
+                        dropShadow: {
+                            enabled: true,
+                            color: colors[this.activeTab][0],
+                            top: 18,
+                            left: 7,
+                            blur: 10,
+                            opacity: 0.1
+                        },
+                        responsive: [{
+                            breakpoint: 768,
+                            options: {
+                                chart: {
+                                    height: 240
+                                },
+                                xaxis: {
+                                    labels: {
+                                        style: {
+                                            fontSize: '10px'
+                                        }
+                                    }
+                                },
+                                yaxis: {
+                                    labels: {
+                                        style: {
+                                            fontSize: '10px'
+                                        }
+                                    }
+                                }
+                            }
+                        }]
+                    },
+                    series: [{
+                        name: 'Koszty',
+                        data: data.map(item => item.value || 0)
+                    }],
+                    xaxis: {
+                        categories: data.map(item => item.label || ''),
+                        axisBorder: {
+                            show: false
+                        },
+                        axisTicks: {
+                            show: false
+                        },
+                        labels: {
+                            style: {
+                                colors: '#9CA3AF',
+                                fontSize: '12px',
+                                fontWeight: 500
+                            },
+                            rotate: -45,
+                            rotateAlways: true
+                        }
+                    },
+                    yaxis: {
+                        labels: {
+                            formatter: (value) => this.formatCurrency(value),
+                            style: {
+                                colors: '#9CA3AF',
+                                fontSize: '12px'
+                            }
+                        }
+                    },
+                    colors: colors[this.activeTab],
+                    grid: {
+                        borderColor: '#F3F4F6',
+                        strokeDashArray: 5,
+                        padding: {
+                            top: 0,
+                            right: 0,
+                            bottom: 0,
+                            left: 10
+                        }
+                    },
+                    tooltip: {
+                        theme: 'light',
+                        style: {
+                            fontSize: '12px',
+                            fontFamily: 'Inter, sans-serif'
+                        },
+                        y: {
+                            formatter: (value, {
+                                series,
+                                seriesIndex,
+                                dataPointIndex,
+                                w
+                            }) => {
+                                let tooltipText = this.formatCurrency(value);
+                                const item = data[dataPointIndex];
+                                if (item && item.processed_count !== undefined && item.avg_cost_per_carpet !==
+                                    undefined) {
+                                    tooltipText += `<br/>Liczba dywanów: ${item.processed_count}`;
+                                    tooltipText +=
+                                        `<br/>Średni koszt/dywan: ${this.formatCurrency(item.avg_cost_per_carpet)}`;
+                                }
+                                return tooltipText;
+                            }
+                        },
+                        x: {
+                            formatter: (value, {
+                                dataPointIndex
+                            }) => {
+                                const item = data[dataPointIndex];
+                                return item ? item.full_name : value;
+                            }
+                        }
+                    },
+                    dataLabels: {
+                        enabled: false
+                    },
+                    legend: {
+                        position: 'top',
+                        horizontalAlign: 'right',
+                        fontSize: '12px',
+                        onItemClick: {
+                            toggleDataSeries: false
+                        }
+                    }
+                };
+
+                if (this.chartType === 'line') {
+                    baseConfig.stroke = {
+                        curve: 'smooth',
+                        width: 3,
+                        lineCap: 'round'
+                    };
+                    baseConfig.markers = {
+                        size: 4,
+                        colors: ['#fff'],
+                        strokeColors: colors[this.activeTab][0],
+                        strokeWidth: 2,
+                        hover: {
+                            size: 6
+                        }
+                    };
+                } else if (this.chartType === 'bar') {
+                    baseConfig.plotOptions = {
+                        bar: {
+                            borderRadius: 6,
+                            columnWidth: '50%',
+                            borderRadiusApplication: 'end'
+                        }
+                    };
+                }
+
+                if (this.activeTab === 'yearly' && this.chartType === 'line') {
+                    baseConfig.chart.type = 'area';
+                    baseConfig.fill = {
+                        type: 'gradient',
+                        gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.4,
+                            opacityTo: 0.1,
+                            stops: [0, 100]
+                        }
+                    };
+                }
+
+                return baseConfig;
+            },
+
+            getEmptyChartConfig() {
+                return {
+                    chart: {
+                        type: 'line',
+                        height: '100%',
+                        toolbar: {
+                            show: false
+                        }
+                    },
+                    series: [{
+                        name: 'Koszty',
+                        data: []
+                    }],
+                    xaxis: {
+                        categories: []
+                    },
+                    noData: {
+                        text: 'Brak danych do wyswietlenia',
+                        align: 'center',
+                        verticalAlign: 'middle',
+                        offsetX: 0,
+                        offsetY: 0,
+                        style: {
+                            color: '#6B7280',
+                            fontSize: '14px',
+                            fontFamily: 'Inter, sans-serif'
+                        }
+                    }
+                };
+            },
+
+            createMainChart() {
+                const element = document.querySelector("#main-chart");
+                if (element) {
+                    this.mainChart = new ApexCharts(element, this.getChartConfig());
+                    this.mainChart.render();
+                }
+            },
+
+            updateMainChart() {
+                if (this.mainChart) {
+                    const config = this.getChartConfig();
+                    this.mainChart.updateOptions(config, true, true);
+                } else {
+                    this.createMainChart();
+                }
+            },
+
+            createCostTypesChart() {
+                if (!this.costTypesData || this.costTypesData.length === 0) return;
+                const config = {
+                    chart: {
+                        type: 'donut',
+                        height: '100%',
+                        fontFamily: 'Inter, sans-serif',
+                        responsive: [{
+                            breakpoint: 768,
+                            options: {
+                                chart: {
+                                    height: 240
+                                },
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }]
+                    },
+                    series: this.costTypesData.map(item => item.value || 0),
+                    labels: this.costTypesData.map(item => item.label || 'Nieznany'),
+                    colors: this.costTypesData.map((_, index) => this.getCostTypeColor(index)),
+                    plotOptions: {
+                        pie: {
+                            donut: {
+                                size: '70%',
+                                labels: {
+                                    show: true,
+                                    total: {
+                                        show: true,
+                                        label: 'Lacznie',
+                                        formatter: () => this.formatCurrency(
+                                            this.costTypesData.reduce((sum, item) => sum + (item.value || 0), 0)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    legend: {
+                        show: true,
+                        position: 'right',
+                        fontSize: '12px',
+                        markers: {
+                            width: 10,
+                            height: 10
+                        }
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: (value) => this.formatCurrency(value)
+                        }
+                    },
+                    dataLabels: {
+                        enabled: true,
+                        formatter: (val) => `${val.toFixed(1)}%`,
+                        style: {
+                            fontSize: '10px'
+                        }
+                    }
+                };
+                const element = document.querySelector("#cost-types-chart");
+                if (element) {
+                    this.costTypesChart = new ApexCharts(element, config);
+                    this.costTypesChart.render();
+                }
+            },
+
+            formatCurrency(value) {
+                if (!value || isNaN(value)) return '0 zl';
+                return new Intl.NumberFormat('pl-PL', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(value) + ' zl';
             }
         }
+    }
 
-        document.addEventListener('livewire:init', function() {
-            Livewire.on('download-pdf', (data) => {
-                const filename = data[0].filename;
-                const link = document.createElement('a');
-                link.href = '/storage/' + filename;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
+    document.addEventListener('livewire:init', function() {
+        Livewire.on('download-pdf', (data) => {
+            const filename = data[0].filename;
+            const link = document.createElement('a');
+            link.href = '/storage/' + filename;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
+    });
 
-        document.addEventListener('livewire:init', function() {
-            Livewire.on('download-csv', (data) => {
-                const filename = data[0].filename;
-                const link = document.createElement('a');
-                link.href = '/storage/' + filename;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
+    document.addEventListener('livewire:init', function() {
+        Livewire.on('download-csv', (data) => {
+            const filename = data[0].filename;
+            const link = document.createElement('a');
+            link.href = '/storage/' + filename;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
-    </script>
-@endpush
+    });
+</script>

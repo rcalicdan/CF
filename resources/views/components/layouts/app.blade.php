@@ -9,11 +9,11 @@
 
 <body class="font-sans">
 
-    <div x-data="{ 
-            isMobileMenuOpen: false, 
-            isDesktopSidebarCollapsed: $persist(false).as('sidebarCollapsed'),
-            dropdownOpen: false
-        }" x-cloak>
+    <div x-data="{
+        isMobileMenuOpen: false,
+        isDesktopSidebarCollapsed: $persist(false).as('sidebarCollapsed'),
+        dropdownOpen: false
+    }" x-cloak>
 
         <x-partials.dashboard.sidebar />
 
@@ -33,6 +33,7 @@
 
     @livewireScripts
     @stack('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@latest/dist/css/splide.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@latest/dist/js/splide.min.js"></script>
 </body>
