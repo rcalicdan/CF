@@ -126,14 +126,14 @@ class Charts extends Component
             $date = Carbon::parse($item->period_start);
             return [
                 'label' => match ($period) {
-                    'week' => 'W'.$date->weekOfYear.' '.$date->format('y'),
+                    'week' => 'W' . $date->weekOfYear . ' ' . $date->format('y'),
                     'month' => $date->format('M Y'),
                     'year' => $date->format('Y'),
                 },
                 'full_name' => match ($period) {
-                    'week' => $date->format('d.m').' - '.$date->endOfWeek()->format('d.m.Y'),
+                    'week' => $date->format('d.m') . ' - ' . $date->endOfWeek()->format('d.m.Y'),
                     'month' => $date->format('F Y'),
-                    'year' => 'Rok '.$date->format('Y'),
+                    'year' => 'Rok ' . $date->format('Y'),
                 },
                 'value' => (int) $item->total_processed,
                 'completed_count' => (int) $item->completed_count,
@@ -146,7 +146,7 @@ class Charts extends Component
 
     private function getStatusBreakdownData(): array
     {
-        $data = OrderCarpet::select('status', DB::raw('COUNT(*) as count, AVG(total_area) as avg_area'))
+        $data = OrderCarpet::selectRaw('status, COUNT(*) as count, AVG(total_area) as avg_area')
             ->where('created_at', '>=', Carbon::now()->startOfMonth())
             ->groupBy('status')
             ->orderBy('count', 'desc')
@@ -191,7 +191,7 @@ class Charts extends Component
             $date = Carbon::parse($item->period_start);
             return [
                 'label' => match ($period) {
-                    'week' => 'W'.$date->weekOfYear.' '.$date->format('y'),
+                    'week' => 'W' . $date->weekOfYear . ' ' . $date->format('y'),
                     'month' => $date->format('M Y'),
                     'year' => $date->format('Y'),
                 },
@@ -230,7 +230,7 @@ class Charts extends Component
             ->orderBy('order_count', 'desc')
             ->limit(5)
             ->get()
-            ->map(fn ($item) => ['label' => $item->driver_name, 'value' => (int) $item->order_count])
+            ->map(fn($item) => ['label' => $item->driver_name, 'value' => (int) $item->order_count])
             ->toArray();
     }
 
@@ -244,7 +244,7 @@ class Charts extends Component
             ->orderBy('service_count', 'desc')
             ->limit(5)
             ->get()
-            ->map(fn ($item) => ['label' => $item->service_name, 'value' => (int) $item->service_count])
+            ->map(fn($item) => ['label' => $item->service_name, 'value' => (int) $item->service_count])
             ->toArray();
     }
 
@@ -273,7 +273,7 @@ class Charts extends Component
         if (count($monthlyData) >= 2) {
             $lastTwo = array_slice($monthlyData, -2);
             $change = $lastTwo[1]['value'] - $lastTwo[0]['value'];
-            $this->monthlyTrend = $change > 0 ? "Wzrost o {$change}" : ($change < 0 ? "Spadek o ".abs($change) : 'Bez zmian');
+            $this->monthlyTrend = $change > 0 ? "Wzrost o {$change}" : ($change < 0 ? "Spadek o " . abs($change) : 'Bez zmian');
         }
 
         $yearlyData = $this->chartData['throughput']['yearly'] ?? [];
@@ -281,7 +281,7 @@ class Charts extends Component
             $lastTwo = array_slice($yearlyData, -2);
             $changePercent = $lastTwo[0]['value'] > 0 ?
                 (($lastTwo[1]['value'] - $lastTwo[0]['value']) / $lastTwo[0]['value']) * 100 : ($lastTwo[1]['value'] > 0 ? 100 : 0);
-            $this->yearlyChange = ($changePercent >= 0 ? '+' : '').round($changePercent, 1).'%';
+            $this->yearlyChange = ($changePercent >= 0 ? '+' : '') . round($changePercent, 1) . '%';
         }
     }
 
