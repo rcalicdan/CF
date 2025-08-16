@@ -1,0 +1,128 @@
+/* Aggressive Modal Styles */
+.modal-overlay-force {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+}
+
+.modal-content-force {
+    background-color: white !important;
+    border-radius: 8px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    max-width: 500px !important;
+    width: 100% !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    position: relative !important;
+    z-index: 10000 !important;
+}
+
+.modal-hidden-force {
+    display: none !important;
+}
+
+.modal-visible-force {
+    display: flex !important;
+}
+
+.modal-header-force {
+    padding: 24px 24px 16px 24px !important;
+    display: flex !important;
+    align-items: flex-start !important;
+}
+
+.modal-icon-force {
+    width: 48px !important;
+    height: 48px !important;
+    background-color: #fef2f2 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-right: 16px !important;
+    flex-shrink: 0 !important;
+}
+
+.modal-text-force {
+    flex: 1 !important;
+}
+
+.modal-title-force {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: #111827 !important;
+    margin: 0 0 8px 0 !important;
+    line-height: 1.5 !important;
+}
+
+.modal-description-force {
+    font-size: 14px !important;
+    color: #6b7280 !important;
+    margin: 0 !important;
+    line-height: 1.5 !important;
+}
+
+.modal-actions-force {
+    background-color: #f9fafb !important;
+    padding: 16px 24px !important;
+    display: flex !important;
+    gap: 12px !important;
+    justify-content: flex-end !important;
+}
+
+.modal-btn-danger-force {
+    background-color: #dc2626 !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    min-width: 100px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background-color 0.2s !important;
+}
+
+.modal-btn-danger-force:hover {
+    background-color: #b91c1c !important;
+}
+
+.modal-btn-secondary-force {
+    background-color: white !important;
+    color: #374151 !important;
+    border: 1px solid #d1d5db !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    min-width: 80px !important;
+    transition: background-color 0.2s !important;
+}
+
+.modal-btn-secondary-force:hover {
+    background-color: #f9fafb !important;
+}
+
+@keyframes spin-force {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin-force {
+    animation: spin-force 1s linear infinite !important;
+    width: 16px !important;
+    height: 16px !important;
+    margin-right: 8px !important;
+}

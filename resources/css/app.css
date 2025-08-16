@@ -1,0 +1,7 @@
+@import "tailwindcss";
+@import "./app/dashboard.css";
+@import "./app/auth.css";
+@import "./app/confirmation-modal.css";
+
+
+@source "../views";

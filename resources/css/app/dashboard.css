@@ -1,0 +1,130 @@
+:root {
+    --color-primary-accent: #6d28d9;
+    --color-primary-text: #4c1d95;
+    --color-bg-main: #f5f3ff;
+    --color-bg-active: #ede9fe;
+    --color-secondary-accent: #3b82f6;
+    --color-border-soft: #ddd6fe;
+}
+
+body {
+    background-color: var(--color-bg-main);
+}
+
+.text-primary {
+    color: var(--color-primary-accent);
+}
+
+.text-primary-dark {
+    color: var(--color-primary-text);
+}
+
+.bg-primary-light {
+    background-color: var(--color-bg-active);
+}
+
+.themed-card {
+    border: 1px solid var(--color-bg-active);
+}
+
+.themed-input:focus {
+    --tw-ring-color: var(--color-primary-accent);
+}
+
+.themed-chart-placeholder {
+    background-color: var(--color-bg-active);
+}
+
+.themed-chart-placeholder p {
+    color: var(--color-primary-accent);
+    opacity: 0.6;
+}
+
+.sidebar-link.active {
+    background-color: var(--color-bg-active);
+}
+
+.sidebar-link.active .sidebar-icon,
+.sidebar-link.active .sidebar-text {
+    color: var(--color-primary-accent);
+}
+
+.sidebar-link:not(.active):hover {
+    background-color: var(--color-bg-active);
+}
+
+.dropdown-link:hover {
+    background-color: var(--color-primary-accent);
+    color: white;
+}
+
+.themed-table-header {
+    border-bottom-color: var(--color-border-soft);
+}
+
+.themed-table-body {
+    divide-color: var(--color-border-soft);
+}
+
+.stat-icon-primary-bg {
+    background-color: rgba(109, 40, 217, 0.2);
+}
+
+.stat-icon-green-bg {
+    background-color: rgba(16, 185, 129, 0.2);
+}
+
+.stat-icon-blue-bg {
+    background-color: rgba(59, 130, 246, 0.2);
+}
+
+.stat-icon-red-bg {
+    background-color: rgba(239, 68, 68, 0.2);
+}
+
+.status-pill-blue {
+    background-color: var(--color-secondary-accent);
+    color: white;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.sidebar-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidebar-link.active .sidebar-icon,
+.sidebar-link.active .sidebar-text {
+    color: var(--color-primary-accent);
+}
+
+.sidebar-link:not(.active) .sidebar-icon {
+    color: #6b7280;
+}
+
+.sidebar-link:not(.active):hover .sidebar-icon {
+    color: var(--color-primary-accent);
+}
+
+[x-cloak] {
+    display: none !important;
+}
