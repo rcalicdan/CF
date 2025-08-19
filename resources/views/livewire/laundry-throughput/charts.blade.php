@@ -16,6 +16,17 @@
                     <span class="truncate">Odśwież</span>
                 </button>
             </div> --}}
+            <div class="mb-4">
+                <button wire:click="generatePdfReport"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    Generuj raport PDF
+                </button>
+            </div>
         </div>
     </div>
 
@@ -136,7 +147,8 @@
                                 <button @click="toggleChartType('bar')"
                                     @mouseenter="showTooltip = true; tooltipType = 'bar'"
                                     @mouseleave="showTooltip = false"
-                                    :class="chartType === 'bar' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'"
+                                    :class="chartType === 'bar' ? 'bg-blue-100 text-blue-600' :
+                                        'bg-gray-100 text-gray-600'"
                                     class="p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:scale-105">
                                     <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
@@ -328,9 +340,9 @@
                 getTrendBadgeClass() {
                     const trend = this.getTrendText().toLowerCase();
                     if (trend.includes('rosnący') || trend.includes('wzrost') || trend.includes('+'))
-                    return 'bg-green-100 text-green-800';
+                        return 'bg-green-100 text-green-800';
                     if (trend.includes('malejący') || trend.includes('spadek') || trend.includes('-'))
-                    return 'bg-red-100 text-red-800';
+                        return 'bg-red-100 text-red-800';
                     return 'bg-blue-100 text-blue-800';
                 },
 
@@ -950,5 +962,16 @@
                 }
             }
         }
+        document.addEventListener('livewire:init', function() {
+            Livewire.on('download-pdf', (data) => {
+                const filename = data[0].filename;
+                const link = document.createElement('a');
+                link.href = '/storage/' + filename;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
     </script>
 @endpush
