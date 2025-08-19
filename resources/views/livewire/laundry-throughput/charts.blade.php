@@ -9,17 +9,13 @@
                 <p class="text-sm sm:text-base text-gray-500 mt-1">Kompleksowa analiza wydajności, przychodów i operacji
                 </p>
             </div>
-            <div class="flex gap-2 sm:gap-3 w-full sm:w-auto">
+            {{-- <div class="flex gap-2 sm:gap-3 w-full sm:w-auto">
                 <button @click="$wire.refreshData()"
                     class="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200 whitespace-nowrap">
-                    <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                        </path>
-                    </svg>
+                    <svg class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     <span class="truncate">Odśwież</span>
                 </button>
-            </div>
+            </div> --}}
         </div>
     </div>
 
@@ -140,8 +136,7 @@
                                 <button @click="toggleChartType('bar')"
                                     @mouseenter="showTooltip = true; tooltipType = 'bar'"
                                     @mouseleave="showTooltip = false"
-                                    :class="chartType === 'bar' ? 'bg-blue-100 text-blue-600' :
-                                        'bg-gray-100 text-gray-600'"
+                                    :class="chartType === 'bar' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'"
                                     class="p-1.5 sm:p-2 rounded-lg transition-colors duration-200 hover:scale-105">
                                     <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">

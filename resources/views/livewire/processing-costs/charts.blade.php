@@ -10,7 +10,7 @@
                 </p>
             </div>
             <div class="flex gap-2 sm:gap-3 w-full sm:w-auto">
-                <button @click="$wire.refreshData()" :disabled="loading"
+                {{-- <button @click="$wire.refreshData()" :disabled="loading"
                     class="flex-1 sm:flex-none flex items-center justify-center px-3 py-2 sm:px-4 sm:py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200 whitespace-nowrap">
                     <svg x-show="!loading" class="w-4 h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
@@ -26,7 +26,7 @@
                             class="opacity-75"></path>
                     </svg>
                     <span x-text="loading ? 'Odswiezanie...' : 'Odswież'" class="truncate"></span>
-                </button>
+                </button> --}}
 
                 <!-- PDF Download Button -->
                 <button @click="$wire.generatePdf()"
@@ -238,6 +238,7 @@
         </div>
     </div>
 </div>
+
 @push('scripts')
     <script>
         function chartsComponent() {
