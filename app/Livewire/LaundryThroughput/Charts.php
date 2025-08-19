@@ -53,14 +53,14 @@ class Charts extends Component
     {
         try {
             $reportData = $this->preparePdfReportData();
-
             $pdfService = new PdfReportService();
             $filename = $pdfService->generateLaundryThroughputReport($reportData);
 
-            $this->dispatch('download-pdf', ['filename' => $filename]);
+            $this->dispatch('download-pdf-route', ['filename' => $filename]);
 
             session()->flash('message', 'Raport został wygenerowany pomyślnie.');
         } catch (\Exception $e) {
+            \Log::error('LaundryThroughput PDF Error: ' . $e->getMessage());
             session()->flash('error', 'Błąd podczas generowania raportu: ' . $e->getMessage());
         }
     }
