@@ -2,6 +2,7 @@
 
 namespace App\Livewire\LaundryThroughput;
 
+use App\ActionService\PdfReportService;
 use App\Enums\OrderCarpetStatus;
 use App\Enums\OrderStatus;
 use App\Models\Order;
@@ -46,6 +47,188 @@ class Charts extends Component
         $this->calculateTrends();
 
         $this->dispatch('update-charts', ['data' => $this->chartData]);
+    }
+
+    public function generatePdfReport()
+    {
+        try {
+            $reportData = $this->preparePdfReportData();
+
+            $pdfService = new PdfReportService();
+            $filename = $pdfService->generateLaundryThroughputReport($reportData);
+
+            $this->dispatch('download-pdf', ['filename' => $filename]);
+
+            session()->flash('message', 'Raport został wygenerowany pomyślnie.');
+        } catch (\Exception $e) {
+            session()->flash('error', 'Błąd podczas generowania raportu: ' . $e->getMessage());
+        }
+    }
+
+    private function preparePdfReportData(): array
+    {
+        return [
+            'summary' => $this->getSummaryData(),
+            'dailyData' => $this->getThroughputData('day', 30),
+            'weeklyData' => $this->getThroughputData('week', 12),
+            'monthlyData' => $this->getThroughputData('month', 12),
+            'revenueDaily' => $this->getRevenueData('day', 30),
+            'revenueWeekly' => $this->getRevenueData('week', 12),
+            'revenueMonthly' => $this->getRevenueData('month', 12),
+            'clientPerformance' => $this->getClientPerformanceData(),
+        ];
+    }
+
+    private function getSummaryData(): array
+    {
+        return [
+            'current_month_carpets' => $this->totalCurrentMonthCarpets,
+            'previous_month_carpets' => $this->totalPreviousMonthCarpets,
+            'carpets_change_percentage' => $this->percentageChangeCarpets,
+            'current_month_revenue' => $this->totalRevenueCurrentMonth,
+            'previous_month_revenue' => $this->totalRevenuePreviousMonth,
+            'revenue_change_percentage' => $this->percentageChangeRevenue,
+            'avg_order_value' => $this->avgOrderValue,
+            'weekly_trend' => $this->weeklyTrend,
+            'monthly_trend' => $this->monthlyTrend,
+            'yearly_change' => $this->yearlyChange,
+        ];
+    }
+
+    private function getThroughputData(string $period, int $count): array
+    {
+        $startDate = match ($period) {
+            'day' => Carbon::now()->subDays($count)->startOfDay(),
+            'week' => Carbon::now()->subWeeks($count)->startOfWeek(),
+            'month' => Carbon::now()->subMonths($count)->startOfMonth(),
+            'year' => Carbon::now()->subYears($count)->startOfYear(),
+        };
+
+        $trunc_sql = "DATE_TRUNC('$period', updated_at)";
+
+        $data = OrderCarpet::query()
+            ->selectRaw("
+                {$trunc_sql} as period_start,
+                COUNT(*) as total_processed,
+                COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as completed_count,
+                AVG(total_area) as avg_area,
+                SUM(total_area) as total_area_sum,
+                AVG(CASE WHEN height > 0 AND width > 0 THEN (height * width) END) as avg_carpet_size,
+                SUM(CASE WHEN height > 0 AND width > 0 THEN (height * width) END) as total_carpet_area
+            ", [OrderCarpetStatus::COMPLETED->value, OrderCarpetStatus::DELIVERED->value])
+            ->where('updated_at', '>=', $startDate)
+            ->whereNotNull('updated_at')
+            ->groupBy('period_start')
+            ->orderBy('period_start')
+            ->get();
+
+        return $data->map(function ($item) use ($period) {
+            $date = Carbon::parse($item->period_start);
+            return [
+                'label' => match ($period) {
+                    'day' => $date->format('d.m.Y'),
+                    'week' => 'W' . $date->weekOfYear . ' ' . $date->format('y'),
+                    'month' => $date->format('M Y'),
+                    'year' => $date->format('Y'),
+                },
+                'full_name' => match ($period) {
+                    'day' => $date->format('d F Y'),
+                    'week' => $date->format('d.m') . ' - ' . $date->endOfWeek()->format('d.m.Y'),
+                    'month' => $date->format('F Y'),
+                    'year' => 'Rok ' . $date->format('Y'),
+                },
+                'value' => (int) $item->total_processed,
+                'completed_count' => (int) $item->completed_count,
+                'avg_area' => round((float) $item->avg_area, 2),
+                'total_area' => round((float) $item->total_area_sum, 2),
+                'avg_carpet_size' => round((float) $item->avg_carpet_size, 2),
+                'total_carpet_area' => round((float) $item->total_carpet_area, 2),
+                'completion_rate' => $item->total_processed > 0 ? round(($item->completed_count / $item->total_processed) * 100, 1) : 0,
+                'weight_estimate' => round((float) $item->total_area_sum * 2.5, 2), // Assuming 2.5kg per m²
+            ];
+        })->toArray();
+    }
+
+    private function getRevenueData(string $period, int $count): array
+    {
+        $startDate = match ($period) {
+            'day' => Carbon::now()->subDays($count)->startOfDay(),
+            'week' => Carbon::now()->subWeeks($count)->startOfWeek(),
+            'month' => Carbon::now()->subMonths($count)->startOfMonth(),
+            'year' => Carbon::now()->subYears($count)->startOfYear(),
+        };
+
+        $trunc_sql = "DATE_TRUNC('$period', updated_at)";
+
+        $data = Order::query()
+            ->selectRaw("
+                {$trunc_sql} as period_start,
+                SUM(total_amount) as total_revenue,
+                COUNT(*) as order_count,
+                AVG(total_amount) as avg_order_value
+            ")
+            ->where('status', OrderStatus::DELIVERED->value)
+            ->where('updated_at', '>=', $startDate)
+            ->groupBy('period_start')
+            ->orderBy('period_start')
+            ->get();
+
+        return $data->map(function ($item) use ($period) {
+            $date = Carbon::parse($item->period_start);
+            return [
+                'label' => match ($period) {
+                    'day' => $date->format('d.m.Y'),
+                    'week' => 'W' . $date->weekOfYear . ' ' . $date->format('y'),
+                    'month' => $date->format('M Y'),
+                    'year' => $date->format('Y'),
+                },
+                'full_name' => match ($period) {
+                    'day' => $date->format('d F Y'),
+                    'week' => $date->format('d.m') . ' - ' . $date->endOfWeek()->format('d.m.Y'),
+                    'month' => $date->format('F Y'),
+                    'year' => 'Rok ' . $date->format('Y'),
+                },
+                'value' => round((float) $item->total_revenue, 2),
+                'order_count' => (int) $item->order_count,
+                'avg_order_value' => round((float) $item->avg_order_value, 2),
+            ];
+        })->toArray();
+    }
+
+    private function getClientPerformanceData(): array
+    {
+        return Order::join('clients', 'orders.client_id', '=', 'clients.id')
+            ->join('order_carpets', 'orders.id', '=', 'order_carpets.order_id')
+            ->selectRaw("
+                clients.id,
+                CONCAT(clients.first_name, ' ', clients.last_name) as client_name,
+                clients.city,
+                COUNT(DISTINCT orders.id) as order_count,
+                COUNT(order_carpets.id) as carpet_count,
+                SUM(order_carpets.total_area) as total_area,
+                SUM(orders.total_amount) as total_revenue,
+                AVG(orders.total_amount) as avg_order_value,
+                AVG(order_carpets.total_area) as avg_carpet_area
+            ")
+            ->where('orders.created_at', '>=', Carbon::now()->subMonths(12))
+            ->groupBy('clients.id', 'clients.first_name', 'clients.last_name', 'clients.city')
+            ->orderBy('total_revenue', 'desc')
+            ->limit(20)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'client_name' => $item->client_name,
+                    'city' => $item->city ?? 'N/A',
+                    'order_count' => (int) $item->order_count,
+                    'carpet_count' => (int) $item->carpet_count,
+                    'total_area' => round((float) $item->total_area, 2),
+                    'total_revenue' => round((float) $item->total_revenue, 2),
+                    'avg_order_value' => round((float) $item->avg_order_value, 2),
+                    'avg_carpet_area' => round((float) $item->avg_carpet_area, 2),
+                    'weight_estimate' => round((float) $item->total_area * 2.5, 2),
+                ];
+            })
+            ->toArray();
     }
 
     private function calculateSummaryStats()
@@ -95,52 +278,6 @@ class Charts extends Component
         $this->chartData['driverPerformance'] = $this->getDriverPerformanceData();
     }
 
-    private function getThroughputData(string $period, int $count): array
-    {
-        $startDate = match ($period) {
-            'week' => Carbon::now()->subWeeks($count)->startOfWeek(),
-            'month' => Carbon::now()->subMonths($count)->startOfMonth(),
-            'year' => Carbon::now()->subYears($count)->startOfYear(),
-        };
-
-        $trunc_sql = "DATE_TRUNC('$period', updated_at)";
-
-        $data = OrderCarpet::query()
-            ->selectRaw("
-                {$trunc_sql} as period_start,
-                COUNT(*) as total_processed,
-                COUNT(CASE WHEN status IN (?, ?) THEN 1 END) as completed_count,
-                AVG(total_area) as avg_area,
-                SUM(total_area) as total_area_sum
-            ", [OrderCarpetStatus::COMPLETED->value, OrderCarpetStatus::DELIVERED->value])
-            ->where('updated_at', '>=', $startDate)
-            ->whereNotNull('updated_at')
-            ->groupBy('period_start')
-            ->orderBy('period_start')
-            ->get();
-
-        return $data->map(function ($item) use ($period) {
-            $date = Carbon::parse($item->period_start);
-            return [
-                'label' => match ($period) {
-                    'week' => 'W'.$date->weekOfYear.' '.$date->format('y'),
-                    'month' => $date->format('M Y'),
-                    'year' => $date->format('Y'),
-                },
-                'full_name' => match ($period) {
-                    'week' => $date->format('d.m').' - '.$date->endOfWeek()->format('d.m.Y'),
-                    'month' => $date->format('F Y'),
-                    'year' => 'Rok '.$date->format('Y'),
-                },
-                'value' => (int) $item->total_processed,
-                'completed_count' => (int) $item->completed_count,
-                'avg_area' => round((float) $item->avg_area, 2),
-                'total_area' => round((float) $item->total_area_sum, 2),
-                'completion_rate' => $item->total_processed > 0 ? round(($item->completed_count / $item->total_processed) * 100, 1) : 0,
-            ];
-        })->toArray();
-    }
-
     private function getStatusBreakdownData(): array
     {
         $data = OrderCarpet::selectRaw('status, COUNT(*) as count, AVG(total_area) as avg_area')
@@ -158,40 +295,6 @@ class Charts extends Component
                 'value' => (int) $item->count,
                 'percentage' => $total > 0 ? round(($item->count / $total) * 100, 1) : 0,
                 'avg_area' => round((float) $item->avg_area, 2),
-            ];
-        })->toArray();
-    }
-
-    private function getRevenueData(string $period, int $count): array
-    {
-        $startDate = match ($period) {
-            'week' => Carbon::now()->subWeeks($count)->startOfWeek(),
-            'month' => Carbon::now()->subMonths($count)->startOfMonth(),
-            'year' => Carbon::now()->subYears($count)->startOfYear(),
-        };
-
-        $trunc_sql = "DATE_TRUNC('$period', updated_at)";
-
-        $data = Order::query()
-            ->selectRaw("
-                {$trunc_sql} as period_start,
-                SUM(total_amount) as total_revenue
-            ")
-            ->where('status', OrderStatus::DELIVERED->value)
-            ->where('updated_at', '>=', $startDate)
-            ->groupBy('period_start')
-            ->orderBy('period_start')
-            ->get();
-
-        return $data->map(function ($item) use ($period) {
-            $date = Carbon::parse($item->period_start);
-            return [
-                'label' => match ($period) {
-                    'week' => 'W'.$date->weekOfYear.' '.$date->format('y'),
-                    'month' => $date->format('M Y'),
-                    'year' => $date->format('Y'),
-                },
-                'value' => round((float) $item->total_revenue, 2),
             ];
         })->toArray();
     }
@@ -226,7 +329,7 @@ class Charts extends Component
             ->orderBy('order_count', 'desc')
             ->limit(5)
             ->get()
-            ->map(fn ($item) => ['label' => $item->driver_name, 'value' => (int) $item->order_count])
+            ->map(fn($item) => ['label' => $item->driver_name, 'value' => (int) $item->order_count])
             ->toArray();
     }
 
@@ -255,7 +358,7 @@ class Charts extends Component
         if (count($monthlyData) >= 2) {
             $lastTwo = array_slice($monthlyData, -2);
             $change = $lastTwo[1]['value'] - $lastTwo[0]['value'];
-            $this->monthlyTrend = $change > 0 ? "Wzrost o {$change}" : ($change < 0 ? "Spadek o ".abs($change) : 'Bez zmian');
+            $this->monthlyTrend = $change > 0 ? "Wzrost o {$change}" : ($change < 0 ? "Spadek o " . abs($change) : 'Bez zmian');
         }
 
         $yearlyData = $this->chartData['throughput']['yearly'] ?? [];
@@ -263,7 +366,7 @@ class Charts extends Component
             $lastTwo = array_slice($yearlyData, -2);
             $changePercent = $lastTwo[0]['value'] > 0 ?
                 (($lastTwo[1]['value'] - $lastTwo[0]['value']) / $lastTwo[0]['value']) * 100 : ($lastTwo[1]['value'] > 0 ? 100 : 0);
-            $this->yearlyChange = ($changePercent >= 0 ? '+' : '').round($changePercent, 1).'%';
+            $this->yearlyChange = ($changePercent >= 0 ? '+' : '') . round($changePercent, 1) . '%';
         }
     }
 
