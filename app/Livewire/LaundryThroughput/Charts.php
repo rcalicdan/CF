@@ -38,8 +38,6 @@ class Charts extends Component
     public function mount()
     {
         $this->refreshData();
-        $sampleClient = DB::table('clients')->first();
-        \Log::info('Sample client data:', (array) $sampleClient);
     }
 
     public function refreshData()
@@ -49,6 +47,22 @@ class Charts extends Component
         $this->calculateTrends();
 
         $this->dispatch('update-charts', ['data' => $this->chartData]);
+    }
+
+    public function generateCsvReport()
+    {
+        try {
+            $reportData = $this->preparePdfReportData();
+            $csvService = new \App\ActionService\LaundryThroughputCsvReportService();
+            $filename = $csvService->generateLaundryThroughputReport($reportData);
+
+            $this->dispatch('download-csv', ['filename' => $filename]);
+
+            session()->flash('message', 'Raport CSV został wygenerowany pomyślnie.');
+        } catch (\Exception $e) {
+            \Log::error('LaundryThroughput CSV Error: ' . $e->getMessage());
+            session()->flash('error', 'Błąd podczas generowania raportu CSV: ' . $e->getMessage());
+        }
     }
 
     public function generatePdfReport()
@@ -264,11 +278,11 @@ class Charts extends Component
 
         $this->totalRevenueCurrentMonth = Order::where('status', OrderStatus::DELIVERED->value)
             ->where('updated_at', '>=', $currentMonthStart)
-            ->sum('total_amount');
+            ->sum('total_amount') ?? 0;
 
         $this->totalRevenuePreviousMonth = Order::where('status', OrderStatus::DELIVERED->value)
             ->whereBetween('updated_at', [$previousMonthStart, $previousMonthEnd])
-            ->sum('total_amount');
+            ->sum('total_amount') ?? 0;
 
         $this->percentageChangeRevenue = $this->totalRevenuePreviousMonth > 0
             ? (($this->totalRevenueCurrentMonth - $this->totalRevenuePreviousMonth) / $this->totalRevenuePreviousMonth) * 100
@@ -336,9 +350,15 @@ class Charts extends Component
     {
         return Order::join('drivers', 'orders.assigned_driver_id', '=', 'drivers.id')
             ->join('users', 'drivers.user_id', '=', 'users.id')
-            ->selectRaw("users.first_name || ' ' || users.last_name as driver_name, COUNT(orders.id) as order_count")
+            ->selectRaw("
+                COALESCE(
+                    NULLIF(TRIM(users.first_name || ' ' || users.last_name), ''), 
+                    'Unknown Driver'
+                ) as driver_name, 
+                COUNT(orders.id) as order_count
+            ")
             ->where('orders.created_at', '>=', Carbon::now()->startOfMonth())
-            ->groupBy('driver_name')
+            ->groupBy('users.first_name', 'users.last_name')
             ->orderBy('order_count', 'desc')
             ->limit(5)
             ->get()

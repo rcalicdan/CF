@@ -67,17 +67,17 @@ Route::prefix('processing-costs')->middleware('auth')->name('processing-costs.')
     Route::get('{processingCost}/edit', App\Livewire\ProcessingCosts\UpdatePage::class)->name('edit');
 });
 
-Route::get('/download-pdf/{filename}', function ($filename) {
+Route::middleware('auth')->get('/download-pdf/{filename}', function ($filename) {
     if (!str_ends_with($filename, '.pdf') || str_contains($filename, '..')) {
         abort(404);
     }
-    
+
     $path = storage_path('app/public/' . $filename);
-    
+
     if (!file_exists($path)) {
         abort(404, 'File not found');
     }
-    
+
     return response()->download($path, $filename, [
         'Content-Type' => 'application/pdf',
     ])->deleteFileAfterSend(false);
