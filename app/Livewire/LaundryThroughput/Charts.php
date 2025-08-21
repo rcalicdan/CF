@@ -38,6 +38,8 @@ class Charts extends Component
     public function mount()
     {
         $this->refreshData();
+        $sampleClient = DB::table('clients')->first();
+        \Log::info('Sample client data:', (array) $sampleClient);
     }
 
     public function refreshData()
@@ -197,35 +199,46 @@ class Charts extends Component
 
     private function getClientPerformanceData(): array
     {
-        return Order::join('clients', 'orders.client_id', '=', 'clients.id')
-            ->join('order_carpets', 'orders.id', '=', 'order_carpets.order_id')
-            ->selectRaw("
-                clients.id,
-                CONCAT(clients.first_name, ' ', clients.last_name) as client_name,
-                clients.city,
-                COUNT(DISTINCT orders.id) as order_count,
-                COUNT(order_carpets.id) as carpet_count,
-                SUM(order_carpets.total_area) as total_area,
-                SUM(orders.total_amount) as total_revenue,
-                AVG(orders.total_amount) as avg_order_value,
-                AVG(order_carpets.total_area) as avg_carpet_area
-            ")
-            ->where('orders.created_at', '>=', Carbon::now()->subMonths(12))
-            ->groupBy('clients.id', 'clients.first_name', 'clients.last_name', 'clients.city')
-            ->orderBy('total_revenue', 'desc')
-            ->limit(20)
+        return Order::with(['client', 'orderCarpets'])
+            ->whereHas('client')
+            ->where('created_at', '>=', Carbon::now()->subMonths(12))
             ->get()
+            ->groupBy('client_id')
+            ->map(function ($orders, $clientId) {
+                $client = $orders->first()->client;
+                if (!$client) {
+                    return null;
+                }
+
+                $orderCarpets = $orders->flatMap->orderCarpets;
+
+                return [
+                    'client_name' => $client->full_name ?: ($client->first_name . ' ' . $client->last_name),
+                    'city' => $client->city ?? 'N/A',
+                    'order_count' => $orders->count(),
+                    'carpet_count' => $orderCarpets->count(),
+                    'total_area' => (float) $orderCarpets->sum('total_area'),
+                    'total_revenue' => (float) $orders->sum('total_amount'),
+                    'avg_order_value' => (float) $orders->avg('total_amount'),
+                    'avg_carpet_area' => (float) $orderCarpets->avg('total_area'),
+                    'weight_estimate' => (float) $orderCarpets->sum('total_area') * 2.5,
+                ];
+            })
+            ->filter()
+            ->sortByDesc('total_revenue')
+            ->take(20)
+            ->values()
             ->map(function ($item) {
                 return [
-                    'client_name' => $item->client_name,
-                    'city' => $item->city ?? 'N/A',
-                    'order_count' => (int) $item->order_count,
-                    'carpet_count' => (int) $item->carpet_count,
-                    'total_area' => round((float) $item->total_area, 2),
-                    'total_revenue' => round((float) $item->total_revenue, 2),
-                    'avg_order_value' => round((float) $item->avg_order_value, 2),
-                    'avg_carpet_area' => round((float) $item->avg_carpet_area, 2),
-                    'weight_estimate' => round((float) $item->total_area * 2.5, 2),
+                    'client_name' => $item['client_name'],
+                    'city' => $item['city'],
+                    'order_count' => (int) $item['order_count'],
+                    'carpet_count' => (int) $item['carpet_count'],
+                    'total_area' => round($item['total_area'], 2),
+                    'total_revenue' => round($item['total_revenue'], 2),
+                    'avg_order_value' => round($item['avg_order_value'], 2),
+                    'avg_carpet_area' => round($item['avg_carpet_area'], 2),
+                    'weight_estimate' => round($item['weight_estimate'], 2),
                 ];
             })
             ->toArray();
