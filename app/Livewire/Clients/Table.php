@@ -39,6 +39,7 @@ class Table extends Component
             ->sortDirection($this->sortDirection)
             ->showBulkActions(true)
             ->showCreate(true)
+            ->viewRoute('clients.show')
             ->createRoute('clients.create')
             ->editRoute('clients.edit')
             ->bulkDeleteAction('bulkDelete');

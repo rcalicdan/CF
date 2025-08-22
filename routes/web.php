@@ -20,6 +20,7 @@ Route::prefix('clients')->middleware('auth')->name('clients.')->group(function (
     Route::get('', App\Livewire\Clients\Table::class)->name('index');
     Route::get('create', App\Livewire\Clients\CreatePage::class)->name('create');
     Route::get('{client}/edit', App\Livewire\Clients\UpdatePage::class)->name('edit');
+    Route::get('{client}', App\Livewire\Clients\ViewPage::class)->name('show');
 });
 
 Route::get('orders/by-driver', App\Livewire\Orders\DriverTable::class)->name('by-driver');
