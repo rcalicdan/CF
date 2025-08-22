@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Clients;
 
+use App\ActionService\ClientPdfReportService;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderCarpet;
@@ -27,6 +28,15 @@ class ViewPage extends Component
     {
         $this->client = $client;
         $this->authorize('view', $client);
+    }
+
+    public function generatePdfReport()
+    {
+        $reportService = new ClientPdfReportService();
+        $filename = $reportService->generateClientReport($this->client);
+
+        return response()->download(storage_path('app/public/' . $filename))
+            ->deleteFileAfterSend();
     }
 
     public function setActiveTab($tab)
