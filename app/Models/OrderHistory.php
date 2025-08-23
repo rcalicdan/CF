@@ -48,21 +48,6 @@ class OrderHistory extends Model
         return $this->new_status ? EnumTranslationService::translate(OrderStatus::from($this->new_status)) : '';
     }
 
-    public function getActionTypeLabel(): string
-    {
-        return match ($this->action_type) {
-            'status_change' => __('Status Changed'),
-            'created' => __('Order Created'),
-            'updated' => __('Order Updated'),
-            'assigned' => __('Driver Assigned'),
-            'completed' => __('Order Completed'),
-            'cancelled' => __('Order Cancelled'),
-            'payment_updated' => __('Payment Updated'),
-            'delivered' => __('Order Delivered'),
-            default => __('Unknown Action'),
-        };
-    }
-
     public function getStatusChangeIcon(): string
     {
         if ($this->action_type === 'status_change' && $this->new_status) {
@@ -135,24 +120,32 @@ class OrderHistory extends Model
         return $formatted;
     }
 
-    private function getFieldDisplayName(string $field): string
+    public function getActionTypeLabel(): string
     {
-        return match ($field) {
-            'status' => __('Status'),
-            'assigned_driver_id' => __('Assigned Driver'),
-            'schedule_date' => __('Schedule Date'),
-            'total_amount' => __('Total Amount'),
-            'client_id' => __('Client'),
-            'price_list_id' => __('Price List'),
-            'is_complaint' => __('Is Complaint'),
-            default => __(ucfirst(str_replace('_', ' ', $field))),
+        return match ($this->action_type) {
+            'status_change' => 'Zmiana statusu',
+            'created' => 'Utworzono zamówienie',
+            'updated' => 'Zaktualizowano zamówienie',
+            'assigned' => 'Przypisano kierowcę',
+            'completed' => 'Ukończono zamówienie',
+            'cancelled' => 'Anulowano zamówienie',
+            'payment_updated' => 'Zaktualizowano płatność',
+            'delivered' => 'Dostarczono zamówienie',
+            'schedule_updated' => 'Zmieniono termin',
+            'amount_updated' => 'Zmieniono kwotę',
+            'client_updated' => 'Zmieniono klienta',
+            'complaint_updated' => 'Zmieniono status reklamacji',
+            'carpet_added' => 'Dodano dywan',
+            'carpet_removed' => 'Usunięto dywan',
+            'service_added' => 'Dodano usługę',
+            default => 'Nieznana akcja',
         };
     }
 
     private function formatFieldValue(string $field, $value): string
     {
         if (is_null($value)) {
-            return __('N/A');
+            return 'Nie ustawiono';
         }
 
         return match ($field) {
@@ -160,34 +153,50 @@ class OrderHistory extends Model
             'assigned_driver_id' => $this->getDriverName($value),
             'client_id' => $this->getClientName($value),
             'price_list_id' => $this->getPriceListName($value),
-            'is_complaint' => $value ? __('Yes') : __('No'),
-            'total_amount' => number_format((float) $value, 2) . ' PLN',
-            'schedule_date' => $value ? \Carbon\Carbon::parse($value)->format('d.m.Y H:i') : __('N/A'),
+            'is_complaint' => $value ? 'Tak' : 'Nie',
+            'total_amount' => number_format((float) $value, 2, ',', ' ') . ' PLN',
+            'schedule_date' => $value ? \Carbon\Carbon::parse($value)->format('d.m.Y H:i') : 'Nie ustawiono',
             default => (string) $value,
+        };
+    }
+
+    private function getFieldDisplayName(string $field): string
+    {
+        return match ($field) {
+            'status' => 'Status',
+            'assigned_driver_id' => 'Przypisany kierowca',
+            'schedule_date' => 'Data realizacji',
+            'total_amount' => 'Kwota całkowita',
+            'client_id' => 'Klient',
+            'price_list_id' => 'Cennik',
+            'is_complaint' => 'Reklamacja',
+            'carpet_id' => 'Dywan',
+            'service_id' => 'Usługa',
+            default => ucfirst(str_replace('_', ' ', $field)),
         };
     }
 
     private function getDriverName($driverId): string
     {
-        if (!$driverId) return __('Not assigned');
+        if (!$driverId) return 'Nie przypisano';
 
         $driver = \App\Models\Driver::with('user')->find($driverId);
-        return $driver && $driver->user ? $driver->user->full_name : __('Unknown Driver');
+        return $driver && $driver->user ? $driver->user->full_name : 'Nieznany kierowca';
     }
 
     private function getClientName($clientId): string
     {
-        if (!$clientId) return __('N/A');
+        if (!$clientId) return 'Nie ustawiono';
 
         $client = \App\Models\Client::find($clientId);
-        return $client ? $client->full_name : __('Unknown Client');
+        return $client ? $client->full_name : 'Nieznany klient';
     }
 
     private function getPriceListName($priceListId): string
     {
-        if (!$priceListId) return __('N/A');
+        if (!$priceListId) return 'Nie ustawiono';
 
         $priceList = \App\Models\PriceList::find($priceListId);
-        return $priceList ? $priceList->name : __('Unknown Price List');
+        return $priceList ? $priceList->name : 'Nieznany cennik';
     }
 }
