@@ -28,7 +28,13 @@ class ShowPage extends Component
 
     public function mount(Order $order)
     {
-        $this->order = $order;
+        $this->order = $order->load([
+            'client',
+            'driver.user',
+            'orderPayment',
+            'orderDeliveryConfirmation',
+            'orderHistories.user' 
+        ]);
         $this->authorize('view', $order);
     }
 

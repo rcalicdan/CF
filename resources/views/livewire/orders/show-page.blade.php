@@ -11,7 +11,10 @@
 
         @include('contents.orders.payment-delivery-cards')
 
+        @include('contents.orders.history-section')
+
         <div class="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
+            <!-- Rest of your existing carpets table -->
             <div class="bg-gradient-to-r from-indigo-50 to-blue-50 px-6 py-5 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xl leading-6 font-semibold text-gray-900 flex items-center">
@@ -41,6 +44,5 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
