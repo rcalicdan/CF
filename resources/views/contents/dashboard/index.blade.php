@@ -5,6 +5,7 @@
         @include('contents.dashboard.partials.stats-overview')
         @include('contents.dashboard.partials.main-content')
         @include('contents.dashboard.partials.quick-actions')
+        @include('contents.dashboard.partials.complaint-statistics')
         @livewire('laundry-throughput.charts')
         @livewire('processing-costs.charts')   
     </div>
