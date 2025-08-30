@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Complaints;
 
+use App\ActionService\ComplaintPdfReportService;
 use App\Enums\ComplaintStatus;
 use App\Enums\OrderCarpetStatus;
 use App\Models\Complaint;
@@ -28,6 +29,15 @@ class ComplaintStatistics extends Component
     {
         $this->loadStats();
     }
+
+    public function generatePdfReport()
+{
+    $reportService = new ComplaintPdfReportService();
+    $filename = $reportService->generateComplaintReport((int)$this->selectedPeriod);
+
+    return response()->download(storage_path('app/public/' . $filename))
+        ->deleteFileAfterSend();
+}
 
     public function loadStats()
     {
