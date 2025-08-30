@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Complaints;
 
+use App\ActionService\ComplaintCsvReportService;
 use App\ActionService\ComplaintPdfReportService;
 use App\Enums\ComplaintStatus;
 use App\Enums\OrderCarpetStatus;
@@ -17,7 +18,7 @@ class ComplaintStatistics extends Component
     public $weeklyTrend = [];
     public $categoryStats = [];
     public $recentComplaints = [];
-    
+
     protected $listeners = ['refreshStats' => 'loadStats'];
 
     public function mount()
@@ -31,13 +32,40 @@ class ComplaintStatistics extends Component
     }
 
     public function generatePdfReport()
-{
-    $reportService = new ComplaintPdfReportService();
-    $filename = $reportService->generateComplaintReport((int)$this->selectedPeriod);
+    {
+        $reportService = new ComplaintPdfReportService();
+        $filename = $reportService->generateComplaintReport((int)$this->selectedPeriod);
 
-    return response()->download(storage_path('app/public/' . $filename))
-        ->deleteFileAfterSend();
-}
+        return response()->download(storage_path('app/public/' . $filename))
+            ->deleteFileAfterSend();
+    }
+
+    public function generateCsvReport()
+    {
+        $reportService = new ComplaintCsvReportService();
+        $filename = $reportService->generateComplaintCsvReport((int)$this->selectedPeriod);
+
+        return response()->download(storage_path('app/public/' . $filename))
+            ->deleteFileAfterSend();
+    }
+
+    public function generateSummaryCsvReport()
+    {
+        $reportService = new ComplaintCsvReportService();
+        $filename = $reportService->generateComplaintSummaryReport((int)$this->selectedPeriod);
+
+        return response()->download(storage_path('app/public/' . $filename))
+            ->deleteFileAfterSend();
+    }
+
+    public function generateWeeklyTrendCsv()
+    {
+        $reportService = new ComplaintCsvReportService();
+        $filename = $reportService->generateWeeklyTrendReport();
+
+        return response()->download(storage_path('app/public/' . $filename))
+            ->deleteFileAfterSend();
+    }
 
     public function loadStats()
     {
@@ -53,7 +81,7 @@ class ComplaintStatistics extends Component
         $openComplaints = Complaint::where('status', ComplaintStatus::OPEN->value)->count();
         $inProgressComplaints = Complaint::where('status', ComplaintStatus::IN_PROGRESS->value)->count();
         $resolvedComplaints = Complaint::where('status', ComplaintStatus::RESOLVED->value)->count();
-        
+
         $activeComplaints = $openComplaints + $inProgressComplaints;
         $resolutionRate = $totalComplaints > 0 ? round(($resolvedComplaints / $totalComplaints) * 100, 1) : 0;
 
@@ -61,10 +89,10 @@ class ComplaintStatistics extends Component
         $previousWeekStart = Carbon::now()->subWeeks(2)->startOfWeek();
         $previousWeekEnd = Carbon::now()->subWeeks(1)->endOfWeek();
         $previousWeekTotal = Complaint::whereBetween('created_at', [$previousWeekStart, $previousWeekEnd])->count();
-        
+
         $currentWeekStart = Carbon::now()->startOfWeek();
         $currentWeekTotal = Complaint::where('created_at', '>=', $currentWeekStart)->count();
-        
+
         $weeklyChange = $previousWeekTotal > 0 ? $currentWeekTotal - $previousWeekTotal : 0;
 
         return [
@@ -87,12 +115,12 @@ class ComplaintStatistics extends Component
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
             $days[] = $date->format('D');
-            
+
             $newCount = Complaint::whereDate('created_at', $date)->count();
             $resolvedCount = Complaint::where('status', ComplaintStatus::RESOLVED->value)
                 ->whereDate('updated_at', $date)
                 ->count();
-                
+
             $newComplaints[] = $newCount;
             $resolvedComplaints[] = $resolvedCount;
         }
@@ -161,7 +189,7 @@ class ComplaintStatistics extends Component
     private function determinePriority($complaint)
     {
         $details = strtolower($complaint->complaint_details);
-        
+
         if (str_contains($details, 'uszkodz') || str_contains($details, 'zniszcz')) {
             return ['level' => 'high', 'label' => 'Wysoki'];
         } elseif (str_contains($details, 'opóźnien') || str_contains($details, 'komunikacja')) {
@@ -173,7 +201,7 @@ class ComplaintStatistics extends Component
 
     public function getStatusColor($status)
     {
-        return match($status) {
+        return match ($status) {
             ComplaintStatus::OPEN->value => ['bg' => 'bg-red-100', 'text' => 'text-red-800', 'label' => 'Nowa'],
             ComplaintStatus::IN_PROGRESS->value => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-800', 'label' => 'W trakcie'],
             ComplaintStatus::RESOLVED->value => ['bg' => 'bg-green-100', 'text' => 'text-green-800', 'label' => 'Rozwiązana'],
