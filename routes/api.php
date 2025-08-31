@@ -70,4 +70,5 @@ Route::middleware(['auth:api', 'throttle:120,1'])->name('api.')->group(function 
     });
 
     Route::post('send-sms', [SendCustomSmsController::class, 'sendSms'])->middleware('throttle:15,1');
+    Route::post('check-qr-exists', [OrderCarpetQrController::class, 'checkQrExists']);
 });

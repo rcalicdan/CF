@@ -156,13 +156,19 @@ class OrderCarpet extends Model
         $filename = pathinfo($this->qr_code, PATHINFO_FILENAME);
         return $filename;
     }
-
+    
     /**
      * Find carpet by reference code.
+     * Supports both with and without .png extension
      */
     public static function findByReference(string $reference): ?self
     {
-        return static::where('qr_code', 'like', "%{$reference}.png")->first();
+        $cleanReference = str_replace('.png', '', $reference);
+
+        return static::where('qr_code', $cleanReference)
+            ->orWhere('qr_code', $cleanReference . '.png')
+            ->orWhere('qr_code', 'like', "%{$cleanReference}%")
+            ->first();
     }
 
     /**
