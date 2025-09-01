@@ -3,7 +3,7 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
                 <h3 class="text-lg sm:text-xl font-bold text-gray-900">Najnowsze skargi</h3>
-                <p class="text-sm text-gray-500 mt-1">Ostatnie zgłoszenia od klientów</p>
+                <p class="text-sm text-gray-500 mt-1">Ostatnie zamówienia oznaczone jako skargi</p>
             </div>
             <button class="text-sm font-medium text-red-600 hover:text-red-700 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors self-start">
                 Zobacz wszystkie
@@ -23,14 +23,19 @@
                     <div class="space-y-2 flex-1 min-w-0">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <p class="text-sm sm:text-base font-semibold text-gray-900 truncate">
-                                {{ Str::limit($complaint['details'], 50) }}
+                                Zamówienie #{{ $complaint['order_id'] }}
                             </p>
-                            <span class="text-xs text-gray-400 flex-shrink-0">
-                                {{ $complaint['created_at']->diffForHumans() }}
-                            </span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-medium text-green-600">
+                                    {{ number_format($complaint['total_amount'], 2) }} PLN
+                                </span>
+                                <span class="text-xs text-gray-400 flex-shrink-0">
+                                    {{ $complaint['created_at']->diffForHumans() }}
+                                </span>
+                            </div>
                         </div>
                         <p class="text-xs sm:text-sm text-gray-600">
-                            {{ $complaint['client_name'] }} • Zamówienie #{{ $complaint['order_id'] }} • {{ $complaint['carpet_qr'] }}
+                            {{ $complaint['client_name'] }} • {{ $complaint['carpet_qr'] }}
                         </p>
                         <p class="text-xs sm:text-sm text-gray-500 line-clamp-2">
                             {{ $complaint['details'] }}
@@ -39,8 +44,10 @@
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusInfo['bg'] }} {{ $statusInfo['text'] }}">
                                 {{ $statusInfo['label'] }}
                             </span>
-                            <span class="text-xs text-gray-500">
-                                Priorytet: {{ $complaint['priority']['label'] }}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {{ $complaint['priority']['level'] === 'high' ? 'bg-red-100 text-red-700' : 
+                                   ($complaint['priority']['level'] === 'medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700') }}">
+                                {{ $complaint['priority']['label'] }}
                             </span>
                         </div>
                     </div>
