@@ -1,11 +1,11 @@
 <div>
     <x-flash-session />
-    <x-partials.dashboard.content-header :title="__('Services Management')" />
+    <x-partials.dashboard.content-header :title="__('Complaints Management')" />
 
     <x-data-table 
         :data="$this->rows" 
         :headers="$dataTable['headers']"
-        :showActions="false" 
+        :showActions="$dataTable['showActions']" 
         :showSearch="$dataTable['showSearch']"
         :showCreate="$dataTable['showCreate']" 
         :createRoute="$dataTable['createRoute']"

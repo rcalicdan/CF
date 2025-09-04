@@ -7,6 +7,7 @@
                 @include('contents.order-carpets.photos-section')
                 @include('contents.order-carpets.services-section')
                 @include('contents.order-carpets.remarks-section')
+                @include('contents.order-carpets.history-section') 
             </div>
 
             {{-- Sidebar --}}

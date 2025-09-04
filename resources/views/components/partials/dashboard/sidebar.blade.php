@@ -30,7 +30,7 @@
 
         @can('viewAny', App\Models\Service::class)
             <!--<x-dashboard.sidebar-link href="{{ route('services.index') }}" icon="fas fa-tshirt" :active="request()->routeIs('services.*')"
-                :label="__('Laundry Services')" />-->
+                    :label="__('Laundry Services')" />-->
         @endcan
 
         @can('viewAny', App\Models\PriceList::class)
@@ -52,11 +52,18 @@
             </div>
         @endcan
 
+        {{-- @can('viewAny', App\Models\Complaint::class)
+            <x-dashboard.sidebar-link href="{{ route('complaints.index') }}" icon="fas fa-exclamation-triangle"
+                :active="request()->routeIs('complaints.*')" :label="__('Complaints')" />
+        @endcan --}}
+
         @can('viewAny', App\Models\ProcessingCost::class)
-            <x-dashboard.sidebar-link href="{{ route('processing-costs.index') }}" icon="fas fa-hand-holding-usd" :active="request()->routeIs('processing-costs.*')" :label="__('Processing Costs Management')" />
+            <x-dashboard.sidebar-link href="{{ route('processing-costs.index') }}" icon="fas fa-hand-holding-usd"
+                :active="request()->routeIs('processing-costs.*')" :label="__('Processing Costs Management')" />
         @endcan
 
-        <x-dashboard.sidebar-link href="{{ route('qr-codes.index') }}" icon="fas fa-qrcode" :active="request()->routeIs('qr-codes.*')" :label="__('QR Code Management')" />
+        <x-dashboard.sidebar-link href="{{ route('qr-codes.index') }}" icon="fas fa-qrcode" :active="request()->routeIs('qr-codes.*')"
+            :label="__('QR Code Management')" />
     </nav>
 
     <div class="hidden md:block p-4 border-t border-gray-200 flex-shrink-0">
