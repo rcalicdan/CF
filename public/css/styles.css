@@ -1,0 +1,243 @@
+.route-summary-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+}
+
+.route-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.priority-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.priority-high {
+    background-color: #ef4444;
+}
+
+.priority-medium {
+    background-color: #f59e0b;
+}
+
+.priority-low {
+    background-color: #10b981;
+}
+
+.loading-glass-effect {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+}
+
+.custom-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.gradient-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.custom-marker {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.depot-marker {
+    background: #1f2937;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.custom-popup .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+}
+
+.route-card {
+    transition: all 0.2s ease;
+    min-width: 0;
+}
+
+.route-card:hover {
+    background-color: #f9fafb;
+    border-color: #667eea;
+}
+
+.route-card .flex-1 {
+    min-width: 0;
+    overflow-wrap: break-word;
+}
+
+/* Ensure proper container behavior */
+.container {
+    width: 100%;
+    max-width: 1400px;
+}
+
+/* Better responsive grid behavior */
+@media (max-width: 1279px) {
+    .xl\:col-span-1,
+    .xl\:col-span-2 {
+        grid-column: span 1;
+    }
+    
+    .xl\:sticky {
+        position: static;
+    }
+}
+
+@media (min-width: 1280px) {
+    .xl\:sticky {
+        position: sticky;
+        top: 2rem;
+        max-height: calc(100vh - 4rem);
+        overflow-y: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .space-y-6 > * + * {
+        margin-top: 1rem;
+    }
+    
+    .gap-8 {
+        gap: 1rem;
+    }
+    
+    .p-6 {
+        padding: 1rem;
+    }
+    
+    .max-h-64 {
+        max-height: 12rem;
+    }
+    
+    .text-3xl {
+        font-size: 1.5rem;
+    }
+    
+    .text-xl {
+        font-size: 1.125rem;
+    }
+}
+
+.priority-breakdown,
+.timeline-summary {
+    min-width: 0;
+}
+
+.priority-breakdown .flex,
+.timeline-summary .flex {
+    min-width: 0;
+}
+
+.priority-breakdown span,
+.timeline-summary span {
+    overflow-wrap: break-word;
+}
+
+
+.loading-overlay {
+    position: fixed !important;
+    z-index: 9999 !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.summary-animate-in {
+    animation: slideInUp 0.4s ease-out;
+}
+
+@keyframes loading-progress {
+    0% {
+        width: 0%;
+    }
+
+    50% {
+        width: 70%;
+    }
+
+    100% {
+        width: 100%;
+    }
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.min-w-0 {
+    min-width: 0;
+}
+
+.flex-shrink-0 {
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .lg\:grid-cols-2 {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
+
+
+@media (min-width: 640px) and (max-width: 1279px) {
+    .container {
+        max-width: 1200px;
+    }
+}
+
+@media print {
+    .loading-overlay,
+    .sticky {
+        display: none !important;
+    }
+    
+    .container {
+        max-width: none;
+        padding: 0;
+    }
+}
