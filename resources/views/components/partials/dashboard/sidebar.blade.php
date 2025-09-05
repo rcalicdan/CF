@@ -52,10 +52,8 @@
             </div>
         @endcan
 
-        {{-- @can('viewAny', App\Models\Complaint::class)
-            <x-dashboard.sidebar-link href="{{ route('complaints.index') }}" icon="fas fa-exclamation-triangle"
-                :active="request()->routeIs('complaints.*')" :label="__('Complaints')" />
-        @endcan --}}
+        <x-dashboard.sidebar-link href="{{ route('routes') }}" icon="fas fa-route" :active="request()->routeIs('routes')"
+            :label="__('Route Optimization')" />
 
         @can('viewAny', App\Models\ProcessingCost::class)
             <x-dashboard.sidebar-link href="{{ route('processing-costs.index') }}" icon="fas fa-hand-holding-usd"

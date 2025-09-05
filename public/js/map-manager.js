@@ -14,13 +14,13 @@ class MapManager {
 
         try {
             console.log('Initializing map...');
-            
+
             this.data.map = L.map('map', {
                 center: [52.0, 19.0],
                 zoom: 6,
                 zoomControl: true,
                 attributionControl: true,
-                preferCanvas: true, 
+                preferCanvas: true,
                 maxZoom: 18,
                 minZoom: 5
             });
@@ -96,9 +96,9 @@ class MapManager {
                 });
 
                 const marker = L.marker([order.coordinates[0], order.coordinates[1]], {
-                        icon: orderIcon,
-                        title: `Order #${order.id} - ${order.client_name}`
-                    })
+                    icon: orderIcon,
+                    title: `Order #${order.id} - ${order.client_name}`
+                })
                     .addTo(this.data.map)
                     .bindPopup(this.createOrderPopup(order, index + 1), {
                         maxWidth: 250,
@@ -161,11 +161,10 @@ class MapManager {
             return;
         }
 
-        console.log('Visualizing optimized route...');
-
+        console.log('Visualizing VROOM optimized route with Leaflet Routing Machine...');
         this.clearRoute();
 
-        const routeCoordinates = this.buildRouteCoordinates();
+        const routeCoordinates = this.buildOptimizedRouteCoordinates();
 
         try {
             this.data.routingControl = L.Routing.control({
@@ -173,42 +172,187 @@ class MapManager {
                 routeWhileDragging: false,
                 addWaypoints: false,
                 show: false,
-                createMarker: function() {
-                    return null; 
+                createMarker: function () {
+                    return null;
                 },
                 lineOptions: {
                     styles: [{
                         color: '#667eea',
                         opacity: 0.8,
-                        weight: 4
+                        weight: 5,
+                        dashArray: '10, 5'
                     }]
                 },
                 router: L.Routing.osrmv1({
                     serviceUrl: 'https://router.project-osrm.org/route/v1',
-                    profile: 'driving'
+                    profile: 'driving',
+                    timeout: 30000
+                }),
+
+                formatter: new L.Routing.Formatter({
+                    units: 'metric',
+                    roundingSensitivity: 1,
+                    language: 'en'
                 })
             });
 
             this.data.routingControl.addTo(this.data.map);
 
+            this.data.routingControl.on('routesfound', (e) => {
+                console.log('Routes found:', e.routes);
+                this.onRoutesFound(e.routes);
+            });
+
+            this.data.routingControl.on('routingerror', (e) => {
+                console.error('Routing error:', e.error);
+                this.onRoutingError(e.error);
+            });
+
+            // Fit map to route after a delay
             setTimeout(() => {
                 this.fitMapToRoute();
-            }, 500);
+            }, 1000);
 
             console.log('Route visualization completed');
 
         } catch (error) {
             console.error('Route visualization failed:', error);
+            this.fallbackRouteVisualization(routeCoordinates);
+        }
+    }
+
+    buildOptimizedRouteCoordinates() {
+        const coordinates = [this.depotCoordinates];
+
+        if (this.data.optimizationResult && this.data.optimizationResult.route_steps) {
+            this.data.optimizationResult.route_steps.forEach(step => {
+                if (step.coordinates) {
+                    coordinates.push(step.coordinates);
+                }
+            });
+        } else {
+            this.data.orders.forEach(order => {
+                coordinates.push(order.coordinates);
+            });
+        }
+
+        coordinates.push(this.depotCoordinates);
+        return coordinates;
+    }
+
+    onRoutesFound(routes) {
+        if (routes && routes.length > 0) {
+            const route = routes[0];
+            console.log('Route details:', {
+                distance: `${(route.summary.totalDistance / 1000).toFixed(1)} km`,
+                time: `${Math.round(route.summary.totalTime / 60)} minutes`,
+                waypoints: route.waypoints.length
+            });
+
+            if (this.data.optimizationResult) {
+                this.data.optimizationResult.actual_route_distance = Math.round(route.summary.totalDistance / 1000);
+                this.data.optimizationResult.actual_route_time = Math.round(route.summary.totalTime / 60);
+            }
+
+            this.addRouteStepMarkers(route);
+        }
+    }
+
+    onRoutingError(error) {
+        console.error('Leaflet Routing Machine error:', error);
+        const coordinates = this.buildOptimizedRouteCoordinates();
+        this.fallbackRouteVisualization(coordinates);
+    }
+
+    addRouteStepMarkers(route) {
+        route.waypoints.forEach((waypoint, index) => {
+            if (index === 0 || index === route.waypoints.length - 1) {
+                return;
+            }
+
+            const stepNumber = index;
+            const stepIcon = L.divIcon({
+                className: 'route-step-marker',
+                html: `<div class="route-step-number" style="background-color: #667eea; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${stepNumber}</div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+
+            const stepMarker = L.marker([waypoint.latLng.lat, waypoint.latLng.lng], {
+                icon: stepIcon,
+                zIndexOffset: 1000
+            }).addTo(this.data.map);
+
+            if (!this.data.routeStepMarkers) {
+                this.data.routeStepMarkers = [];
+            }
+            this.data.routeStepMarkers.push(stepMarker);
+        });
+    }
+
+    fallbackRouteVisualization(coordinates) {
+        console.log('Using fallback route visualization...');
+
+        const polyline = L.polyline(coordinates, {
+            color: '#ff6b6b',
+            weight: 4,
+            opacity: 0.7,
+            dashArray: '5, 10'
+        }).addTo(this.data.map);
+
+        this.data.fallbackPolyline = polyline;
+        this.data.map.fitBounds(polyline.getBounds().pad(0.1));
+    }
+
+    clearRoute() {
+        if (this.data.routingControl) {
+            this.data.map.removeControl(this.data.routingControl);
+            this.data.routingControl = null;
+        }
+
+        if (this.data.routeStepMarkers) {
+            this.data.routeStepMarkers.forEach(marker => {
+                if (this.data.map.hasLayer(marker)) {
+                    this.data.map.removeLayer(marker);
+                }
+            });
+            this.data.routeStepMarkers = [];
+        }
+
+        if (this.data.fallbackPolyline) {
+            if (this.data.map.hasLayer(this.data.fallbackPolyline)) {
+                this.data.map.removeLayer(this.data.fallbackPolyline);
+            }
+            this.data.fallbackPolyline = null;
+        }
+    }
+
+    fitMapToRoute() {
+        try {
+            if (this.data.routingControl && this.data.routingControl._routes && this.data.routingControl._routes.length > 0) {
+                const route = this.data.routingControl._routes[0];
+                if (route.bounds) {
+                    this.data.map.fitBounds(route.bounds, { padding: [20, 20] });
+                    return;
+                }
+            }
+
+            if (this.data.markers.length > 0) {
+                const group = new L.featureGroup([...this.data.markers]);
+                this.data.map.fitBounds(group.getBounds().pad(0.1));
+            }
+        } catch (error) {
+            console.error('Failed to fit map to route:', error);
         }
     }
 
     buildRouteCoordinates() {
         const coordinates = [this.depotCoordinates];
-           
+
         if (this.data.optimizationResult && this.data.optimizationResult.route_steps) {
             this.data.optimizationResult.route_steps.forEach(step => {
-                const order = this.data.orders.find(o => 
-                    step.location.includes(o.address.split(',')[0]) || 
+                const order = this.data.orders.find(o =>
+                    step.location.includes(o.address.split(',')[0]) ||
                     step.description.includes(o.client_name)
                 );
                 if (order) {
@@ -227,9 +371,9 @@ class MapManager {
             ];
             coordinates.push(...optimizedOrder.slice(1));
         }
-        
+
         coordinates.push(this.depotCoordinates);
-        
+
         return coordinates;
     }
 
@@ -254,7 +398,7 @@ class MapManager {
         const order = this.data.orders.find(o => o.id === orderId);
         if (order && this.data.map) {
             this.data.map.setView(order.coordinates, 15);
-            
+
             const markerIndex = this.data.orders.findIndex(o => o.id === orderId);
             if (markerIndex >= 0 && this.data.markers[markerIndex]) {
                 this.data.markers[markerIndex].openPopup();

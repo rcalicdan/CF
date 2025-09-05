@@ -31,8 +31,8 @@ class RouteOptimizerData {
             {
                 id: 1001,
                 client_name: "Jan Kowalczyk",
-                address: "Kraków, ul. Floriańska 25",
-                coordinates: [50.0647, 19.9450],
+                address: "Warszawa, ul. Krakowskie Przedmieście 5",
+                coordinates: [52.2370, 21.0170], // Central Warsaw
                 total_amount: 340,
                 status: "pending",
                 priority: "high"
@@ -41,7 +41,7 @@ class RouteOptimizerData {
                 id: 1002,
                 client_name: "Maria Szymańska",
                 address: "Warszawa, ul. Nowy Świat 15",
-                coordinates: [52.2297, 21.0122],
+                coordinates: [52.2297, 21.0122], // Central Warsaw
                 total_amount: 580,
                 status: "pending",
                 priority: "medium"
@@ -49,8 +49,8 @@ class RouteOptimizerData {
             {
                 id: 1003,
                 client_name: "Andrzej Duda",
-                address: "Gdańsk, ul. Długa 30",
-                coordinates: [54.3520, 18.6466],
+                address: "Warszawa, ul. Marszałkowska 100",
+                coordinates: [52.2319, 21.0067], 
                 total_amount: 750,
                 status: "pending",
                 priority: "high"
@@ -58,8 +58,8 @@ class RouteOptimizerData {
             {
                 id: 1004,
                 client_name: "Katarzyna Lewandowska",
-                address: "Wrocław, Rynek 40",
-                coordinates: [51.1079, 17.0385],
+                address: "Warszawa, ul. Aleje Jerozolimskie 65",
+                coordinates: [52.2244, 21.0067], 
                 total_amount: 420,
                 status: "pending",
                 priority: "low"
@@ -67,19 +67,19 @@ class RouteOptimizerData {
             {
                 id: 1005,
                 client_name: "Tomasz Zieliński",
-                address: "Poznań, Stary Rynek 10",
-                coordinates: [52.4064, 16.9252],
+                address: "Warszawa, ul. Puławska 15",
+                coordinates: [52.2096, 21.0252], 
                 total_amount: 680,
                 status: "pending",
                 priority: "medium"
             }
         ];
 
-        this.selectedDriver = null; 
+        this.selectedDriver = null;
         this.loading = false;
         this.optimizationResult = null;
         this.optimizationError = null;
-        this.showRouteSummary = false; 
+        this.showRouteSummary = false;
         this.map = null;
         this.markers = [];
         this.routingControl = null;

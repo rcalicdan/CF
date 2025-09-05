@@ -1,8 +1,8 @@
 class RouteOptimizerService {
     constructor(data) {
         this.data = data;
-        this.apiEndpoint = '147.135.252.51:3000';
-        this.mockDelay = 1500;
+        this.apiEndpoint = 'http://147.135.252.51:3000';
+        this.mockDelay = 0;
     }
 
     async optimizeRoutes() {
@@ -14,13 +14,11 @@ class RouteOptimizerService {
             throw new Error('No orders to optimize');
         }
 
-        console.log('Starting route optimization...');
+        console.log('Starting route optimization with VROOM API...');
 
         try {
-            await this.callOptimizationAPI();
-            await new Promise(resolve => setTimeout(resolve, this.mockDelay));
-
-            this.data.optimizationResult = this.generateOptimizedRoute();
+            const vroomResult = await this.callVroomAPI();
+            this.data.optimizationResult = this.processVroomResult(vroomResult);
 
             console.log('Route optimization completed:', this.data.optimizationResult);
 
@@ -37,126 +35,245 @@ class RouteOptimizerService {
         }
     }
 
-    async callOptimizationAPI() {
-        console.log(`Calling VROOM optimization API at ${this.apiEndpoint}`);
-        console.log('Selected Driver:', this.data.selectedDriver);
-        console.log('Orders to optimize:', this.data.orders.length);
+    async callVroomAPI() {
+        console.log('Calling VROOM API...');
 
-        this.data.orders.forEach((order, index) => {
-            console.log(`Order ${index + 1}:`, {
-                id: order.id,
-                client: order.client_name,
-                address: order.address,
-                coordinates: order.coordinates,
-                priority: order.priority,
-                amount: order.total_amount
+        const vroomPayload = this.buildVroomPayload();
+        console.log('VROOM Payload:', JSON.stringify(vroomPayload, null, 2));
+
+        try {
+            const response = await fetch(`${this.apiEndpoint}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(vroomPayload)
             });
-        });
 
-        // TODO: Replace with actual API call
-        // const response = await fetch(`http://${this.apiEndpoint}/optimize`, {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify({
-        //         driver: this.data.selectedDriver,
-        //         orders: this.data.orders,
-        //         depot: [52.2297, 21.0122] // Warsaw depot coordinates
-        //     })
-        // });
-        // return await response.json();
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`VROOM API error: ${response.status} ${response.statusText} - ${errorText}`);
+            }
 
-        return new Promise(resolve => setTimeout(resolve, 800));
+            const result = await response.json();
+            console.log('VROOM API Response:', result);
+
+            if (!result.routes || result.routes.length === 0) {
+                throw new Error('VROOM returned no routes');
+            }
+
+            return result;
+
+        } catch (error) {
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('Cannot connect to VROOM server. Please check if the service is running.');
+            }
+            throw error;
+        }
     }
 
-    generateOptimizedRoute() {
-        console.log('Generating optimized route...');
+    processVroomResult(vroomResult) {
+        if (!vroomResult.routes || vroomResult.routes.length === 0) {
+            throw new Error('No routes returned from VROOM API');
+        }
 
-        // Create optimized order based on geographical optimization
-        // This simulates the result of TSP (Traveling Salesman Problem) solving
-        const optimizedOrder = [
-            { ...this.data.orders[1], step: 1 }, // Warsaw - closest to depot
-            { ...this.data.orders[4], step: 2 }, // Poznan - west from Warsaw
-            { ...this.data.orders[3], step: 3 }, // Wroclaw - southwest
-            { ...this.data.orders[0], step: 4 }, // Krakow - south
-            { ...this.data.orders[2], step: 5 }  // Gdansk - north (last stop before return)
-        ];
-
-        // Calculate cumulative distances and times
-        let cumulativeDistance = 0;
-        let cumulativeTime = 0;
-
-        const routeSteps = optimizedOrder.map((order, index) => {
-            const segmentDistance = this.calculateSegmentDistance(index, optimizedOrder);
-            const segmentTime = this.calculateSegmentTime(segmentDistance);
-
-            cumulativeDistance += segmentDistance;
-            cumulativeTime += segmentTime;
-
-            return {
-                step: index + 1,
-                location: order.address,
-                description: `Deliver to ${order.client_name}`,
-                distance: index === 0 ? '0 km' : `${segmentDistance} km`,
-                duration: index === 0 ? '0 min' : `${segmentTime} min`,
-                cumulative_distance: `${cumulativeDistance} km`,
-                cumulative_time: `${cumulativeTime} min`,
-                order_id: order.id,
-                client_name: order.client_name,
-                amount: order.total_amount,
-                priority: order.priority,
-                estimated_arrival: this.calculateEstimatedArrival(cumulativeTime),
-                coordinates: order.coordinates
-            };
-        });
-
+        const route = vroomResult.routes[0];
+        const steps = route.steps || [];
+        const totalDistance = Math.round((route.distance || 0) / 1000);
+        const totalTime = Math.round((route.duration || 0) / 60);
+        const routeSteps = this.processVroomSteps(steps);
         const unoptimizedDistance = this.calculateUnoptimizedDistance();
-        const savings = unoptimizedDistance - cumulativeDistance;
+        const savings = Math.max(0, unoptimizedDistance - totalDistance);
 
-        const result = {
-            total_distance: cumulativeDistance,
-            total_time: cumulativeTime,
-            savings: Math.max(0, savings),
+        return {
+            total_distance: totalDistance,
+            total_time: totalTime,
+            savings: savings,
             route_steps: routeSteps,
             driver: this.data.selectedDriver,
             optimization_timestamp: new Date().toISOString(),
-            total_orders: optimizedOrder.length,
-            total_value: optimizedOrder.reduce((sum, order) => sum + order.total_amount, 0),
-            estimated_fuel_cost: this.calculateFuelCost(cumulativeDistance),
-            carbon_footprint: this.calculateCarbonFootprint(cumulativeDistance)
+            total_orders: routeSteps.length,
+            total_value: this.data.orders.reduce((sum, order) => sum + order.total_amount, 0),
+            estimated_fuel_cost: this.calculateFuelCost(totalDistance),
+            carbon_footprint: this.calculateCarbonFootprint(totalDistance),
+            vroom_raw: vroomResult,
+            route_waypoints: this.extractRouteWaypoints(steps)
+        };
+    }
+
+    processVroomSteps(steps) {
+        const routeSteps = [];
+        let stepCounter = 1;
+
+        steps.forEach((step, index) => {
+            if (step.type === 'job' && step.job) {
+                const order = this.data.orders.find(o => o.id === step.job);
+                if (order) {
+                    routeSteps.push({
+                        step: stepCounter++,
+                        location: order.address,
+                        description: `Deliver to ${order.client_name}`,
+                        distance: step.distance ? `${Math.round(step.distance / 1000)} km` : '0 km',
+                        duration: step.duration ? `${Math.round(step.duration / 60)} min` : '0 min',
+                        order_id: order.id,
+                        client_name: order.client_name,
+                        amount: order.total_amount,
+                        priority: order.priority,
+                        estimated_arrival: this.calculateEstimatedArrival(step.arrival || 0),
+                        coordinates: order.coordinates,
+                        vroom_step: step,
+                        sequence: step.service || stepCounter - 1
+                    });
+                }
+            }
+        });
+
+        routeSteps.sort((a, b) => a.sequence - b.sequence);
+
+        return routeSteps;
+    }
+
+    extractRouteWaypoints(steps) {
+        const waypoints = [[21.0122, 52.2297]]; 
+
+        steps.forEach(step => {
+            if (step.type === 'job' && step.job) {
+                const order = this.data.orders.find(o => o.id === step.job);
+                if (order) {
+                    waypoints.push(order.coordinates);
+                }
+            }
+        });
+
+        waypoints.push([21.0122, 52.2297]);
+        return waypoints;
+    }
+
+    buildVroomPayload() {
+        const depotCoords = [21.0122, 52.2297];
+
+        const vehicle = {
+            id: this.data.selectedDriver.id,
+            profile: "driving-car",
+            start: depotCoords,
+            end: depotCoords,
+            capacity: [100],
+            time_window: [28800, 64800]
         };
 
-        return result;
+        const jobs = this.data.orders.map((order, index) => ({
+            id: order.id,
+            location: [order.coordinates[1], order.coordinates[0]],
+            service: 900,
+            amount: [1],
+            priority: this.getPriorityValue(order.priority),
+            time_windows: this.getTimeWindow(order.priority)
+        }));
+
+        return {
+            vehicles: [vehicle],
+            jobs: jobs,
+            options: {
+                g: true
+            }
+        };
     }
 
-    calculateSegmentDistance(index, optimizedOrder) {
-        const distances = [
-            0,   // Start at depot
-            120, // Warsaw to Poznan
-            180, // Poznan to Wroclaw  
-            270, // Wroclaw to Krakow
-            480  // Krakow to Gdansk
-        ];
-
-        return distances[index] + Math.round(Math.random() * 20 - 10); // Add some variation
+    getPriorityValue(priority) {
+        const priorities = {
+            'high': 100,
+            'medium': 50,
+            'low': 10
+        };
+        return priorities[priority] || 50;
     }
 
-    calculateSegmentTime(distance) {
-        const baseTime = Math.round((distance / 80) * 60); // Convert to minutes
-        const stopTime = 15; // 15 minutes per stop for delivery
-        return baseTime + stopTime;
+    getTimeWindow(priority) {
+        const timeWindows = {
+            'high': [[28800, 43200]], // 8:00 AM - 12:00 PM
+            'medium': [[32400, 54000]], // 9:00 AM - 3:00 PM  
+            'low': [[36000, 64800]] // 10:00 AM - 6:00 PM
+        };
+        return timeWindows[priority] || [[28800, 64800]];
     }
 
-    calculateUnoptimizedDistance() {
-        return Math.round(1240 + Math.random() * 400 + 200); // 1440-1840 km
+    processVroomResult(vroomResult) {
+        if (!vroomResult.routes || vroomResult.routes.length === 0) {
+            throw new Error('No routes returned from VROOM API');
+        }
+
+        const route = vroomResult.routes[0];
+        const steps = route.steps || [];
+
+        const totalDistance = Math.round((route.distance || 0) / 1000);
+        const totalTime = Math.round((route.duration || 0) / 60);
+
+        const routeSteps = this.processRouteSteps(steps, totalDistance, totalTime);
+
+        const unoptimizedDistance = this.calculateUnoptimizedDistance();
+        const savings = Math.max(0, unoptimizedDistance - totalDistance);
+
+        return {
+            total_distance: totalDistance,
+            total_time: totalTime,
+            savings: savings,
+            route_steps: routeSteps,
+            driver: this.data.selectedDriver,
+            optimization_timestamp: new Date().toISOString(),
+            total_orders: this.data.orders.length,
+            total_value: this.data.orders.reduce((sum, order) => sum + order.total_amount, 0),
+            estimated_fuel_cost: this.calculateFuelCost(totalDistance),
+            carbon_footprint: this.calculateCarbonFootprint(totalDistance),
+            vroom_raw: vroomResult // Keep raw result for debugging
+        };
     }
 
-    calculateEstimatedArrival(cumulativeTimeMinutes) {
+    processRouteSteps(steps, totalDistance, totalTime) {
+        const routeSteps = [];
+        let cumulativeDistance = 0;
+        let cumulativeTime = 0;
+
+        steps.forEach((step, index) => {
+            if (step.type === 'start') return;
+
+            if (step.type === 'job') {
+                const order = this.data.orders.find(o => o.id === step.job);
+                if (order) {
+                    const segmentDistance = Math.round((step.distance || 0) / 1000);
+                    const segmentTime = Math.round((step.duration || 0) / 60);
+
+                    cumulativeDistance += segmentDistance;
+                    cumulativeTime += segmentTime;
+
+                    routeSteps.push({
+                        step: routeSteps.length + 1,
+                        location: order.address,
+                        description: `Deliver to ${order.client_name}`,
+                        distance: `${segmentDistance} km`,
+                        duration: `${segmentTime} min`,
+                        cumulative_distance: `${cumulativeDistance} km`,
+                        cumulative_time: `${cumulativeTime} min`,
+                        order_id: order.id,
+                        client_name: order.client_name,
+                        amount: order.total_amount,
+                        priority: order.priority,
+                        estimated_arrival: this.calculateEstimatedArrival(step.arrival || cumulativeTime * 60),
+                        coordinates: order.coordinates,
+                        vroom_step: step
+                    });
+                }
+            }
+        });
+
+        return routeSteps;
+    }
+
+    calculateEstimatedArrival(arrivalSeconds) {
         const startTime = new Date();
         startTime.setHours(8, 0, 0, 0);
 
-        const arrivalTime = new Date(startTime.getTime() + (cumulativeTimeMinutes * 60000));
+        const arrivalTime = new Date(startTime.getTime() + (arrivalSeconds * 1000));
 
         return arrivalTime.toLocaleTimeString('pl-PL', {
             hour: '2-digit',
@@ -164,10 +281,13 @@ class RouteOptimizerService {
         });
     }
 
+    calculateUnoptimizedDistance() {
+        return Math.round(1240 + Math.random() * 400 + 200);
+    }
+
     calculateFuelCost(distanceKm) {
         const fuelConsumptionPer100km = 10;
         const fuelPricePerLiter = 6.5;
-
         return Math.round((distanceKm / 100) * fuelConsumptionPer100km * fuelPricePerLiter);
     }
 
@@ -178,58 +298,18 @@ class RouteOptimizerService {
 
     handleOptimizationError(error) {
         console.error('Route optimization error:', error);
-
         this.data.optimizationError = {
             message: error.message || 'Optimization failed',
             timestamp: new Date().toISOString(),
             canRetry: true
         };
-
         this.data.optimizationResult = null;
-
-        setTimeout(() => {
-            if (this.data.optimizationError) {
-                this.data.optimizationError = null;
-            }
-        }, 5000);
     }
 
     canOptimize() {
         const hasDriver = this.data.selectedDriver && this.data.selectedDriver.id;
         const hasOrders = this.data.orders.length > 0;
         const notLoading = !this.data.loading;
-
-        console.log('canOptimize check:', {
-            hasDriver,
-            hasOrders,
-            notLoading,
-            selectedDriver: this.data.selectedDriver,
-            ordersCount: this.data.orders.length
-        });
-
         return hasDriver && hasOrders && notLoading;
-    }
-
-    getOptimizationSummary() {
-        if (!this.data.optimizationResult) return null;
-
-        const result = this.data.optimizationResult;
-        return {
-            totalDistance: `${result.total_distance} km`,
-            totalTime: `${Math.round(result.total_time / 60)}h ${result.total_time % 60}m`,
-            savings: `${result.savings} km saved`,
-            fuelCost: `zł${result.estimated_fuel_cost}`,
-            co2Saved: `${(result.savings * 0.27).toFixed(1)} kg CO2`,
-            stops: result.total_orders
-        };
-    }
-
-    resetOptimization() {
-        this.data.optimizationResult = null;
-        this.data.optimizationError = null;
-
-        if (window.mapManager) {
-            window.mapManager.clearRoute();
-        }
     }
 }
