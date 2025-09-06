@@ -154,12 +154,10 @@ class RouteOptimizerData {
         this.selectedDate = date;
         this.orders = this.getOrdersForDate(date);
 
-        // Reset optimization when date changes
         this.optimizationResult = null;
         this.optimizationError = null;
         this.showRouteSummary = false;
 
-        // Refresh map markers if map is initialized
         if (this.mapInitialized && window.mapManager) {
             window.mapManager.refreshMarkers();
             window.mapManager.clearRoute();
@@ -194,22 +192,5 @@ class RouteOptimizerData {
 
     get lowPriorityOrders() {
         return this.orders.filter(order => order.priority === 'low');
-    }
-
-    get formattedSelectedDate() {
-        const date = new Date(this.selectedDate + 'T00:00:00');
-        return date.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    }
-
-    get dateStatus() {
-        const today = this.getTodayDate();
-        if (this.selectedDate === today) return 'today';
-        if (this.selectedDate < today) return 'past';
-        return 'future';
     }
 }

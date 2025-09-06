@@ -46,6 +46,32 @@ function routeOptimizer() {
             console.log('RouteOptimizer component initialized');
         },
 
+        getTodayDate() {
+            const today = new Date();
+            return today.toISOString().split('T')[0];
+        },
+
+        get formattedSelectedDate() {
+            const date = new Date(this.selectedDate + 'T00:00:00');
+            return date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        },
+
+        get dateStatus() {
+            const today = this.getTodayDate();
+            if (this.selectedDate === today) return 'today';
+            if (this.selectedDate < today) return 'past';
+            return 'future';
+        },
+
+        get totalOrderValue() {
+            return this.orders.reduce((sum, order) => sum + order.total_amount, 0);
+        },
+
         async optimizeRoutes() {
             console.log('optimizeRoutes called with driver:', this.selectedDriver);
             console.log('Orders available for', this.selectedDate, ':', this.orders.length);
@@ -84,14 +110,11 @@ function routeOptimizer() {
             }
         },
 
-        // Add methods for date management
         getMinDate() {
-            // Allow planning from today onwards
             return this.getTodayDate();
         },
 
         getMaxDate() {
-            // Allow planning up to 30 days in advance
             const maxDate = new Date();
             maxDate.setDate(maxDate.getDate() + 30);
             return maxDate.toISOString().split('T')[0];
@@ -162,10 +185,6 @@ function routeOptimizer() {
                 level,
                 ...data
             }));
-        },
-
-        get totalOrderValue() {
-            return this.orders.reduce((sum, order) => sum + order.total_amount, 0);
         },
 
         toggleSummary() {
