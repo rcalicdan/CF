@@ -3,6 +3,69 @@
         <div class="w-full max-w-full">
             <div class="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
                 <div class="xl:col-span-1 space-y-4 lg:space-y-6">
+
+                    <!-- Date Selection -->
+                    <div class="bg-white rounded-xl custom-shadow p-4 lg:p-6">
+                        <h2 class="text-lg lg:text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-calendar-alt text-primary mr-2"></i>
+                            Delivery Date
+                        </h2>
+
+                        <div class="space-y-4">
+                            <!-- Date Picker -->
+                            <div class="date-picker-container">
+                                <input type="date" x-model="selectedDate" :min="getMinDate()"
+                                    :max="getMaxDate()" @change="onDateChange($event)"
+                                    class="date-picker-input w-full" id="deliveryDate" />
+                            </div>
+
+                            <!-- Date Info Card -->
+                            <div class="date-info-card rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-calendar-day text-gray-500 mr-2"></i>
+                                        <span class="font-medium text-gray-700">Selected Date</span>
+                                    </div>
+                                    <div :class="getDateStatusClass()" class="date-status-badge">
+                                        <span x-text="dateStatus"></span>
+                                    </div>
+                                </div>
+
+                                <div class="text-sm font-semibold text-gray-800 mb-2" x-text="formattedSelectedDate">
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3 text-center">
+                                    <div class="bg-white rounded-lg p-2 border">
+                                        <div class="text-lg font-bold text-blue-600" x-text="orders.length"></div>
+                                        <div class="text-xs text-gray-600">Orders</div>
+                                    </div>
+                                    <div class="bg-white rounded-lg p-2 border">
+                                        <div class="text-lg font-bold text-green-600"
+                                            x-text="'zł' + totalOrderValue.toLocaleString('pl-PL')"></div>
+                                        <div class="text-xs text-gray-600">Value</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Date Navigation -->
+                            <div class="date-navigation">
+                                <button @click="selectedDate = getTodayDate(); setSelectedDate(selectedDate);"
+                                    :class="selectedDate === getTodayDate() ? 'bg-blue-100 border-blue-300 text-blue-700' :
+                                        'bg-white hover:bg-gray-50'"
+                                    class="date-nav-btn text-xs px-3 py-2">Today</button>
+
+                                <button
+                                    @click="(() => { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); const tomorrowStr = tomorrow.toISOString().split('T')[0]; selectedDate = tomorrowStr; setSelectedDate(tomorrowStr); })()"
+                                    class="date-nav-btn text-xs px-3 py-2 bg-white hover:bg-gray-50">Tomorrow</button>
+
+                                <button
+                                    @click="(() => { const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7); const nextWeekStr = nextWeek.toISOString().split('T')[0]; selectedDate = nextWeekStr; setSelectedDate(nextWeekStr); })()"
+                                    class="date-nav-btn text-xs px-3 py-2 bg-white hover:bg-gray-50">+7 Days</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Driver Selection -->
                     <div class="bg-white rounded-xl custom-shadow p-4 lg:p-6">
                         <h2 class="text-lg lg:text-xl font-semibold text-gray-800 mb-4 flex items-center">
                             <i class="fas fa-users text-primary mr-2"></i>
@@ -36,16 +99,23 @@
                     <div class="bg-white rounded-xl custom-shadow p-4 lg:p-6">
                         <h2 class="text-lg lg:text-xl font-semibold text-gray-800 mb-4 flex items-center">
                             <i class="fas fa-box text-primary mr-2"></i>
-                            Today's Deliveries
+                            <span x-text="getDateStatusText()"></span>
                             <span class="ml-auto bg-primary text-white px-2 py-1 rounded-full text-sm"
                                 x-text="orders.length"></span>
                         </h2>
-                        <div class="space-y-3 max-h-48 lg:max-h-64 overflow-y-auto">
+
+                        <!-- Orders List -->
+                        <div x-show="orders.length > 0" class="space-y-3 max-h-48 lg:max-h-64 overflow-y-auto">
                             <template x-for="order in orders" :key="order.id">
                                 <div class="p-3 lg:p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                                     <div class="flex justify-between items-start">
                                         <div class="flex-1 min-w-0">
-                                            <div class="font-medium text-gray-800" x-text="'Order #' + order.id"></div>
+                                            <div class="flex items-center gap-2 mb-1">
+                                                <div class="font-medium text-gray-800" x-text="'Order #' + order.id">
+                                                </div>
+                                                <div :class="'priority-' + order.priority" class="priority-indicator">
+                                                </div>
+                                            </div>
                                             <div class="text-sm text-gray-600 truncate" x-text="order.client_name">
                                             </div>
                                             <div class="text-sm text-primary font-medium truncate"
@@ -61,6 +131,17 @@
                                 </div>
                             </template>
                         </div>
+
+                        <!-- Empty State -->
+                        <div x-show="orders.length === 0" class="orders-empty-state">
+                            <div class="text-gray-500 mb-2">
+                                <i class="fas fa-calendar-times text-4xl mb-3"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-2">No Orders Scheduled</h3>
+                            <p class="text-sm text-gray-500">No delivery orders found for <span
+                                    x-text="formattedSelectedDate"></span></p>
+                            <p class="text-xs text-gray-400 mt-2">Try selecting a different date</p>
+                        </div>
                     </div>
 
                     <!-- Optimization Controls -->
@@ -70,17 +151,27 @@
                             Route Optimization
                         </h2>
                         <div class="space-y-4">
-                            <button @click="optimizeRoutes()" :disabled="loading"
+                            <button @click="optimizeRoutes()" :disabled="loading || orders.length === 0"
                                 class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                                 <span x-show="!loading" class="flex items-center justify-center">
                                     <i class="fas fa-route mr-2"></i>
-                                    Optimize Routes
+                                    Optimize Routes for <span x-text="formattedSelectedDate"
+                                        class="ml-1 font-normal text-sm"></span>
                                 </span>
                                 <span x-show="loading" class="flex items-center justify-center">
                                     <i class="fas fa-spinner fa-spin mr-2"></i>
                                     Optimizing...
                                 </span>
                             </button>
+
+                            <!-- Optimization Info -->
+                            <div x-show="orders.length === 0"
+                                class="text-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <div class="text-sm text-yellow-700">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Select a date with available orders to optimize routes
+                                </div>
+                            </div>
 
                             <!-- Quick Stats -->
                             <div x-show="optimizationResult" class="grid grid-cols-2 gap-3">
@@ -122,17 +213,23 @@
                     </div>
                 </div>
 
-
                 <div class="xl:col-span-3 space-y-4 lg:space-y-6">
                     <!-- Map -->
                     <div class="bg-white rounded-xl custom-shadow overflow-hidden">
                         <div class="p-4 border-b bg-gray-50">
-                            <h2 class="text-lg lg:text-xl font-semibold text-gray-800 flex items-center">
+                            <h2
+                                class="text-lg lg:text-xl font-semibold text-gray-800 flex items-center flex-wrap gap-2">
                                 <i class="fas fa-map text-primary mr-2"></i>
                                 Live Route Map
-                                <span x-show="selectedDriver" class="ml-auto text-sm text-gray-600">
-                                    Driver: <span class="font-medium" x-text="selectedDriver.full_name"></span>
-                                </span>
+                                <div class="flex items-center gap-4 ml-auto text-sm text-gray-600">
+                                    <span x-show="selectedDriver">
+                                        Driver: <span class="font-medium" x-text="selectedDriver.full_name"></span>
+                                    </span>
+                                    <span class="px-2 py-1 bg-gray-200 rounded-full text-xs">
+                                        <i class="fas fa-calendar-day mr-1"></i>
+                                        <span x-text="selectedDate"></span>
+                                    </span>
+                                </div>
                             </h2>
                         </div>
                         <div id="map" class="h-64 sm:h-80 lg:h-96 xl:h-[32rem] w-full"></div>
@@ -149,10 +246,16 @@
                             class="text-lg lg:text-xl font-semibold text-gray-800 mb-4 lg:mb-6 flex items-center flex-wrap">
                             <i class="fas fa-chart-bar text-primary mr-2"></i>
                             Route Summary & Analytics
-                            <button @click="exportSummary()"
-                                class="ml-auto mt-2 sm:mt-0 text-sm bg-primary text-white px-3 py-1 rounded-lg hover:bg-opacity-90">
-                                <i class="fas fa-download mr-1"></i>Export
-                            </button>
+                            <div class="flex items-center gap-2 ml-auto">
+                                <span class="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    <span x-text="executiveSummary?.deliveryDate || formattedSelectedDate"></span>
+                                </span>
+                                <button @click="exportSummary()"
+                                    class="text-sm bg-primary text-white px-3 py-1 rounded-lg hover:bg-opacity-90">
+                                    <i class="fas fa-download mr-1"></i>Export
+                                </button>
+                            </div>
                         </h2>
 
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 lg:mb-6">
@@ -203,47 +306,16 @@
                                 </div>
                             </div>
 
-                            <!-- Add this in your control panel -->
-                            <div x-show="optimizationResult" class="bg-white rounded-xl custom-shadow p-6">
-                                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                                    <i class="fas fa-route text-primary mr-2"></i>
-                                    Route Controls
-                                </h2>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <button
-                                        @click="window.mapManager?.clearRoute(); window.mapManager?.visualizeOptimizedRoute()"
-                                        class="bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
-                                        <i class="fas fa-redo mr-2"></i>Redraw Route
-                                    </button>
-                                    <button @click="window.mapManager?.fitMapToRoute()"
-                                        class="bg-green-50 hover:bg-green-100 text-green-600 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
-                                        <i class="fas fa-search-plus mr-2"></i>Fit to Route
-                                    </button>
-                                </div>
-
-                                <!-- Route Quality Indicator -->
-                                <div x-show="optimizationResult?.actual_route_distance"
-                                    class="mt-4 p-3 bg-gray-50 rounded-lg">
-                                    <div class="text-sm text-gray-600 mb-1">Route Quality:</div>
-                                    <div class="flex items-center justify-between text-sm">
-                                        <span>VROOM Optimized:</span>
-                                        <span class="font-medium"
-                                            x-text="optimizationResult?.total_distance + ' km'"></span>
-                                    </div>
-                                    <div class="flex items-center justify-between text-sm">
-                                        <span>Actual Route:</span>
-                                        <span class="font-medium"
-                                            x-text="optimizationResult?.actual_route_distance + ' km'"></span>
-                                    </div>
-                                </div>
-                            </div>
-
                             <!-- Timeline Summary -->
                             <div class="bg-gray-50 p-4 lg:p-5 rounded-xl">
                                 <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
                                     <i class="fas fa-clock mr-2"></i>Timeline Summary
                                 </h3>
                                 <div class="space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-gray-600">Delivery Date:</span>
+                                        <span class="font-medium text-primary" x-text="selectedDate"></span>
+                                    </div>
                                     <div class="flex justify-between items-center">
                                         <span class="text-sm text-gray-600">Start Time:</span>
                                         <span class="font-medium"
@@ -267,6 +339,51 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Route Controls -->
+                        <div class="mt-6 bg-white border rounded-xl p-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-route text-primary mr-2"></i>
+                                Route Controls
+                            </h3>
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                <button
+                                    @click="window.mapManager?.clearRoute(); window.mapManager?.visualizeOptimizedRoute()"
+                                    class="bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-redo mr-2"></i>Redraw Route
+                                </button>
+                                <button @click="window.mapManager?.fitMapToRoute()"
+                                    class="bg-green-50 hover:bg-green-100 text-green-600 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-search-plus mr-2"></i>Fit to Route
+                                </button>
+                                <button @click="exportSummary()"
+                                    class="bg-purple-50 hover:bg-purple-100 text-purple-600 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-file-export mr-2"></i>Export Data
+                                </button>
+                                <button @click="window.print()"
+                                    class="bg-gray-50 hover:bg-gray-100 text-gray-600 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-print mr-2"></i>Print
+                                </button>
+                            </div>
+
+                            <!-- Route Quality Indicator -->
+                            <div x-show="optimizationResult?.actual_route_distance"
+                                class="mt-4 p-3 bg-gray-50 rounded-lg">
+                                <div class="text-sm text-gray-600 mb-2">Route Quality Analysis:</div>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div class="flex justify-between">
+                                        <span>VROOM Optimized:</span>
+                                        <span class="font-medium"
+                                            x-text="optimizationResult?.total_distance + ' km'"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Actual Route:</span>
+                                        <span class="font-medium"
+                                            x-text="optimizationResult?.actual_route_distance + ' km'"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Route Details -->
@@ -274,6 +391,9 @@
                         <h2 class="text-lg lg:text-xl font-semibold text-gray-800 mb-4 flex items-center">
                             <i class="fas fa-list-ol text-primary mr-2"></i>
                             Optimized Route Details
+                            <span class="ml-auto text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                                <span x-text="selectedDate"></span>
+                            </span>
                         </h2>
                         <div class="space-y-4">
                             <div class="space-y-3">
@@ -288,8 +408,14 @@
                                             </div>
                                             <div class="text-sm text-gray-600 truncate" x-text="step.description">
                                             </div>
-                                            <div class="text-xs text-primary mt-1"
-                                                x-text="'ETA: ' + step.estimated_arrival"></div>
+                                            <div class="flex items-center gap-4 text-xs mt-1">
+                                                <span class="text-primary">ETA: <span
+                                                        x-text="step.estimated_arrival"></span></span>
+                                                <span class="text-gray-500">Priority: <span class="capitalize"
+                                                        x-text="step.priority"></span></span>
+                                                <span class="text-green-600">Value: zł<span
+                                                        x-text="step.amount"></span></span>
+                                            </div>
                                         </div>
                                         <div class="text-right ml-2 flex-shrink-0">
                                             <div class="text-sm font-semibold text-gray-700" x-text="step.distance">
@@ -305,7 +431,6 @@
             </div>
         </div>
 
-        <!-- Loading Overlay -->
         <!-- Loading Overlay -->
         <div x-show="loading" x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
@@ -324,8 +449,10 @@
                 </div>
 
                 <h3 class="text-lg lg:text-xl font-bold text-gray-800 mb-3">Optimizing Routes</h3>
-                <p class="text-sm lg:text-base text-gray-600 mb-4">Calculating the best delivery path using advanced
-                    algorithms...</p>
+                <p class="text-sm lg:text-base text-gray-600 mb-4">
+                    Calculating the best delivery path for <span x-text="formattedSelectedDate"
+                        class="font-medium"></span>
+                </p>
 
                 <div class="space-y-2">
                     <div class="flex items-center justify-center text-xs lg:text-sm text-gray-500">

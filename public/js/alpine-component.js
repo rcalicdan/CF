@@ -9,9 +9,8 @@ function routeOptimizer() {
 
         init() {
             console.log('RouteOptimizer component initializing...');
-
-            console.log('Initial showRouteSummary:', this.showRouteSummary);
-            console.log('Selected driver on init:', this.selectedDriver);
+            console.log('Initial selected date:', this.selectedDate);
+            console.log('Orders for selected date:', this.orders.length);
 
             this.$watch('loading', (value) => {
                 console.log('Loading state changed:', value);
@@ -25,8 +24,9 @@ function routeOptimizer() {
                 }
             });
 
-            this.$watch('showRouteSummary', (value) => {
-                console.log('Show route summary changed:', value);
+            this.$watch('selectedDate', (value) => {
+                console.log('Selected date changed:', value);
+                this.setSelectedDate(value);
             });
 
             this.$nextTick(() => {
@@ -48,7 +48,12 @@ function routeOptimizer() {
 
         async optimizeRoutes() {
             console.log('optimizeRoutes called with driver:', this.selectedDriver);
-            console.log('Orders available:', this.orders.length);
+            console.log('Orders available for', this.selectedDate, ':', this.orders.length);
+
+            if (this.orders.length === 0) {
+                alert(`No orders available for ${this.formattedSelectedDate}`);
+                return;
+            }
 
             if (!window.optimizerService || !window.optimizerService.canOptimize()) {
                 console.warn('Cannot optimize routes - missing service or requirements');
@@ -72,6 +77,47 @@ function routeOptimizer() {
             }
         },
 
+        onDateChange(event) {
+            const newDate = event.target.value;
+            if (newDate) {
+                this.setSelectedDate(newDate);
+            }
+        },
+
+        // Add methods for date management
+        getMinDate() {
+            // Allow planning from today onwards
+            return this.getTodayDate();
+        },
+
+        getMaxDate() {
+            // Allow planning up to 30 days in advance
+            const maxDate = new Date();
+            maxDate.setDate(maxDate.getDate() + 30);
+            return maxDate.toISOString().split('T')[0];
+        },
+
+        getDateStatusClass() {
+            const status = this.dateStatus;
+            const classes = {
+                today: 'bg-green-100 text-green-800 border-green-200',
+                past: 'bg-gray-100 text-gray-500 border-gray-200',
+                future: 'bg-blue-100 text-blue-800 border-blue-200'
+            };
+            return classes[status] || classes.future;
+        },
+
+        getDateStatusText() {
+            const status = this.dateStatus;
+            const texts = {
+                today: 'Today\'s Deliveries',
+                past: 'Past Deliveries',
+                future: 'Scheduled Deliveries'
+            };
+            return texts[status] || 'Deliveries';
+        },
+
+        // Keep all existing methods...
         get executiveSummary() {
             if (!this.optimizationResult) {
                 console.log('No optimization result for executive summary');
@@ -90,7 +136,8 @@ function routeOptimizer() {
                 startTime: '08:00',
                 firstDelivery: '09:30',
                 lastDelivery: result.route_steps?.length ? result.route_steps[result.route_steps.length - 1]?.estimated_arrival : '16:45',
-                returnTime: this.calculateReturnTime(result.total_time || 0)
+                returnTime: this.calculateReturnTime(result.total_time || 0),
+                deliveryDate: this.formattedSelectedDate
             };
 
             console.log('Executive summary generated:', summary);
@@ -164,6 +211,7 @@ function routeOptimizer() {
             const summary = this.executiveSummary;
             const exportData = {
                 optimization_date: new Date().toLocaleDateString(),
+                delivery_date: this.selectedDate,
                 driver: this.selectedDriver.full_name,
                 vehicle: this.selectedDriver.vehicle_details,
                 summary: {
@@ -185,7 +233,8 @@ function routeOptimizer() {
                     client: order.client_name,
                     address: order.address,
                     value: order.total_amount,
-                    priority: order.priority
+                    priority: order.priority,
+                    delivery_date: order.delivery_date
                 }))
             };
 
@@ -194,13 +243,13 @@ function routeOptimizer() {
             const url = URL.createObjectURL(dataBlob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `route-summary-${new Date().toISOString().split('T')[0]}.json`;
+            link.download = `route-summary-${this.selectedDate}.json`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
 
-            console.log('Route summary exported');
+            console.log('Route summary exported for', this.selectedDate);
         },
 
         calculateReturnTime(totalMinutes) {
@@ -235,6 +284,8 @@ function routeOptimizer() {
             console.log('optimizationResult exists:', !!this.optimizationResult);
             console.log('executiveSummary:', this.executiveSummary);
             console.log('priorityBreakdown:', this.priorityBreakdown);
+            console.log('selectedDate:', this.selectedDate);
+            console.log('orders count:', this.orders.length);
             console.log('========================');
         }
     };
