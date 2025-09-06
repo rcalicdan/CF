@@ -13,6 +13,8 @@
                 <!-- Right Column -->
                 <div class="xl:col-span-3 space-y-4 lg:space-y-6">
                     @include('contents.routes.partials.map-section')
+                    @include('contents.routes.partials.manual-edit-controls')
+                    
                     @include('contents.routes.partials.route-summary')
                     @include('contents.routes.partials.route-details')
                 </div>

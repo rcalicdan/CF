@@ -332,3 +332,54 @@
         font-size: 0.875rem;
     }
 }
+
+/* Manual edit styles */
+.custom-marker.custom-stop {
+    border: 2px solid #8b5cf6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+}
+
+.marker-context-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+}
+
+.context-btn {
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.context-btn:hover {
+    background: #f3f4f6;
+}
+
+.context-btn.danger {
+    color: #ef4444;
+}
+
+.context-btn.danger:hover {
+    background: #fef2f2;
+}
+
+/* Drag and drop styles */
+.route-card.cursor-move:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.route-card[draggable="true"] {
+    transition: all 0.2s;
+}
+
+/* Route drawing styles */
+.route-drawing-instructions {
+    z-index: 1000;
+}
