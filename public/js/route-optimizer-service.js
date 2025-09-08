@@ -80,131 +80,6 @@ class RouteOptimizerService {
 
         const route = vroomResult.routes[0];
         const steps = route.steps || [];
-        const totalDistance = Math.round((route.distance || 0) / 1000);
-        const totalTime = Math.round((route.duration || 0) / 60);
-        const routeSteps = this.processVroomSteps(steps);
-        const unoptimizedDistance = this.calculateUnoptimizedDistance();
-        const savings = Math.max(0, unoptimizedDistance - totalDistance);
-
-        return {
-            total_distance: totalDistance,
-            total_time: totalTime,
-            savings: savings,
-            route_steps: routeSteps,
-            driver: this.data.selectedDriver,
-            optimization_timestamp: new Date().toISOString(),
-            total_orders: routeSteps.length,
-            total_value: this.data.orders.reduce((sum, order) => sum + order.total_amount, 0),
-            estimated_fuel_cost: this.calculateFuelCost(totalDistance),
-            carbon_footprint: this.calculateCarbonFootprint(totalDistance),
-            vroom_raw: vroomResult,
-            route_waypoints: this.extractRouteWaypoints(steps)
-        };
-    }
-
-    processVroomSteps(steps) {
-        const routeSteps = [];
-        let stepCounter = 1;
-
-        steps.forEach((step, index) => {
-            if (step.type === 'job' && step.job) {
-                const order = this.data.orders.find(o => o.id === step.job);
-                if (order) {
-                    routeSteps.push({
-                        step: stepCounter++,
-                        location: order.address,
-                        description: `Deliver to ${order.client_name}`,
-                        distance: step.distance ? `${Math.round(step.distance / 1000)} km` : '0 km',
-                        duration: step.duration ? `${Math.round(step.duration / 60)} min` : '0 min',
-                        order_id: order.id,
-                        client_name: order.client_name,
-                        amount: order.total_amount,
-                        priority: order.priority,
-                        estimated_arrival: this.calculateEstimatedArrival(step.arrival || 0),
-                        coordinates: order.coordinates,
-                        vroom_step: step,
-                        sequence: step.service || stepCounter - 1
-                    });
-                }
-            }
-        });
-
-        routeSteps.sort((a, b) => a.sequence - b.sequence);
-
-        return routeSteps;
-    }
-
-    extractRouteWaypoints(steps) {
-        const waypoints = [[21.0122, 52.2297]]; 
-
-        steps.forEach(step => {
-            if (step.type === 'job' && step.job) {
-                const order = this.data.orders.find(o => o.id === step.job);
-                if (order) {
-                    waypoints.push(order.coordinates);
-                }
-            }
-        });
-
-        waypoints.push([21.0122, 52.2297]);
-        return waypoints;
-    }
-
-    buildVroomPayload() {
-        const depotCoords = [21.0122, 52.2297];
-
-        const vehicle = {
-            id: this.data.selectedDriver.id,
-            profile: "driving-car",
-            start: depotCoords,
-            end: depotCoords,
-            capacity: [100],
-            time_window: [28800, 64800]
-        };
-
-        const jobs = this.data.orders.map((order, index) => ({
-            id: order.id,
-            location: [order.coordinates[1], order.coordinates[0]],
-            service: 900,
-            amount: [1],
-            priority: this.getPriorityValue(order.priority),
-            time_windows: this.getTimeWindow(order.priority)
-        }));
-
-        return {
-            vehicles: [vehicle],
-            jobs: jobs,
-            options: {
-                g: true
-            }
-        };
-    }
-
-    getPriorityValue(priority) {
-        const priorities = {
-            'high': 100,
-            'medium': 50,
-            'low': 10
-        };
-        return priorities[priority] || 50;
-    }
-
-    getTimeWindow(priority) {
-        const timeWindows = {
-            'high': [[28800, 43200]], // 8:00 AM - 12:00 PM
-            'medium': [[32400, 54000]], // 9:00 AM - 3:00 PM  
-            'low': [[36000, 64800]] // 10:00 AM - 6:00 PM
-        };
-        return timeWindows[priority] || [[28800, 64800]];
-    }
-
-    processVroomResult(vroomResult) {
-        if (!vroomResult.routes || vroomResult.routes.length === 0) {
-            throw new Error('No routes returned from VROOM API');
-        }
-
-        const route = vroomResult.routes[0];
-        const steps = route.steps || [];
 
         const totalDistance = Math.round((route.distance || 0) / 1000);
         const totalTime = Math.round((route.duration || 0) / 60);
@@ -225,7 +100,8 @@ class RouteOptimizerService {
             total_value: this.data.orders.reduce((sum, order) => sum + order.total_amount, 0),
             estimated_fuel_cost: this.calculateFuelCost(totalDistance),
             carbon_footprint: this.calculateCarbonFootprint(totalDistance),
-            vroom_raw: vroomResult // Keep raw result for debugging
+            vroom_raw: vroomResult,
+            geometry: route.geometry || null
         };
     }
 
@@ -267,6 +143,55 @@ class RouteOptimizerService {
         });
 
         return routeSteps;
+    }
+
+
+    getPriorityValue(priority) {
+        const priorities = {
+            'high': 100,
+            'medium': 50,
+            'low': 10
+        };
+        return priorities[priority] || 50;
+    }
+
+    getTimeWindow(priority) {
+        const timeWindows = {
+            'high': [[28800, 43200]],
+            'medium': [[32400, 54000]],
+            'low': [[36000, 64800]]
+        };
+        return timeWindows[priority] || [[28800, 64800]];
+    }
+
+    buildVroomPayload() {
+        const depotCoords = [21.0122, 52.2297];
+
+        const vehicle = {
+            id: this.data.selectedDriver.id,
+            profile: "driving-car",
+            start: depotCoords,
+            end: depotCoords,
+            capacity: [100],
+            time_window: [28800, 64800]
+        };
+
+        const jobs = this.data.orders.map((order, index) => ({
+            id: order.id,
+            location: [order.coordinates[1], order.coordinates[0]],
+            service: 900,
+            amount: [1],
+            priority: this.getPriorityValue(order.priority),
+            time_windows: this.getTimeWindow(order.priority)
+        }));
+
+        return {
+            vehicles: [vehicle],
+            jobs: jobs,
+            options: {
+                g: true
+            }
+        };
     }
 
     calculateEstimatedArrival(arrivalSeconds) {

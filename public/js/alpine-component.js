@@ -10,50 +10,33 @@ function routeOptimizer() {
         manualEditMode: false,
         isDragging: false,
         draggedOrderIndex: null,
-        customRoutePoints: [],
-        isDrawingRoute: false,
 
         init() {
             console.log('RouteOptimizer component initializing...');
-            console.log('Initial selected date:', this.selectedDate);
-            console.log('Orders for selected date:', this.orders.length);
-
             if (!this.optimizationResult && this.orders.length > 0) {
                 this.refreshOptimizedRoute();
             }
-
             this.$watch('loading', (value) => {
                 console.log('Loading state changed:', value);
             });
-
             this.$watch('optimizationResult', (value) => {
-                console.log('Optimization result changed:', !!value);
                 if (value) {
-                    console.log('Auto-showing summary...');
                     this.showRouteSummary = true;
                 }
             });
-
             this.$watch('selectedDate', (value) => {
-                console.log('Selected date changed:', value);
                 this.setSelectedDate(value);
             });
-
             this.$nextTick(() => {
                 setTimeout(() => {
-                    console.log('Initializing map...');
                     const mapManager = new MapManager(this);
                     const optimizerService = new RouteOptimizerService(this);
-
                     window.mapManager = mapManager;
                     window.optimizerService = optimizerService;
                     window.routeData = this;
-
                     mapManager.init();
                 }, 100);
             });
-
-            console.log('RouteOptimizer component initialized');
         },
 
         getTodayDate() {
@@ -84,26 +67,11 @@ function routeOptimizer() {
 
         toggleManualEdit() {
             this.manualEditMode = !this.manualEditMode;
-            console.log('Manual edit mode:', this.manualEditMode);
-
             if (window.mapManager) {
                 if (this.manualEditMode) {
                     window.mapManager.enableManualEdit();
                 } else {
                     window.mapManager.disableManualEdit();
-                }
-            }
-        },
-
-        toggleRouteDrawing() {
-            this.isDrawingRoute = !this.isDrawingRoute;
-            console.log('Route drawing mode:', this.isDrawingRoute);
-
-            if (window.mapManager) {
-                if (this.isDrawingRoute) {
-                    window.mapManager.enableRouteDrawing();
-                } else {
-                    window.mapManager.disableRouteDrawing();
                 }
             }
         },
@@ -130,9 +98,6 @@ function routeOptimizer() {
             if (confirm('Are you sure you want to remove this stop from the route?')) {
                 this.orders.splice(index, 1);
                 this.refreshOptimizedRoute();
-                if (window.mapManager) {
-                    window.mapManager.refreshMarkers();
-                }
             }
         },
 
@@ -142,7 +107,6 @@ function routeOptimizer() {
                 alert('Invalid coordinates. Please try again.');
                 return;
             }
-
             const customOrder = {
                 id: Date.now(),
                 client_name: 'Custom Stop',
@@ -154,14 +118,9 @@ function routeOptimizer() {
                 delivery_date: this.selectedDate,
                 isCustom: true
             };
-
             this.orders.push(customOrder);
-
             setTimeout(() => {
                 this.refreshOptimizedRoute();
-                if (window.mapManager) {
-                    window.mapManager.refreshMarkers();
-                }
             }, 100);
         },
 
@@ -183,89 +142,45 @@ function routeOptimizer() {
         onDrop(index, event) {
             if (this.isDragging && this.draggedOrderIndex !== null) {
                 event.preventDefault();
-
                 const draggedOrder = this.orders[this.draggedOrderIndex];
                 this.orders.splice(this.draggedOrderIndex, 1);
                 this.orders.splice(index, 0, draggedOrder);
-
                 this.isDragging = false;
                 this.draggedOrderIndex = null;
-
                 document.querySelectorAll('.dragging').forEach(el => {
                     el.classList.remove('dragging');
                 });
-
                 this.refreshOptimizedRoute();
             }
         },
 
         refreshOptimizedRoute() {
-            // Initialize optimizationResult if it doesn't exist
-            if (!this.optimizationResult) {
-                this.optimizationResult = {
-                    route_steps: [],
-                    total_orders: 0,
-                    total_value: 0,
-                    total_distance: 0,
-                    total_time: 0
-                };
-            }
-
-            // Ensure route_steps exists
-            if (!this.optimizationResult.route_steps) {
-                this.optimizationResult.route_steps = [];
-            }
-
-            this.optimizationResult.route_steps = this.orders.map((order, index) => ({
-                step: index + 1,
-                location: order.address,
-                description: `Deliver to ${order.client_name}`,
-                distance: index > 0 ? '5 km' : '0 km',
-                duration: '15 min',
-                order_id: order.id,
-                client_name: order.client_name,
-                amount: order.total_amount,
-                priority: order.priority,
-                estimated_arrival: this.calculateEstimatedArrival(index * 30 * 60),
-                coordinates: order.coordinates,
-                sequence: index + 1
-            }));
-
-            this.optimizationResult.total_orders = this.orders.length;
-            this.optimizationResult.total_value = this.orders.reduce((sum, order) => sum + order.total_amount, 0);
+            this.optimizationResult = null;
+            this.showRouteSummary = false;
 
             if (window.mapManager) {
-                window.mapManager.visualizeOptimizedRoute();
+                window.mapManager.refreshMarkers();
+                window.mapManager.clearRoute();
             }
         },
 
         saveManualChanges() {
             if (confirm('Save current route configuration?')) {
-                console.log('Saving manual route changes...');
-
                 const saveData = {
                     date: this.selectedDate,
                     driver_id: this.selectedDriver.id,
                     orders: this.orders,
-                    custom_route_points: this.customRoutePoints,
                     optimization_result: this.optimizationResult,
                     manual_modifications: {
                         edit_mode_used: this.manualEditMode,
                         custom_stops_added: this.orders.filter(o => o.isCustom).length,
-                        custom_route_drawn: this.customRoutePoints.length > 0
                     }
                 };
-
                 console.log('Save data:', saveData);
-
                 this.manualEditMode = false;
-                this.isDrawingRoute = false;
-
                 if (window.mapManager) {
                     window.mapManager.disableManualEdit();
-                    window.mapManager.disableRouteDrawing();
                 }
-
                 alert('Route changes saved successfully!');
             }
         },
@@ -273,29 +188,16 @@ function routeOptimizer() {
         resetToOptimized() {
             if (confirm('Reset to original optimized route? This will lose all manual changes.')) {
                 this.orders = this.getOrdersForDate(this.selectedDate);
-                this.customRoutePoints = [];
                 this.manualEditMode = false;
-                this.isDrawingRoute = false;
-
                 this.refreshOptimizedRoute();
-
-                if (window.mapManager) {
-                    window.mapManager.refreshMarkers();
-                    window.mapManager.clearCustomRoute();
-                    window.mapManager.disableManualEdit();
-                    window.mapManager.disableRouteDrawing();
-                }
-
-                console.log('Reset to optimized route');
             }
         },
 
         exportManualRoute() {
-            if (!this.optimizationResult && this.orders.length === 0) {
+            if (this.orders.length === 0) {
                 alert('No route data to export');
                 return;
             }
-
             const exportData = {
                 export_type: 'manual_route',
                 export_date: new Date().toISOString(),
@@ -303,7 +205,6 @@ function routeOptimizer() {
                 driver: this.selectedDriver,
                 manual_modifications: {
                     edit_mode_used: this.manualEditMode,
-                    custom_route_drawn: this.customRoutePoints.length > 0,
                     custom_stops_added: this.orders.filter(o => o.isCustom).length
                 },
                 route_data: {
@@ -318,18 +219,13 @@ function routeOptimizer() {
                         priority: order.priority,
                         value: order.total_amount,
                         is_custom: order.isCustom || false
-                    })),
-                    custom_route_points: this.customRoutePoints,
-                    optimization_result: this.optimizationResult
+                    }))
                 },
                 statistics: {
                     total_value: this.totalOrderValue,
                     priority_breakdown: this.priorityBreakdown,
-                    estimated_distance: this.optimizationResult?.total_distance || 'N/A',
-                    estimated_time: this.optimizationResult?.total_time || 'N/A'
                 }
             };
-
             const dataStr = JSON.stringify(exportData, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(dataBlob);
@@ -340,32 +236,23 @@ function routeOptimizer() {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-
-            console.log('Manual route exported for', this.selectedDate);
         },
 
         async optimizeRoutes() {
-            console.log('optimizeRoutes called with driver:', this.selectedDriver);
-            console.log('Orders available for', this.selectedDate, ':', this.orders.length);
-
             if (this.orders.length === 0) {
                 alert(`No orders available for ${this.formattedSelectedDate}`);
                 return;
             }
-
             if (!window.optimizerService || !window.optimizerService.canOptimize()) {
                 console.warn('Cannot optimize routes - missing service or requirements');
                 return;
             }
-
             this.loading = true;
             this.optimizationError = null;
-
             try {
                 await window.optimizerService.optimizeRoutes();
                 setTimeout(() => {
                     this.showRouteSummary = true;
-                    console.log('Summary should now be visible:', this.showRouteSummary);
                 }, 100);
             } catch (error) {
                 console.error('Route optimization failed:', error);
@@ -414,16 +301,12 @@ function routeOptimizer() {
 
         get executiveSummary() {
             if (!this.optimizationResult) {
-                console.log('No optimization result for executive summary');
                 return null;
             }
-
-            console.log('Generating executive summary...');
             const result = this.optimizationResult;
             const savings = result.savings || 0;
             const routeSteps = result.route_steps || [];
-
-            const summary = {
+            return {
                 totalStops: result.total_orders || 0,
                 totalDistance: `${result.total_distance || 0} km`,
                 totalTime: this.formatTime(result.total_time || 0),
@@ -434,9 +317,6 @@ function routeOptimizer() {
                 returnTime: this.calculateReturnTime(result.total_time || 0),
                 deliveryDate: this.formattedSelectedDate
             };
-
-            console.log('Executive summary generated:', summary);
-            return summary;
         },
 
         get priorityBreakdown() {
@@ -445,27 +325,20 @@ function routeOptimizer() {
                 medium: { count: 0, value: 0, colorClass: 'bg-yellow-500' },
                 low: { count: 0, value: 0, colorClass: 'bg-green-500' }
             };
-
             this.orders.forEach(order => {
                 if (breakdown[order.priority]) {
                     breakdown[order.priority].count++;
                     breakdown[order.priority].value += order.total_amount;
                 }
             });
-
-            return Object.entries(breakdown).map(([level, data]) => ({
-                level,
-                ...data
-            }));
+            return Object.entries(breakdown).map(([level, data]) => ({ level, ...data }));
         },
 
         toggleSummary() {
             this.showRouteSummary = !this.showRouteSummary;
-            console.log('Summary toggled to:', this.showRouteSummary);
         },
 
         selectDriver(driver) {
-            console.log('Driver selected:', driver);
             this.selectedDriver = driver;
         },
 
@@ -476,20 +349,14 @@ function routeOptimizer() {
         },
 
         resetOptimization() {
-            console.log('Resetting optimization...');
             this.optimizationResult = null;
             this.optimizationError = null;
             this.loading = false;
             this.showRouteSummary = false;
             this.manualEditMode = false;
-            this.isDrawingRoute = false;
-            this.customRoutePoints = [];
-
             if (window.mapManager) {
                 window.mapManager.clearRoute();
-                window.mapManager.clearCustomRoute();
                 window.mapManager.disableManualEdit();
-                window.mapManager.disableRouteDrawing();
             }
         },
 
@@ -504,7 +371,6 @@ function routeOptimizer() {
                 console.warn('No optimization result to export');
                 return;
             }
-
             const summary = this.executiveSummary;
             const exportData = {
                 optimization_date: new Date().toLocaleDateString(),
@@ -535,7 +401,6 @@ function routeOptimizer() {
                     is_custom: order.isCustom || false
                 }))
             };
-
             const dataStr = JSON.stringify(exportData, null, 2);
             const dataBlob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(dataBlob);
@@ -546,30 +411,20 @@ function routeOptimizer() {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-
-            console.log('Route summary exported for', this.selectedDate);
         },
 
         calculateReturnTime(totalMinutes) {
             const startTime = new Date();
             startTime.setHours(8, 0, 0, 0);
             const returnTime = new Date(startTime.getTime() + (totalMinutes * 60000));
-            return returnTime.toLocaleTimeString('pl-PL', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            return returnTime.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
         },
 
         calculateEstimatedArrival(arrivalSeconds) {
             const startTime = new Date();
             startTime.setHours(8, 0, 0, 0);
-
             const arrivalTime = new Date(startTime.getTime() + (arrivalSeconds * 1000));
-
-            return arrivalTime.toLocaleTimeString('pl-PL', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            return arrivalTime.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
         },
 
         formatCurrency(amount) {
@@ -583,29 +438,21 @@ function routeOptimizer() {
         },
 
         formatDistance(meters) {
-            return meters >= 1000
-                ? `${Math.round(meters / 1000)} km`
-                : `${meters} m`;
+            return meters >= 1000 ? `${Math.round(meters / 1000)} km` : `${meters} m`;
         },
 
         debugSummaryState() {
-            console.log('=== Summary Debug Info ===');
-            console.log('showRouteSummary:', this.showRouteSummary);
-            console.log('optimizationResult exists:', !!this.optimizationResult);
-            console.log('executiveSummary:', this.executiveSummary);
-            console.log('priorityBreakdown:', this.priorityBreakdown);
-            console.log('selectedDate:', this.selectedDate);
-            console.log('orders count:', this.orders.length);
-            console.log('manualEditMode:', this.manualEditMode);
-            console.log('isDrawingRoute:', this.isDrawingRoute);
-            console.log('customRoutePoints:', this.customRoutePoints.length);
-            console.log('========================');
+            console.log({
+                showRouteSummary: this.showRouteSummary,
+                optimizationResult: !!this.optimizationResult,
+                executiveSummary: this.executiveSummary,
+                priorityBreakdown: this.priorityBreakdown,
+                selectedDate: this.selectedDate,
+                orders: this.orders.length,
+                manualEditMode: this.manualEditMode
+            });
         }
     };
 }
 
 window.routeOptimizer = routeOptimizer;
-
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM loaded, RouteOptimizer ready for Alpine.js initialization');
-});
