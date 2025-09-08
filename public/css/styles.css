@@ -98,11 +98,12 @@
 
 /* Better responsive grid behavior */
 @media (max-width: 1279px) {
+
     .xl\:col-span-1,
     .xl\:col-span-2 {
         grid-column: span 1;
     }
-    
+
     .xl\:sticky {
         position: static;
     }
@@ -118,26 +119,26 @@
 }
 
 @media (max-width: 640px) {
-    .space-y-6 > * + * {
+    .space-y-6>*+* {
         margin-top: 1rem;
     }
-    
+
     .gap-8 {
         gap: 1rem;
     }
-    
+
     .p-6 {
         padding: 1rem;
     }
-    
+
     .max-h-64 {
         max-height: 12rem;
     }
-    
+
     .text-3xl {
         font-size: 1.5rem;
     }
-    
+
     .text-xl {
         font-size: 1.125rem;
     }
@@ -217,7 +218,7 @@
     .grid-cols-4 {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .lg\:grid-cols-2 {
         grid-template-columns: repeat(1, 1fr);
     }
@@ -231,11 +232,12 @@
 }
 
 @media print {
+
     .loading-overlay,
     .sticky {
         display: none !important;
     }
-    
+
     .container {
         max-width: none;
         padding: 0;
@@ -321,12 +323,12 @@
     .date-picker-container {
         margin-bottom: 1rem;
     }
-    
+
     .date-navigation {
         flex-wrap: wrap;
         gap: 0.25rem;
     }
-    
+
     .date-nav-btn {
         padding: 0.375rem;
         font-size: 0.875rem;
@@ -382,4 +384,78 @@
 /* Route drawing styles */
 .route-drawing-instructions {
     z-index: 1000;
+}
+
+/* Add to your main CSS file */
+.leaflet-marker-icon {
+    pointer-events: auto !important;
+}
+
+.leaflet-interactive {
+    pointer-events: auto !important;
+}
+
+.custom-marker {
+    pointer-events: auto !important;
+    cursor: pointer;
+}
+
+.leaflet-popup-content-wrapper {
+    pointer-events: auto !important;
+}
+
+/* Prevent text selection during dragging */
+.leaflet-dragging .leaflet-marker-draggable {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Edit mode cursor styles */
+.edit-mode-cursor {
+    cursor: crosshair !important;
+}
+
+/* Context menu styles */
+.context-menu-popup .leaflet-popup-content {
+    margin: 0;
+    padding: 0;
+}
+
+.marker-context-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 120px;
+}
+
+.context-btn {
+    padding: 8px 12px;
+    border: none;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.context-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.context-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.context-btn.danger {
+    color: #ef4444;
+}
+
+.context-btn.danger:hover {
+    background-color: #fef2f2;
 }

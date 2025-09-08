@@ -6,7 +6,7 @@ function routeOptimizer() {
 
         selectedDriver: data.drivers[0],
         showRouteSummary: false,
-        
+
         manualEditMode: false,
         isDragging: false,
         draggedOrderIndex: null,
@@ -17,6 +17,10 @@ function routeOptimizer() {
             console.log('RouteOptimizer component initializing...');
             console.log('Initial selected date:', this.selectedDate);
             console.log('Orders for selected date:', this.orders.length);
+
+            if (!this.optimizationResult && this.orders.length > 0) {
+                this.refreshOptimizedRoute();
+            }
 
             this.$watch('loading', (value) => {
                 console.log('Loading state changed:', value);
@@ -81,7 +85,7 @@ function routeOptimizer() {
         toggleManualEdit() {
             this.manualEditMode = !this.manualEditMode;
             console.log('Manual edit mode:', this.manualEditMode);
-            
+
             if (window.mapManager) {
                 if (this.manualEditMode) {
                     window.mapManager.enableManualEdit();
@@ -94,7 +98,7 @@ function routeOptimizer() {
         toggleRouteDrawing() {
             this.isDrawingRoute = !this.isDrawingRoute;
             console.log('Route drawing mode:', this.isDrawingRoute);
-            
+
             if (window.mapManager) {
                 if (this.isDrawingRoute) {
                     window.mapManager.enableRouteDrawing();
@@ -133,23 +137,32 @@ function routeOptimizer() {
         },
 
         addCustomStop(lat, lng, address = 'Custom Location') {
+            if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+                console.error('Invalid coordinates provided:', { lat, lng });
+                alert('Invalid coordinates. Please try again.');
+                return;
+            }
+
             const customOrder = {
-                id: Date.now(), // Use timestamp as unique ID
+                id: Date.now(),
                 client_name: 'Custom Stop',
                 address: address,
-                coordinates: [lat, lng],
+                coordinates: [parseFloat(lat), parseFloat(lng)],
                 total_amount: 0,
                 status: 'custom',
                 priority: 'medium',
                 delivery_date: this.selectedDate,
                 isCustom: true
             };
-            
+
             this.orders.push(customOrder);
-            this.refreshOptimizedRoute();
-            if (window.mapManager) {
-                window.mapManager.refreshMarkers();
-            }
+
+            setTimeout(() => {
+                this.refreshOptimizedRoute();
+                if (window.mapManager) {
+                    window.mapManager.refreshMarkers();
+                }
+            }, 100);
         },
 
         onDragStart(index, event) {
@@ -170,52 +183,65 @@ function routeOptimizer() {
         onDrop(index, event) {
             if (this.isDragging && this.draggedOrderIndex !== null) {
                 event.preventDefault();
-                
+
                 const draggedOrder = this.orders[this.draggedOrderIndex];
                 this.orders.splice(this.draggedOrderIndex, 1);
                 this.orders.splice(index, 0, draggedOrder);
-                
+
                 this.isDragging = false;
                 this.draggedOrderIndex = null;
-                
+
                 document.querySelectorAll('.dragging').forEach(el => {
                     el.classList.remove('dragging');
                 });
-                
+
                 this.refreshOptimizedRoute();
             }
         },
 
         refreshOptimizedRoute() {
-            if (this.optimizationResult) {
-                this.optimizationResult.route_steps = this.orders.map((order, index) => ({
-                    step: index + 1,
-                    location: order.address,
-                    description: `Deliver to ${order.client_name}`,
-                    distance: index > 0 ? '5 km' : '0 km', 
-                    duration: '15 min', 
-                    order_id: order.id,
-                    client_name: order.client_name,
-                    amount: order.total_amount,
-                    priority: order.priority,
-                    estimated_arrival: this.calculateEstimatedArrival(index * 30 * 60),
-                    coordinates: order.coordinates,
-                    sequence: index + 1
-                }));
-                
-                this.optimizationResult.total_orders = this.orders.length;
-                this.optimizationResult.total_value = this.orders.reduce((sum, order) => sum + order.total_amount, 0);
-                
-                if (window.mapManager) {
-                    window.mapManager.visualizeOptimizedRoute();
-                }
+            // Initialize optimizationResult if it doesn't exist
+            if (!this.optimizationResult) {
+                this.optimizationResult = {
+                    route_steps: [],
+                    total_orders: 0,
+                    total_value: 0,
+                    total_distance: 0,
+                    total_time: 0
+                };
+            }
+
+            // Ensure route_steps exists
+            if (!this.optimizationResult.route_steps) {
+                this.optimizationResult.route_steps = [];
+            }
+
+            this.optimizationResult.route_steps = this.orders.map((order, index) => ({
+                step: index + 1,
+                location: order.address,
+                description: `Deliver to ${order.client_name}`,
+                distance: index > 0 ? '5 km' : '0 km',
+                duration: '15 min',
+                order_id: order.id,
+                client_name: order.client_name,
+                amount: order.total_amount,
+                priority: order.priority,
+                estimated_arrival: this.calculateEstimatedArrival(index * 30 * 60),
+                coordinates: order.coordinates,
+                sequence: index + 1
+            }));
+
+            this.optimizationResult.total_orders = this.orders.length;
+            this.optimizationResult.total_value = this.orders.reduce((sum, order) => sum + order.total_amount, 0);
+
+            if (window.mapManager) {
+                window.mapManager.visualizeOptimizedRoute();
             }
         },
 
         saveManualChanges() {
             if (confirm('Save current route configuration?')) {
                 console.log('Saving manual route changes...');
-                
 
                 const saveData = {
                     date: this.selectedDate,
@@ -229,17 +255,17 @@ function routeOptimizer() {
                         custom_route_drawn: this.customRoutePoints.length > 0
                     }
                 };
-                
+
                 console.log('Save data:', saveData);
-                
+
                 this.manualEditMode = false;
                 this.isDrawingRoute = false;
-                
+
                 if (window.mapManager) {
                     window.mapManager.disableManualEdit();
                     window.mapManager.disableRouteDrawing();
                 }
-                
+
                 alert('Route changes saved successfully!');
             }
         },
@@ -250,16 +276,16 @@ function routeOptimizer() {
                 this.customRoutePoints = [];
                 this.manualEditMode = false;
                 this.isDrawingRoute = false;
-                
+
                 this.refreshOptimizedRoute();
-                
+
                 if (window.mapManager) {
                     window.mapManager.refreshMarkers();
                     window.mapManager.clearCustomRoute();
                     window.mapManager.disableManualEdit();
                     window.mapManager.disableRouteDrawing();
                 }
-                
+
                 console.log('Reset to optimized route');
             }
         },
@@ -395,6 +421,7 @@ function routeOptimizer() {
             console.log('Generating executive summary...');
             const result = this.optimizationResult;
             const savings = result.savings || 0;
+            const routeSteps = result.route_steps || [];
 
             const summary = {
                 totalStops: result.total_orders || 0,
@@ -403,7 +430,7 @@ function routeOptimizer() {
                 savings: `${savings} km`,
                 startTime: '08:00',
                 firstDelivery: '09:30',
-                lastDelivery: result.route_steps?.length ? result.route_steps[result.route_steps.length - 1]?.estimated_arrival : '16:45',
+                lastDelivery: routeSteps.length > 0 ? routeSteps[routeSteps.length - 1]?.estimated_arrival : '16:45',
                 returnTime: this.calculateReturnTime(result.total_time || 0),
                 deliveryDate: this.formattedSelectedDate
             };

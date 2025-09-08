@@ -76,22 +76,21 @@
                                 <i class="fas fa-flag mr-1"></i>
                                 <span x-text="order.priority"></span>
                             </span>
-                            <span
-                                x-show="optimizationResult && optimizationResult.route_steps && optimizationResult.route_steps[index]"
+                            <span x-show="optimizationResult?.route_steps?.[index]?.estimated_arrival"
                                 class="text-green-600">
                                 <i class="fas fa-clock mr-1"></i>
-                                <span x-text="optimizationResult.route_steps[index]?.estimated_arrival"></span>
+                                <span
+                                    x-text="optimizationResult?.route_steps?.[index]?.estimated_arrival || 'TBD'"></span>
                             </span>
                         </div>
                     </div>
 
                     <!-- Distance/Duration Info -->
-                    <div x-show="optimizationResult && optimizationResult.route_steps && optimizationResult.route_steps[index]"
-                        class="text-right ml-2 flex-shrink-0">
+                    <div x-show="optimizationResult?.route_steps?.[index]" class="text-right ml-2 flex-shrink-0">
                         <div class="text-sm font-semibold text-gray-700"
-                            x-text="optimizationResult.route_steps[index]?.distance"></div>
-                        <div class="text-xs text-gray-500" x-text="optimizationResult.route_steps[index]?.duration">
-                        </div>
+                            x-text="optimizationResult?.route_steps?.[index]?.distance || 'N/A'"></div>
+                        <div class="text-xs text-gray-500"
+                            x-text="optimizationResult?.route_steps?.[index]?.duration || 'N/A'"></div>
                     </div>
 
                     <!-- Manual Edit Controls -->

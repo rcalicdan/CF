@@ -6,15 +6,15 @@ class MapManager {
             'medium': '#f59e0b',
             'low': '#10b981'
         };
-        this.depotCoordinates = [52.2297, 21.0122]; // Warsaw
+        this.depotCoordinates = [52.2297, 21.0122];
 
-        // Add new properties for manual editing
         this.editMode = false;
         this.drawingMode = false;
         this.customPolyline = null;
         this.customRoutePoints = [];
         this.tempMarkers = [];
         this.drawingInstructions = null;
+        this.isMapReady = false;
     }
 
     init() {
@@ -46,6 +46,7 @@ class MapManager {
 
             this.data.map.whenReady(() => {
                 console.log('Map ready, adding markers...');
+                this.isMapReady = true;
                 this.addDepotMarker();
                 this.addOrderMarkers();
                 this.data.mapInitialized = true;
@@ -55,34 +56,95 @@ class MapManager {
                 }, 200);
             });
 
+            setTimeout(() => {
+                if (!this.isMapReady) {
+                    console.log('Map ready timeout, forcing initialization...');
+                    this.isMapReady = true;
+                    this.addDepotMarker();
+                    this.addOrderMarkers();
+                    this.data.mapInitialized = true;
+                }
+            }, 3000);
+
         } catch (error) {
             console.error('Map initialization failed:', error);
         }
     }
 
-    // Enable manual editing mode
+    safeMapOperation(operation, operationName = 'map operation') {
+        if (!this.data.map || !this.isMapReady) {
+            console.warn(`Cannot perform ${operationName}: map not ready`);
+            return false;
+        }
+
+        try {
+            if (!this.data.map.getContainer()) {
+                console.warn(`Cannot perform ${operationName}: map container not available`);
+                return false;
+            }
+
+            return operation();
+        } catch (error) {
+            console.error(`Error during ${operationName}:`, error);
+            return false;
+        }
+    }
+
     enableManualEdit() {
-        this.editMode = true;
-        console.log('Manual edit mode enabled');
+        return this.safeMapOperation(() => {
+            this.editMode = true;
+            console.log('Manual edit mode enabled');
 
-        // Make markers draggable
-        this.data.markers.forEach((marker, index) => {
-            marker.dragging.enable();
-            marker.on('dragend', (e) => {
-                const newLatLng = e.target.getLatLng();
-                this.data.orders[index].coordinates = [newLatLng.lat, newLatLng.lng];
-                this.data.refreshOptimizedRoute();
-                console.log(`Order ${this.data.orders[index].id} moved to:`, [newLatLng.lat, newLatLng.lng]);
+            this.data.markers.forEach((marker, index) => {
+                if (marker && marker.dragging) {
+                    marker.dragging.enable();
+                    marker.off('dragend');
+                    marker.on('dragend', (e) => {
+                        const newLatLng = e.target.getLatLng();
+                        if (this.data.orders[index]) {
+                            this.data.orders[index].coordinates = [newLatLng.lat, newLatLng.lng];
+                            this.data.refreshOptimizedRoute();
+                            console.log(`Order ${this.data.orders[index].id} moved to:`, [newLatLng.lat, newLatLng.lng]);
+                        }
+                    });
+                }
             });
-        });
 
-        // Add click handler for adding custom stops
-        this.data.map.on('click', this.onMapClick.bind(this));
 
-        // Change cursor
-        this.data.map.getContainer().style.cursor = 'crosshair';
+            this.data.map.off('click', this.onMapClick);
+            this.data.map.on('click', this.onMapClick.bind(this));
 
-        // Add edit mode indicator
+
+            this.data.map.getContainer().style.cursor = 'crosshair';
+
+            this.addEditModeIndicator();
+            return true;
+        }, 'enable manual edit');
+    }
+
+    disableManualEdit() {
+        return this.safeMapOperation(() => {
+            this.editMode = false;
+            console.log('Manual edit mode disabled');
+
+            this.data.markers.forEach(marker => {
+                if (marker && marker.dragging) {
+                    marker.dragging.disable();
+                    marker.off('dragend');
+                    marker.off('contextmenu');
+                }
+            });
+
+            this.data.map.off('click', this.onMapClick);
+
+            this.data.map.getContainer().style.cursor = '';
+
+            this.removeEditModeIndicator();
+            return true;
+        }, 'disable manual edit');
+    }
+
+    addEditModeIndicator() {
         if (!this.editModeIndicator) {
             this.editModeIndicator = L.control({ position: 'topleft' });
             this.editModeIndicator.onAdd = () => {
@@ -95,63 +157,86 @@ class MapManager {
                 return div;
             };
         }
-        this.editModeIndicator.addTo(this.data.map);
-    }
 
-    // Disable manual editing mode
-    disableManualEdit() {
-        this.editMode = false;
-        console.log('Manual edit mode disabled');
-
-        // Disable marker dragging
-        this.data.markers.forEach(marker => {
-            marker.dragging.disable();
-            marker.off('dragend');
-            marker.off('contextmenu');
-        });
-
-        // Remove click handler
-        this.data.map.off('click', this.onMapClick);
-
-        // Reset cursor
-        this.data.map.getContainer().style.cursor = '';
-
-        // Remove edit mode indicator
-        if (this.editModeIndicator) {
-            this.data.map.removeControl(this.editModeIndicator);
-        }
-    }
-
-    // Handle map clicks for adding custom stops
-    onMapClick(e) {
-        if (this.editMode && !this.drawingMode) {
-            const { lat, lng } = e.latlng;
-
-            // Use reverse geocoding to get address (simplified example)
-            const address = `Custom Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
-
-            if (confirm(`Add custom stop at ${address}?`)) {
-                this.data.addCustomStop(lat, lng, address);
+        if (this.data.map && !this.data.map.hasControl && this.editModeIndicator) {
+            try {
+                this.editModeIndicator.addTo(this.data.map);
+            } catch (error) {
+                console.warn('Could not add edit mode indicator:', error);
             }
         }
     }
 
-    // Enable route drawing mode
+    removeEditModeIndicator() {
+        if (this.editModeIndicator && this.data.map) {
+            try {
+                this.data.map.removeControl(this.editModeIndicator);
+            } catch (error) {
+                console.warn('Could not remove edit mode indicator:', error);
+            }
+        }
+    }
+
+    onMapClick(e) {
+        if (this.editMode && !this.drawingMode && this.isMapReady) {
+            if (this.clickTimeout) {
+                clearTimeout(this.clickTimeout);
+            }
+
+            this.clickTimeout = setTimeout(() => {
+                this.handleCustomStopClick(e);
+            }, 300);
+        }
+    }
+
+    handleCustomStopClick(e) {
+        if (!e.latlng) return;
+
+        const { lat, lng } = e.latlng;
+
+        if (isNaN(lat) || isNaN(lng)) {
+            console.warn('Invalid coordinates received:', { lat, lng });
+            return;
+        }
+
+        const address = `Custom Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+
+        if (confirm(`Add custom stop at ${address}?`)) {
+            setTimeout(() => {
+                this.data.addCustomStop(lat, lng, address);
+            }, 100);
+        }
+    }
+
     enableRouteDrawing() {
-        this.drawingMode = true;
-        this.customRoutePoints = [];
-        console.log('Route drawing mode enabled');
+        return this.safeMapOperation(() => {
+            this.drawingMode = true;
+            this.customRoutePoints = [];
+            console.log('Route drawing mode enabled');
 
-        // Clear existing route
-        this.clearRoute();
+            // Clear existing route
+            this.clearRoute();
 
-        // Add click handler for route drawing
-        this.data.map.on('click', this.onRouteDrawClick.bind(this));
+            // Add click handler for route drawing
+            this.data.map.off('click', this.onRouteDrawClick);
+            this.data.map.on('click', this.onRouteDrawClick.bind(this));
 
-        // Change cursor and add instructions
-        this.data.map.getContainer().style.cursor = 'crosshair';
+            // Change cursor and add instructions
+            this.data.map.getContainer().style.cursor = 'crosshair';
 
-        // Show drawing instructions
+            // Show drawing instructions
+            this.addDrawingInstructions();
+
+            // Add right-click handler to finish drawing
+            this.data.map.off('contextmenu', this.finishRouteDrawing);
+            this.data.map.on('contextmenu', this.finishRouteDrawing.bind(this));
+
+            return true;
+        }, 'enable route drawing');
+    }
+
+    // Add drawing instructions safely
+    addDrawingInstructions() {
         if (!this.drawingInstructions) {
             this.drawingInstructions = L.control({ position: 'topright' });
             this.drawingInstructions.onAdd = () => {
@@ -174,120 +259,166 @@ class MapManager {
                 return div;
             };
         }
-        this.drawingInstructions.addTo(this.data.map);
 
-        // Add right-click handler to finish drawing
-        this.data.map.on('contextmenu', this.finishRouteDrawing.bind(this));
+        if (this.data.map && this.drawingInstructions) {
+            try {
+                this.drawingInstructions.addTo(this.data.map);
+            } catch (error) {
+                console.warn('Could not add drawing instructions:', error);
+            }
+        }
     }
 
-    // Handle clicks during route drawing
     onRouteDrawClick(e) {
-        if (this.drawingMode) {
-            const { lat, lng } = e.latlng;
-            this.customRoutePoints.push([lat, lng]);
+        if (this.drawingMode && e.latlng && this.isMapReady) {
 
-            // Update point counter
-            const pointCounter = document.getElementById('point-count');
-            if (pointCounter) {
-                pointCounter.textContent = this.customRoutePoints.length;
+            if (this.drawClickTimeout) {
+                clearTimeout(this.drawClickTimeout);
             }
 
-            // Add temporary marker
+            this.drawClickTimeout = setTimeout(() => {
+                this.handleRouteDrawClick(e);
+            }, 100);
+        }
+    }
+
+    handleRouteDrawClick(e) {
+        const { lat, lng } = e.latlng;
+
+        if (isNaN(lat) || isNaN(lng)) {
+            console.warn('Invalid coordinates for route drawing:', { lat, lng });
+            return;
+        }
+
+        this.customRoutePoints.push([lat, lng]);
+
+        const pointCounter = document.getElementById('point-count');
+        if (pointCounter) {
+            pointCounter.textContent = this.customRoutePoints.length;
+        }
+
+        this.safeMapOperation(() => {
             const tempMarker = L.circleMarker([lat, lng], {
                 radius: 6,
                 color: '#8b5cf6',
                 fillColor: '#8b5cf6',
                 fillOpacity: 0.8,
                 weight: 2
-            }).addTo(this.data.map);
+            });
 
-            if (!this.tempMarkers) this.tempMarkers = [];
-            this.tempMarkers.push(tempMarker);
-
-            // Draw line if we have more than one point
-            if (this.customRoutePoints.length > 1) {
-                if (this.customPolyline) {
-                    this.data.map.removeLayer(this.customPolyline);
-                }
-
-                this.customPolyline = L.polyline(this.customRoutePoints, {
-                    color: '#8b5cf6',
-                    weight: 4,
-                    opacity: 0.8,
-                    dashArray: '10, 5'
-                }).addTo(this.data.map);
+            if (tempMarker) {
+                tempMarker.addTo(this.data.map);
+                if (!this.tempMarkers) this.tempMarkers = [];
+                this.tempMarkers.push(tempMarker);
             }
-        }
+
+            if (this.customRoutePoints.length > 1) {
+                this.updateCustomRouteLine();
+            }
+
+            return true;
+        }, 'add route drawing marker');
     }
 
-    // Finish route drawing
+    updateCustomRouteLine() {
+        this.safeMapOperation(() => {
+            if (this.customPolyline && this.data.map.hasLayer(this.customPolyline)) {
+                this.data.map.removeLayer(this.customPolyline);
+            }
+
+            this.customPolyline = L.polyline(this.customRoutePoints, {
+                color: '#8b5cf6',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '10, 5'
+            });
+
+            if (this.customPolyline) {
+                this.customPolyline.addTo(this.data.map);
+            }
+
+            return true;
+        }, 'update custom route line');
+    }
+
     finishRouteDrawing(e) {
         if (this.drawingMode) {
-            e.originalEvent.preventDefault();
+            if (e.originalEvent) {
+                e.originalEvent.preventDefault();
+            }
+
             this.drawingMode = false;
 
-            // Remove event handlers
             this.data.map.off('click', this.onRouteDrawClick);
             this.data.map.off('contextmenu', this.finishRouteDrawing);
 
-            // Remove instructions
-            if (this.drawingInstructions) {
-                this.data.map.removeControl(this.drawingInstructions);
-                this.drawingInstructions = null;
-            }
+            this.removeDrawingInstructions();
 
-            // Reset cursor
-            this.data.map.getContainer().style.cursor = '';
+            if (this.data.map.getContainer()) {
+                this.data.map.getContainer().style.cursor = '';
+            }
 
             console.log('Custom route drawn with', this.customRoutePoints.length, 'points');
 
-            // Save custom route points to data
             this.data.customRoutePoints = this.customRoutePoints.slice();
 
-            alert(`Custom route created with ${this.customRoutePoints.length} points!`);
+            if (this.customRoutePoints.length > 0) {
+                alert(`Custom route created with ${this.customRoutePoints.length} points!`);
+            }
         }
     }
 
-    // Disable route drawing mode
+    removeDrawingInstructions() {
+        if (this.drawingInstructions && this.data.map) {
+            try {
+                this.data.map.removeControl(this.drawingInstructions);
+                this.drawingInstructions = null;
+            } catch (error) {
+                console.warn('Could not remove drawing instructions:', error);
+            }
+        }
+    }
+
     disableRouteDrawing() {
         this.drawingMode = false;
 
-        // Remove event handlers
-        this.data.map.off('click', this.onRouteDrawClick);
-        this.data.map.off('contextmenu', this.finishRouteDrawing);
-
-        // Remove instructions
-        if (this.drawingInstructions) {
-            this.data.map.removeControl(this.drawingInstructions);
-            this.drawingInstructions = null;
+        if (this.data.map) {
+            this.data.map.off('click', this.onRouteDrawClick);
+            this.data.map.off('contextmenu', this.finishRouteDrawing);
         }
 
-        // Reset cursor
-        this.data.map.getContainer().style.cursor = '';
+        this.removeDrawingInstructions();
+
+        if (this.data.map && this.data.map.getContainer()) {
+            this.data.map.getContainer().style.cursor = '';
+        }
     }
 
-    // Clear custom route
     clearCustomRoute() {
-        if (this.customPolyline) {
-            this.data.map.removeLayer(this.customPolyline);
+        this.safeMapOperation(() => {
+            if (this.customPolyline && this.data.map.hasLayer(this.customPolyline)) {
+                this.data.map.removeLayer(this.customPolyline);
+            }
             this.customPolyline = null;
-        }
 
-        if (this.tempMarkers) {
-            this.tempMarkers.forEach(marker => {
-                if (this.data.map.hasLayer(marker)) {
-                    this.data.map.removeLayer(marker);
-                }
-            });
-            this.tempMarkers = [];
-        }
+            if (this.tempMarkers) {
+                this.tempMarkers.forEach(marker => {
+                    if (marker && this.data.map.hasLayer(marker)) {
+                        this.data.map.removeLayer(marker);
+                    }
+                });
+                this.tempMarkers = [];
+            }
 
-        this.customRoutePoints = [];
-        this.data.customRoutePoints = [];
+            this.customRoutePoints = [];
+            this.data.customRoutePoints = [];
+
+            return true;
+        }, 'clear custom route');
     }
 
     addDepotMarker() {
-        try {
+        return this.safeMapOperation(() => {
             const depotIcon = L.divIcon({
                 className: 'depot-marker',
                 html: '<i class="fas fa-warehouse"></i>',
@@ -310,176 +441,214 @@ class MapManager {
 
             console.log('Depot marker added successfully');
             return depotMarker;
-        } catch (error) {
-            console.error('Failed to add depot marker:', error);
-        }
+        }, 'add depot marker');
     }
 
-    // Enhanced marker creation with edit capabilities
     addOrderMarkers() {
-        try {
+        return this.safeMapOperation(() => {
             this.clearOrderMarkers();
 
             console.log(`Adding ${this.data.orders.length} order markers...`);
 
             this.data.orders.forEach((order, index) => {
-                const orderIcon = L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div class="custom-marker ${order.isCustom ? 'custom-stop' : ''}" 
-                          style="background-color: ${this.priorityColors[order.priority]}">
-                          ${index + 1}
-                          </div>`,
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
-                });
+                try {
+                    if (!order.coordinates || !Array.isArray(order.coordinates) ||
+                        order.coordinates.length !== 2 ||
+                        isNaN(order.coordinates[0]) || isNaN(order.coordinates[1])) {
+                        console.warn(`Invalid coordinates for order ${order.id}:`, order.coordinates);
+                        return;
+                    }
 
-                const marker = L.marker([order.coordinates[0], order.coordinates[1]], {
-                    icon: orderIcon,
-                    title: `Order #${order.id} - ${order.client_name}`,
-                    draggable: this.editMode
-                })
-                    .addTo(this.data.map)
-                    .bindPopup(this.createOrderPopup(order, index + 1), {
-                        maxWidth: 250,
-                        className: 'custom-popup'
+                    const orderIcon = L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div class="custom-marker ${order.isCustom ? 'custom-stop' : ''}" 
+                              style="background-color: ${this.priorityColors[order.priority] || '#6b7280'}">
+                              ${index + 1}
+                              </div>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
                     });
 
-                // Add context menu for edit mode
-                if (this.editMode) {
-                    marker.on('contextmenu', (e) => {
-                        e.originalEvent.preventDefault();
-                        this.showMarkerContextMenu(e, order, index);
-                    });
+                    const marker = L.marker([order.coordinates[0], order.coordinates[1]], {
+                        icon: orderIcon,
+                        title: `Order #${order.id} - ${order.client_name}`,
+                        draggable: false
+                    })
+                        .addTo(this.data.map)
+                        .bindPopup(this.createOrderPopup(order, index + 1), {
+                            maxWidth: 250,
+                            className: 'custom-popup'
+                        });
 
-                    // Enable dragging if in edit mode
-                    marker.dragging.enable();
-                    marker.on('dragend', (e) => {
-                        const newLatLng = e.target.getLatLng();
-                        this.data.orders[index].coordinates = [newLatLng.lat, newLatLng.lng];
-                        this.data.refreshOptimizedRoute();
-                        console.log(`Order ${order.id} moved to:`, [newLatLng.lat, newLatLng.lng]);
-                    });
+                    if (this.editMode && marker.dragging) {
+                        marker.dragging.enable();
+                        marker.on('dragend', (e) => {
+                            const newLatLng = e.target.getLatLng();
+                            if (this.data.orders[index]) {
+                                this.data.orders[index].coordinates = [newLatLng.lat, newLatLng.lng];
+                                this.data.refreshOptimizedRoute();
+                                console.log(`Order ${order.id} moved to:`, [newLatLng.lat, newLatLng.lng]);
+                            }
+                        });
+
+                        marker.on('contextmenu', (e) => {
+                            e.originalEvent.preventDefault();
+                            this.showMarkerContextMenu(e, order, index);
+                        });
+                    }
+
+                    this.data.markers.push(marker);
+                } catch (error) {
+                    console.error(`Failed to add marker for order ${order.id}:`, error);
                 }
-
-                this.data.markers.push(marker);
             });
 
             console.log(`Successfully added ${this.data.markers.length} markers`);
+            return true;
+        }, 'add order markers');
+    }
+
+    showMarkerContextMenu(e, order, index) {
+        if (!this.data.map || !e.latlng) return;
+
+        try {
+            const contextMenu = L.popup({
+                closeButton: false,
+                autoClose: true,
+                closeOnClick: true,
+                className: 'context-menu-popup'
+            })
+                .setLatLng(e.latlng)
+                .setContent(`
+               <div class="marker-context-menu">
+                   <button onclick="window.routeData.moveStopUp(${index})" class="context-btn" ${index === 0 ? 'disabled' : ''}>
+                       <i class="fas fa-arrow-up"></i> Move Up
+                   </button>
+                   <button onclick="window.routeData.moveStopDown(${index})" class="context-btn" ${index === this.data.orders.length - 1 ? 'disabled' : ''}>
+                       <i class="fas fa-arrow-down"></i> Move Down
+                   </button>
+                   <button onclick="window.routeData.focusOnOrder(${order.id})" class="context-btn">
+                       <i class="fas fa-crosshairs"></i> Focus
+                   </button>
+                   ${order.isCustom ? `
+                       <button onclick="window.routeData.removeStop(${index}); this.closest('.leaflet-popup').remove();" class="context-btn danger">
+                           <i class="fas fa-trash"></i> Remove
+                       </button>
+                   ` : ''}
+               </div>
+           `)
+                .openOn(this.data.map);
         } catch (error) {
-            console.error('Failed to add order markers:', error);
+            console.error('Failed to show context menu:', error);
         }
     }
 
-    // Show context menu for markers
-    showMarkerContextMenu(e, order, index) {
-        const contextMenu = L.popup({
-            closeButton: false,
-            autoClose: true,
-            closeOnClick: true,
-            className: 'context-menu-popup'
-        })
-            .setLatLng(e.latlng)
-            .setContent(`
-           <div class="marker-context-menu">
-               <button onclick="window.routeData.moveStopUp(${index})" class="context-btn" ${index === 0 ? 'disabled' : ''}>
-                   <i class="fas fa-arrow-up"></i> Move Up
-               </button>
-               <button onclick="window.routeData.moveStopDown(${index})" class="context-btn" ${index === this.data.orders.length - 1 ? 'disabled' : ''}>
-                   <i class="fas fa-arrow-down"></i> Move Down
-               </button>
-               <button onclick="window.routeData.focusOnOrder(${order.id})" class="context-btn">
-                   <i class="fas fa-crosshairs"></i> Focus
-               </button>
-               ${order.isCustom ? `
-                   <button onclick="window.routeData.removeStop(${index}); this.closest('.leaflet-popup').remove();" class="context-btn danger">
-                       <i class="fas fa-trash"></i> Remove
-                   </button>
-               ` : ''}
-           </div>
-       `)
-            .openOn(this.data.map);
-    }
-
     createOrderPopup(order, orderNumber) {
+        const safeValue = (value, fallback = 'N/A') => value || fallback;
+
         return `
            <div class="p-2 min-w-[200px]">
                <div class="flex items-center justify-between mb-2">
-                   <strong class="text-lg">Order #${order.id}</strong>
+                   <strong class="text-lg">Order #${safeValue(order.id)}</strong>
                    <div class="flex items-center gap-1">
                        <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold" 
-                            style="background-color: ${this.priorityColors[order.priority]}">${orderNumber}</div>
+                            style="background-color: ${this.priorityColors[order.priority] || '#6b7280'}">${orderNumber}</div>
                        ${order.isCustom ? '<div class="w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs"><i class="fas fa-star"></i></div>' : ''}
                    </div>
                </div>
-               <div class="text-sm font-medium text-gray-800">${order.client_name}</div>
-               <div class="text-sm text-gray-600 mb-2">${order.address}</div>
+               <div class="text-sm font-medium text-gray-800">${safeValue(order.client_name)}</div>
+               <div class="text-sm text-gray-600 mb-2">${safeValue(order.address)}</div>
                <div class="flex items-center justify-between">
-                   <div class="text-lg font-semibold text-green-600">zł${order.total_amount}</div>
+                   <div class="text-lg font-semibold text-green-600">zł${safeValue(order.total_amount, '0')}</div>
                    <div class="text-xs uppercase font-medium px-2 py-1 rounded" 
-                        style="background-color: ${this.priorityColors[order.priority]}20; color: ${this.priorityColors[order.priority]}">${order.priority} priority</div>
+                        style="background-color: ${this.priorityColors[order.priority] || '#6b7280'}20; color: ${this.priorityColors[order.priority] || '#6b7280'}">${safeValue(order.priority, 'medium')} priority</div>
                </div>
-               <div class="text-xs text-gray-500 mt-1">Status: ${order.status}</div>
+               <div class="text-xs text-gray-500 mt-1">Status: ${safeValue(order.status, 'pending')}</div>
                ${order.isCustom ? '<div class="text-xs text-purple-600 mt-1 font-medium">Custom Stop</div>' : ''}
            </div>
        `;
     }
 
     clearOrderMarkers() {
-        this.data.markers.forEach(marker => {
-            if (this.data.map.hasLayer(marker)) {
-                this.data.map.removeLayer(marker);
-            }
-        });
+        if (this.data.markers) {
+            this.data.markers.forEach(marker => {
+                try {
+                    if (marker && this.data.map && this.data.map.hasLayer(marker)) {
+                        this.data.map.removeLayer(marker);
+                    }
+                } catch (error) {
+                    console.warn('Error removing marker:', error);
+                }
+            });
+        }
         this.data.markers = [];
     }
 
     clearRoute() {
-        if (this.data.routingControl) {
-            this.data.map.removeControl(this.data.routingControl);
-            this.data.routingControl = null;
-        }
-
-        if (this.data.routeStepMarkers) {
-            this.data.routeStepMarkers.forEach(marker => {
-                if (this.data.map.hasLayer(marker)) {
-                    this.data.map.removeLayer(marker);
+        this.safeMapOperation(() => {
+            if (this.data.routingControl) {
+                try {
+                    this.data.map.removeControl(this.data.routingControl);
+                } catch (error) {
+                    console.warn('Error removing routing control:', error);
                 }
-            });
-            this.data.routeStepMarkers = [];
-        }
-
-        if (this.data.fallbackPolyline) {
-            if (this.data.map.hasLayer(this.data.fallbackPolyline)) {
-                this.data.map.removeLayer(this.data.fallbackPolyline);
+                this.data.routingControl = null;
             }
-            this.data.fallbackPolyline = null;
-        }
+
+            if (this.data.routeStepMarkers) {
+                this.data.routeStepMarkers.forEach(marker => {
+                    try {
+                        if (marker && this.data.map.hasLayer(marker)) {
+                            this.data.map.removeLayer(marker);
+                        }
+                    } catch (error) {
+                        console.warn('Error removing route step marker:', error);
+                    }
+                });
+                this.data.routeStepMarkers = [];
+            }
+
+            if (this.data.fallbackPolyline) {
+                try {
+                    if (this.data.map.hasLayer(this.data.fallbackPolyline)) {
+                        this.data.map.removeLayer(this.data.fallbackPolyline);
+                    }
+                } catch (error) {
+                    console.warn('Error removing fallback polyline:', error);
+                }
+                this.data.fallbackPolyline = null;
+            }
+
+            return true;
+        }, 'clear route');
     }
 
+    // Rest of the methods remain the same but wrapped with safeMapOperation where needed...
     visualizeOptimizedRoute() {
-        if (!this.data.map || !this.data.mapInitialized) {
-            console.warn('Map not initialized yet');
+        if (!this.isMapReady) {
+            console.warn('Map not ready for route visualization, retrying...');
+            setTimeout(() => this.visualizeOptimizedRoute(), 1000);
             return;
         }
 
-        if (!this.data.optimizationResult && this.data.orders.length === 0) {
-            console.warn('No optimization result or orders available');
-            return;
-        }
+        return this.safeMapOperation(() => {
+            if (!this.data.optimizationResult && this.data.orders.length === 0) {
+                console.warn('No optimization result or orders available');
+                return false;
+            }
 
-        console.log('Visualizing optimized route...');
-        this.clearRoute();
+            console.log('Visualizing optimized route...');
+            this.clearRoute();
 
-        // Use custom route if available, otherwise use optimized route
-        const routeCoordinates = this.data.customRoutePoints.length > 0
-            ? this.data.customRoutePoints
-            : this.buildOptimizedRouteCoordinates();
+            // Use custom route if available, otherwise use optimized route
+            const routeCoordinates = this.data.customRoutePoints.length > 0
+                ? this.data.customRoutePoints
+                : this.buildOptimizedRouteCoordinates();
 
-        try {
             // If we have custom route points, use them directly
             if (this.data.customRoutePoints.length > 0) {
                 this.visualizeCustomRoute(this.data.customRoutePoints);
-                return;
+                return true;
             }
 
             // Otherwise use Leaflet Routing Machine
@@ -524,51 +693,49 @@ class MapManager {
                 this.onRoutingError(e.error);
             });
 
-            // Fit map to route after a delay
             setTimeout(() => {
                 this.fitMapToRoute();
             }, 1000);
 
             console.log('Route visualization completed');
-
-        } catch (error) {
-            console.error('Route visualization failed:', error);
-            this.fallbackRouteVisualization(routeCoordinates);
-        }
+            return true;
+        }, 'visualize optimized route');
     }
 
-    // Visualize custom drawn route
     visualizeCustomRoute(points) {
-        console.log('Visualizing custom route with', points.length, 'points');
+        return this.safeMapOperation(() => {
+            console.log('Visualizing custom route with', points.length, 'points');
 
-        const polyline = L.polyline(points, {
-            color: '#8b5cf6',
-            weight: 4,
-            opacity: 0.8,
-            dashArray: '10, 5'
-        }).addTo(this.data.map);
+            const polyline = L.polyline(points, {
+                color: '#8b5cf6',
+                weight: 4,
+                opacity: 0.8,
+                dashArray: '10, 5'
+            }).addTo(this.data.map);
 
-        this.data.customPolyline = polyline;
+            this.data.customPolyline = polyline;
 
-        // Add numbered markers for route points
-        points.forEach((point, index) => {
-            if (index > 0 && index < points.length - 1) { // Skip start and end
-                const pointMarker = L.circleMarker(point, {
-                    radius: 8,
-                    color: '#8b5cf6',
-                    fillColor: '#8b5cf6',
-                    fillOpacity: 0.8,
-                    weight: 2
-                }).addTo(this.data.map);
+            // Add numbered markers for route points
+            points.forEach((point, index) => {
+                if (index > 0 && index < points.length - 1) { // Skip start and end
+                    const pointMarker = L.circleMarker(point, {
+                        radius: 8,
+                        color: '#8b5cf6',
+                        fillColor: '#8b5cf6',
+                        fillOpacity: 0.8,
+                        weight: 2
+                    }).addTo(this.data.map);
 
-                pointMarker.bindPopup(`Route Point ${index}`);
+                    pointMarker.bindPopup(`Route Point ${index}`);
 
-                if (!this.tempMarkers) this.tempMarkers = [];
-                this.tempMarkers.push(pointMarker);
-            }
-        });
+                    if (!this.tempMarkers) this.tempMarkers = [];
+                    this.tempMarkers.push(pointMarker);
+                }
+            });
 
-        this.data.map.fitBounds(polyline.getBounds().pad(0.1));
+            this.data.map.fitBounds(polyline.getBounds().pad(0.1));
+            return true;
+        }, 'visualize custom route');
     }
 
     buildOptimizedRouteCoordinates() {
@@ -576,13 +743,15 @@ class MapManager {
 
         if (this.data.optimizationResult && this.data.optimizationResult.route_steps) {
             this.data.optimizationResult.route_steps.forEach(step => {
-                if (step.coordinates) {
+                if (step.coordinates && Array.isArray(step.coordinates) && step.coordinates.length === 2) {
                     coordinates.push(step.coordinates);
                 }
             });
         } else {
             this.data.orders.forEach(order => {
-                coordinates.push(order.coordinates);
+                if (order.coordinates && Array.isArray(order.coordinates) && order.coordinates.length === 2) {
+                    coordinates.push(order.coordinates);
+                }
             });
         }
 
@@ -615,88 +784,110 @@ class MapManager {
     }
 
     addRouteStepMarkers(route) {
-        route.waypoints.forEach((waypoint, index) => {
-            if (index === 0 || index === route.waypoints.length - 1) {
-                return;
-            }
+        return this.safeMapOperation(() => {
+            route.waypoints.forEach((waypoint, index) => {
+                if (index === 0 || index === route.waypoints.length - 1) {
+                    return;
+                }
 
-            const stepNumber = index;
-            const stepIcon = L.divIcon({
-                className: 'route-step-marker',
-                html: `<div class="route-step-number" style="background-color: #667eea; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${stepNumber}</div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
+                const stepNumber = index;
+                const stepIcon = L.divIcon({
+                    className: 'route-step-marker',
+                    html: `<div class="route-step-number" style="background-color: #667eea; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${stepNumber}</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                const stepMarker = L.marker([waypoint.latLng.lat, waypoint.latLng.lng], {
+                    icon: stepIcon,
+                    zIndexOffset: 1000
+                }).addTo(this.data.map);
+
+                if (!this.data.routeStepMarkers) {
+                    this.data.routeStepMarkers = [];
+                }
+                this.data.routeStepMarkers.push(stepMarker);
             });
 
-            const stepMarker = L.marker([waypoint.latLng.lat, waypoint.latLng.lng], {
-                icon: stepIcon,
-                zIndexOffset: 1000
-            }).addTo(this.data.map);
-
-            if (!this.data.routeStepMarkers) {
-                this.data.routeStepMarkers = [];
-            }
-            this.data.routeStepMarkers.push(stepMarker);
-        });
+            return true;
+        }, 'add route step markers');
     }
 
     fallbackRouteVisualization(coordinates) {
-        console.log('Using fallback route visualization...');
+        return this.safeMapOperation(() => {
+            console.log('Using fallback route visualization...');
 
-        const polyline = L.polyline(coordinates, {
-            color: '#ff6b6b',
-            weight: 4,
-            opacity: 0.7,
-            dashArray: '5, 10'
-        }).addTo(this.data.map);
+            const polyline = L.polyline(coordinates, {
+                color: '#ff6b6b',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '5, 10'
+            }).addTo(this.data.map);
 
-        this.data.fallbackPolyline = polyline;
-        this.data.map.fitBounds(polyline.getBounds().pad(0.1));
+            this.data.fallbackPolyline = polyline;
+            this.data.map.fitBounds(polyline.getBounds().pad(0.1));
+
+            return true;
+        }, 'fallback route visualization');
     }
 
     fitMapToRoute() {
-        try {
-            if (this.data.routingControl && this.data.routingControl._routes && this.data.routingControl._routes.length > 0) {
-                const route = this.data.routingControl._routes[0];
-                if (route.bounds) {
-                    this.data.map.fitBounds(route.bounds, { padding: [20, 20] });
-                    return;
+        return this.safeMapOperation(() => {
+            try {
+                if (this.data.routingControl && this.data.routingControl._routes && this.data.routingControl._routes.length > 0) {
+                    const route = this.data.routingControl._routes[0];
+                    if (route.bounds) {
+                        this.data.map.fitBounds(route.bounds, { padding: [20, 20] });
+                        return true;
+                    }
                 }
+
+                if (this.data.customPolyline) {
+                    this.data.map.fitBounds(this.data.customPolyline.getBounds().pad(0.1));
+                    return true;
+                }
+
+                if (this.data.markers.length > 0) {
+                    const group = new L.featureGroup([...this.data.markers]);
+                    this.data.map.fitBounds(group.getBounds().pad(0.1));
+                    return true;
+                }
+            } catch (error) {
+                console.error('Failed to fit map to route:', error);
+                return false;
             }
 
-            if (this.data.customPolyline) {
-                this.data.map.fitBounds(this.data.customPolyline.getBounds().pad(0.1));
-                return;
-            }
-
-            if (this.data.markers.length > 0) {
-                const group = new L.featureGroup([...this.data.markers]);
-                this.data.map.fitBounds(group.getBounds().pad(0.1));
-            }
-        } catch (error) {
-            console.error('Failed to fit map to route:', error);
-        }
+            return false;
+        }, 'fit map to route');
     }
 
     refreshMarkers() {
-        if (this.data.mapInitialized) {
+        if (this.isMapReady && this.data.mapInitialized) {
             this.addOrderMarkers();
+        } else {
+            console.warn('Map not ready for marker refresh');
         }
     }
 
     focusOnOrder(orderId) {
-        const order = this.data.orders.find(o => o.id === orderId);
-        if (order && this.data.map) {
-            this.data.map.setView(order.coordinates, 15);
+        return this.safeMapOperation(() => {
+            const order = this.data.orders.find(o => o.id === orderId);
+            if (order && order.coordinates && Array.isArray(order.coordinates) && order.coordinates.length === 2) {
+                this.data.map.setView(order.coordinates, 15);
 
-            const markerIndex = this.data.orders.findIndex(o => o.id === orderId);
-            if (markerIndex >= 0 && this.data.markers[markerIndex]) {
-                this.data.markers[markerIndex].openPopup();
+                const markerIndex = this.data.orders.findIndex(o => o.id === orderId);
+                if (markerIndex >= 0 && this.data.markers[markerIndex]) {
+                    this.data.markers[markerIndex].openPopup();
+                }
+                return true;
             }
-        }
+            return false;
+        }, 'focus on order');
     }
 
     getMapBounds() {
-        return this.data.map ? this.data.map.getBounds() : null;
+        return this.safeMapOperation(() => {
+            return this.data.map.getBounds();
+        }, 'get map bounds') || null;
     }
 }

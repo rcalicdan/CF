@@ -1,4 +1,4 @@
-<div x-show="optimizationResult" class="bg-white rounded-xl custom-shadow p-4 lg:p-6">
+<div x-show="optimizationResult || orders.length > 0" class="bg-white rounded-xl custom-shadow p-4 lg:p-6">
     <h2 class="text-lg lg:text-xl font-semibold text-gray-800 mb-4 flex items-center">
         <i class="fas fa-edit text-primary mr-2"></i>
         Manual Route Editor
