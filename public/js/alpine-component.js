@@ -4,7 +4,7 @@ function routeOptimizer() {
     return {
         ...data,
 
-        selectedDriver: data.drivers[0],
+        selectedDriver: null,
         showRouteSummary: false,
 
         manualEditMode: false,
@@ -12,21 +12,33 @@ function routeOptimizer() {
         draggedOrderIndex: null,
 
         init() {
-            console.log('RouteOptimizer component initializing...');
-            if (!this.optimizationResult && this.orders.length > 0) {
-                this.refreshOptimizedRoute();
+            console.log("RouteOptimizer component initializing...");
+
+            if (this.drivers.length > 0) {
+                this.selectedDriver = this.drivers[0];
             }
-            this.$watch('loading', (value) => {
-                console.log('Loading state changed:', value);
+
+            this.updateOrders();
+
+            this.$watch("loading", (value) => {
+                console.log("Loading state changed:", value);
             });
-            this.$watch('optimizationResult', (value) => {
+            this.$watch("optimizationResult", (value) => {
                 if (value) {
                     this.showRouteSummary = true;
                 }
             });
-            this.$watch('selectedDate', (value) => {
+            this.$watch("selectedDate", (value) => {
                 this.setSelectedDate(value);
+                this.updateOrders();
             });
+            this.$watch("selectedDriver", (newDriver, oldDriver) => {
+                if (newDriver && newDriver.id !== oldDriver?.id) {
+                    console.log(`Driver changed to: ${newDriver.full_name}`);
+                    this.updateOrders();
+                }
+            });
+
             this.$nextTick(() => {
                 setTimeout(() => {
                     const mapManager = new MapManager(this);
@@ -39,30 +51,59 @@ function routeOptimizer() {
             });
         },
 
+        getOrdersForDriverAndDate(driverId, date) {
+            if (!driverId || !date) {
+                return [];
+            }
+        
+            return this.allOrders.filter(
+                (order) =>
+                    order.driver_id === driverId && order.delivery_date === date
+            );
+        },
+
+        updateOrders() {
+            if (this.selectedDriver) {
+                this.orders = this.getOrdersForDriverAndDate(
+                    this.selectedDriver.id,
+                    this.selectedDate
+                );
+                console.log(
+                    `Loaded ${this.orders.length} orders for driver ${this.selectedDriver.full_name} on ${this.selectedDate}`
+                );
+            } else {
+                this.orders = [];
+            }
+            this.refreshOptimizedRoute();
+        },
+
         getTodayDate() {
             const today = new Date();
-            return today.toISOString().split('T')[0];
+            return today.toISOString().split("T")[0];
         },
 
         get formattedSelectedDate() {
-            const date = new Date(this.selectedDate + 'T00:00:00');
-            return date.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
+            const date = new Date(this.selectedDate + "T00:00:00");
+            return date.toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
             });
         },
 
         get dateStatus() {
             const today = this.getTodayDate();
-            if (this.selectedDate === today) return 'today';
-            if (this.selectedDate < today) return 'past';
-            return 'future';
+            if (this.selectedDate === today) return "today";
+            if (this.selectedDate < today) return "past";
+            return "future";
         },
 
         get totalOrderValue() {
-            return this.orders.reduce((sum, order) => sum + order.total_amount, 0);
+            return this.orders.reduce(
+                (sum, order) => sum + order.total_amount,
+                0
+            );
         },
 
         toggleManualEdit() {
@@ -95,28 +136,40 @@ function routeOptimizer() {
         },
 
         removeStop(index) {
-            if (confirm('Are you sure you want to remove this stop from the route?')) {
+            if (
+                confirm(
+                    "Are you sure you want to remove this stop from the route?"
+                )
+            ) {
                 this.orders.splice(index, 1);
                 this.refreshOptimizedRoute();
             }
         },
 
-        addCustomStop(lat, lng, address = 'Custom Location') {
-            if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-                console.error('Invalid coordinates provided:', { lat, lng });
-                alert('Invalid coordinates. Please try again.');
+        addCustomStop(lat, lng, address = "Custom Location") {
+            if (
+                isNaN(lat) ||
+                isNaN(lng) ||
+                lat < -90 ||
+                lat > 90 ||
+                lng < -180 ||
+                lng > 180
+            ) {
+                console.error("Invalid coordinates provided:", { lat, lng });
+                alert("Invalid coordinates. Please try again.");
                 return;
             }
             const customOrder = {
                 id: Date.now(),
-                client_name: 'Custom Stop',
+                client_name: "Custom Stop",
                 address: address,
                 coordinates: [parseFloat(lat), parseFloat(lng)],
                 total_amount: 0,
-                status: 'custom',
-                priority: 'medium',
+                status: "custom",
+                priority: "medium",
                 delivery_date: this.selectedDate,
-                isCustom: true
+                driver_id: this.selectedDriver.id,
+                isCustom: true,
             };
             this.orders.push(customOrder);
             setTimeout(() => {
@@ -127,15 +180,15 @@ function routeOptimizer() {
         onDragStart(index, event) {
             this.isDragging = true;
             this.draggedOrderIndex = index;
-            event.dataTransfer.effectAllowed = 'move';
-            event.dataTransfer.setData('text/html', event.target.outerHTML);
-            event.target.classList.add('dragging');
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/html", event.target.outerHTML);
+            event.target.classList.add("dragging");
         },
 
         onDragOver(event) {
             if (this.isDragging) {
                 event.preventDefault();
-                event.dataTransfer.dropEffect = 'move';
+                event.dataTransfer.dropEffect = "move";
             }
         },
 
@@ -147,8 +200,8 @@ function routeOptimizer() {
                 this.orders.splice(index, 0, draggedOrder);
                 this.isDragging = false;
                 this.draggedOrderIndex = null;
-                document.querySelectorAll('.dragging').forEach(el => {
-                    el.classList.remove('dragging');
+                document.querySelectorAll(".dragging").forEach((el) => {
+                    el.classList.remove("dragging");
                 });
                 this.refreshOptimizedRoute();
             }
@@ -165,7 +218,7 @@ function routeOptimizer() {
         },
 
         saveManualChanges() {
-            if (confirm('Save current route configuration?')) {
+            if (confirm("Save current route configuration?")) {
                 const saveData = {
                     date: this.selectedDate,
                     driver_id: this.selectedDriver.id,
@@ -173,43 +226,49 @@ function routeOptimizer() {
                     optimization_result: this.optimizationResult,
                     manual_modifications: {
                         edit_mode_used: this.manualEditMode,
-                        custom_stops_added: this.orders.filter(o => o.isCustom).length,
-                    }
+                        custom_stops_added: this.orders.filter(
+                            (o) => o.isCustom
+                        ).length,
+                    },
                 };
-                console.log('Save data:', saveData);
+                console.log("Save data:", saveData);
                 this.manualEditMode = false;
                 if (window.mapManager) {
                     window.mapManager.disableManualEdit();
                 }
-                alert('Route changes saved successfully!');
+                alert("Route changes saved successfully!");
             }
         },
 
         resetToOptimized() {
-            if (confirm('Reset to original optimized route? This will lose all manual changes.')) {
-                this.orders = this.getOrdersForDate(this.selectedDate);
+            if (
+                confirm(
+                    "Reset to original optimized route? This will lose all manual changes."
+                )
+            ) {
+                this.updateOrders();
                 this.manualEditMode = false;
-                this.refreshOptimizedRoute();
             }
         },
 
         exportManualRoute() {
             if (this.orders.length === 0) {
-                alert('No route data to export');
+                alert("No route data to export");
                 return;
             }
             const exportData = {
-                export_type: 'manual_route',
+                export_type: "manual_route",
                 export_date: new Date().toISOString(),
                 delivery_date: this.selectedDate,
                 driver: this.selectedDriver,
                 manual_modifications: {
                     edit_mode_used: this.manualEditMode,
-                    custom_stops_added: this.orders.filter(o => o.isCustom).length
+                    custom_stops_added: this.orders.filter((o) => o.isCustom)
+                        .length,
                 },
                 route_data: {
                     total_stops: this.orders.length,
-                    custom_stops: this.orders.filter(o => o.isCustom),
+                    custom_stops: this.orders.filter((o) => o.isCustom),
                     stop_sequence: this.orders.map((order, index) => ({
                         sequence: index + 1,
                         order_id: order.id,
@@ -218,20 +277,22 @@ function routeOptimizer() {
                         coordinates: order.coordinates,
                         priority: order.priority,
                         value: order.total_amount,
-                        is_custom: order.isCustom || false
-                    }))
+                        is_custom: order.isCustom || false,
+                    })),
                 },
                 statistics: {
                     total_value: this.totalOrderValue,
                     priority_breakdown: this.priorityBreakdown,
-                }
+                },
             };
             const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const dataBlob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
+            const link = document.createElement("a");
             link.href = url;
-            link.download = `manual-route-${this.selectedDate}-${Date.now()}.json`;
+            link.download = `manual-route-${
+                this.selectedDate
+            }-${Date.now()}.json`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -243,8 +304,13 @@ function routeOptimizer() {
                 alert(`No orders available for ${this.formattedSelectedDate}`);
                 return;
             }
-            if (!window.optimizerService || !window.optimizerService.canOptimize()) {
-                console.warn('Cannot optimize routes - missing service or requirements');
+            if (
+                !window.optimizerService ||
+                !window.optimizerService.canOptimize()
+            ) {
+                console.warn(
+                    "Cannot optimize routes - missing service or requirements"
+                );
                 return;
             }
             this.loading = true;
@@ -255,7 +321,7 @@ function routeOptimizer() {
                     this.showRouteSummary = true;
                 }, 100);
             } catch (error) {
-                console.error('Route optimization failed:', error);
+                console.error("Route optimization failed:", error);
                 this.optimizationError = error.message;
             } finally {
                 this.loading = false;
@@ -265,7 +331,7 @@ function routeOptimizer() {
         onDateChange(event) {
             const newDate = event.target.value;
             if (newDate) {
-                this.setSelectedDate(newDate);
+                this.selectedDate = newDate;
             }
         },
 
@@ -276,15 +342,15 @@ function routeOptimizer() {
         getMaxDate() {
             const maxDate = new Date();
             maxDate.setDate(maxDate.getDate() + 30);
-            return maxDate.toISOString().split('T')[0];
+            return maxDate.toISOString().split("T")[0];
         },
 
         getDateStatusClass() {
             const status = this.dateStatus;
             const classes = {
-                today: 'bg-green-100 text-green-800 border-green-200',
-                past: 'bg-gray-100 text-gray-500 border-gray-200',
-                future: 'bg-blue-100 text-blue-800 border-blue-200'
+                today: "bg-green-100 text-green-800 border-green-200",
+                past: "bg-gray-100 text-gray-500 border-gray-200",
+                future: "bg-blue-100 text-blue-800 border-blue-200",
             };
             return classes[status] || classes.future;
         },
@@ -292,11 +358,11 @@ function routeOptimizer() {
         getDateStatusText() {
             const status = this.dateStatus;
             const texts = {
-                today: 'Today\'s Deliveries',
-                past: 'Past Deliveries',
-                future: 'Scheduled Deliveries'
+                today: "Today's Deliveries",
+                past: "Past Deliveries",
+                future: "Scheduled Deliveries",
             };
-            return texts[status] || 'Deliveries';
+            return texts[status] || "Deliveries";
         },
 
         get executiveSummary() {
@@ -311,27 +377,33 @@ function routeOptimizer() {
                 totalDistance: `${result.total_distance || 0} km`,
                 totalTime: this.formatTime(result.total_time || 0),
                 savings: `${savings} km`,
-                startTime: '08:00',
-                firstDelivery: '09:30',
-                lastDelivery: routeSteps.length > 0 ? routeSteps[routeSteps.length - 1]?.estimated_arrival : '16:45',
+                startTime: "08:00",
+                firstDelivery: "09:30",
+                lastDelivery:
+                    routeSteps.length > 0
+                        ? routeSteps[routeSteps.length - 1]?.estimated_arrival
+                        : "16:45",
                 returnTime: this.calculateReturnTime(result.total_time || 0),
-                deliveryDate: this.formattedSelectedDate
+                deliveryDate: this.formattedSelectedDate,
             };
         },
 
         get priorityBreakdown() {
             const breakdown = {
-                high: { count: 0, value: 0, colorClass: 'bg-red-500' },
-                medium: { count: 0, value: 0, colorClass: 'bg-yellow-500' },
-                low: { count: 0, value: 0, colorClass: 'bg-green-500' }
+                high: { count: 0, value: 0, colorClass: "bg-red-500" },
+                medium: { count: 0, value: 0, colorClass: "bg-yellow-500" },
+                low: { count: 0, value: 0, colorClass: "bg-green-500" },
             };
-            this.orders.forEach(order => {
+            this.orders.forEach((order) => {
                 if (breakdown[order.priority]) {
                     breakdown[order.priority].count++;
                     breakdown[order.priority].value += order.total_amount;
                 }
             });
-            return Object.entries(breakdown).map(([level, data]) => ({ level, ...data }));
+            return Object.entries(breakdown).map(([level, data]) => ({
+                level,
+                ...data,
+            }));
         },
 
         toggleSummary() {
@@ -368,7 +440,7 @@ function routeOptimizer() {
 
         exportSummary() {
             if (!this.optimizationResult) {
-                console.warn('No optimization result to export');
+                console.warn("No optimization result to export");
                 return;
             }
             const summary = this.executiveSummary;
@@ -386,25 +458,25 @@ function routeOptimizer() {
                         startTime: summary.startTime,
                         firstDelivery: summary.firstDelivery,
                         lastDelivery: summary.lastDelivery,
-                        returnTime: summary.returnTime
-                    }
+                        returnTime: summary.returnTime,
+                    },
                 },
                 priority_breakdown: this.priorityBreakdown,
                 route_details: this.optimizationResult.route_steps,
-                orders: this.orders.map(order => ({
+                orders: this.orders.map((order) => ({
                     id: order.id,
                     client: order.client_name,
                     address: order.address,
                     value: order.total_amount,
                     priority: order.priority,
                     delivery_date: order.delivery_date,
-                    is_custom: order.isCustom || false
-                }))
+                    is_custom: order.isCustom || false,
+                })),
             };
             const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const dataBlob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
+            const link = document.createElement("a");
             link.href = url;
             link.download = `route-summary-${this.selectedDate}.json`;
             document.body.appendChild(link);
@@ -416,19 +488,29 @@ function routeOptimizer() {
         calculateReturnTime(totalMinutes) {
             const startTime = new Date();
             startTime.setHours(8, 0, 0, 0);
-            const returnTime = new Date(startTime.getTime() + (totalMinutes * 60000));
-            return returnTime.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+            const returnTime = new Date(
+                startTime.getTime() + totalMinutes * 60000
+            );
+            return returnTime.toLocaleTimeString("pl-PL", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
         },
 
         calculateEstimatedArrival(arrivalSeconds) {
             const startTime = new Date();
             startTime.setHours(8, 0, 0, 0);
-            const arrivalTime = new Date(startTime.getTime() + (arrivalSeconds * 1000));
-            return arrivalTime.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+            const arrivalTime = new Date(
+                startTime.getTime() + arrivalSeconds * 1000
+            );
+            return arrivalTime.toLocaleTimeString("pl-PL", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
         },
 
         formatCurrency(amount) {
-            return `zł${amount.toLocaleString('pl-PL')}`;
+            return `zł${amount.toLocaleString("pl-PL")}`;
         },
 
         formatTime(minutes) {
@@ -438,7 +520,9 @@ function routeOptimizer() {
         },
 
         formatDistance(meters) {
-            return meters >= 1000 ? `${Math.round(meters / 1000)} km` : `${meters} m`;
+            return meters >= 1000
+                ? `${Math.round(meters / 1000)} km`
+                : `${meters} m`;
         },
 
         debugSummaryState() {
@@ -448,10 +532,11 @@ function routeOptimizer() {
                 executiveSummary: this.executiveSummary,
                 priorityBreakdown: this.priorityBreakdown,
                 selectedDate: this.selectedDate,
+                selectedDriver: this.selectedDriver?.full_name,
                 orders: this.orders.length,
-                manualEditMode: this.manualEditMode
+                manualEditMode: this.manualEditMode,
             });
-        }
+        },
     };
 }
 

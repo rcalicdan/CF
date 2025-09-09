@@ -27,109 +27,21 @@ class RouteOptimizerData {
             }
         ];
 
-        this.allOrders = {
-            '2025-09-06': [
-                {
-                    id: 1001,
-                    client_name: "Jan Kowalczyk",
-                    address: "Warszawa, ul. Krakowskie Przedmieście 5",
-                    coordinates: [52.2370, 21.0170],
-                    total_amount: 340,
-                    status: "pending",
-                    priority: "high",
-                    delivery_date: "2025-09-06"
-                },
-                {
-                    id: 1002,
-                    client_name: "Maria Szymańska",
-                    address: "Warszawa, ul. Nowy Świat 15",
-                    coordinates: [52.2297, 21.0122],
-                    total_amount: 580,
-                    status: "pending",
-                    priority: "medium",
-                    delivery_date: "2025-09-06"
-                },
-                {
-                    id: 1003,
-                    client_name: "Andrzej Duda",
-                    address: "Warszawa, ul. Marszałkowska 100",
-                    coordinates: [52.2319, 21.0067],
-                    total_amount: 750,
-                    status: "pending",
-                    priority: "high",
-                    delivery_date: "2025-09-06"
-                },
-                {
-                    id: 1004,
-                    client_name: "Katarzyna Lewandowska",
-                    address: "Warszawa, ul. Aleje Jerozolimskie 65",
-                    coordinates: [52.2244, 21.0067],
-                    total_amount: 420,
-                    status: "pending",
-                    priority: "low",
-                    delivery_date: "2025-09-06"
-                }
-            ],
-            '2025-09-07': [
-                {
-                    id: 2001,
-                    client_name: "Tomasz Zieliński",
-                    address: "Warszawa, ul. Puławska 15",
-                    coordinates: [52.2096, 21.0252],
-                    total_amount: 680,
-                    status: "pending",
-                    priority: "medium",
-                    delivery_date: "2025-09-07"
-                },
-                {
-                    id: 2002,
-                    client_name: "Barbara Kowalska",
-                    address: "Warszawa, ul. Mokotowska 50",
-                    coordinates: [52.2180, 21.0155],
-                    total_amount: 920,
-                    status: "pending",
-                    priority: "high",
-                    delivery_date: "2025-09-07"
-                },
-                {
-                    id: 2003,
-                    client_name: "Michał Nowak",
-                    address: "Warszawa, ul. Złota 44",
-                    coordinates: [52.2298, 21.0067],
-                    total_amount: 365,
-                    status: "pending",
-                    priority: "low",
-                    delivery_date: "2025-09-07"
-                }
-            ],
-            '2025-09-08': [
-                {
-                    id: 3001,
-                    client_name: "Agnieszka Wiśniewska",
-                    address: "Warszawa, ul. Żurawia 20",
-                    coordinates: [52.2340, 21.0089],
-                    total_amount: 1200,
-                    status: "pending",
-                    priority: "high",
-                    delivery_date: "2025-09-08"
-                },
-                {
-                    id: 3002,
-                    client_name: "Robert Krawczyk",
-                    address: "Warszawa, ul. Bracka 25",
-                    coordinates: [52.2287, 21.0089],
-                    total_amount: 480,
-                    status: "pending",
-                    priority: "medium",
-                    delivery_date: "2025-09-08"
-                }
-            ]
-        };
+        this.allOrders = [
+            { id: 1001, driver_id: 1, client_name: "Jan Kowalczyk", address: "Warszawa, ul. Krakowskie Przedmieście 5", coordinates: [52.2370, 21.0170], total_amount: 340, status: "pending", priority: "high", delivery_date: "2025-09-08" },
+            { id: 1002, driver_id: 1, client_name: "Maria Szymańska", address: "Warszawa, ul. Nowy Świat 15", coordinates: [52.2297, 21.0122], total_amount: 580, status: "pending", priority: "medium", delivery_date: "2025-09-08" },
+            { id: 1003, driver_id: 1, client_name: "Andrzej Duda", address: "Warszawa, ul. Marszałkowska 100", coordinates: [52.2319, 21.0067], total_amount: 750, status: "pending", priority: "high", delivery_date: "2025-09-09" },
+            { id: 2001, driver_id: 2, client_name: "Tomasz Zieliński", address: "Warszawa, ul. Puławska 15", coordinates: [52.2096, 21.0252], total_amount: 680, status: "pending", priority: "medium", delivery_date: "2025-09-08" },
+            { id: 2002, driver_id: 2, client_name: "Barbara Kowalska", address: "Warszawa, ul. Mokotowska 50", coordinates: [52.2180, 21.0155], total_amount: 920, status: "pending", priority: "high", delivery_date: "2025-09-08" },
+            { id: 2003, driver_id: 2, client_name: "Michał Nowak", address: "Warszawa, ul. Złota 44", coordinates: [52.2298, 21.0067], total_amount: 365, status: "pending", priority: "low", delivery_date: "2025-09-10" },
+            { id: 3001, driver_id: 3, client_name: "Agnieszka Wiśniewska", address: "Warszawa, ul. Żurawia 20", coordinates: [52.2340, 21.0089], total_amount: 1200, status: "pending", priority: "high", delivery_date: "2025-09-08" },
+            { id: 3002, driver_id: 3, client_name: "Robert Krawczyk", address: "Warszawa, ul. Bracka 25", coordinates: [52.2287, 21.0089], total_amount: 480, status: "pending", priority: "medium", delivery_date: "2025-09-11" }
+        ];
 
         this.selectedDate = this.getTodayDate();
-        this.orders = this.getOrdersForDate(this.selectedDate);
-
         this.selectedDriver = null;
+        this.orders = [];
+
         this.loading = false;
         this.optimizationResult = null;
         this.optimizationError = null;
@@ -145,14 +57,9 @@ class RouteOptimizerData {
         return today.toISOString().split('T')[0];
     }
 
-    getOrdersForDate(date) {
-        return this.allOrders[date] || [];
-    }
-
     setSelectedDate(date) {
         console.log('Setting selected date to:', date);
         this.selectedDate = date;
-        this.orders = this.getOrdersForDate(date);
 
         this.optimizationResult = null;
         this.optimizationError = null;
@@ -162,12 +69,6 @@ class RouteOptimizerData {
             window.mapManager.refreshMarkers();
             window.mapManager.clearRoute();
         }
-
-        console.log(`Loaded ${this.orders.length} orders for ${date}`);
-    }
-
-    get availableDates() {
-        return Object.keys(this.allOrders).sort();
     }
 
     get totalOrders() {
