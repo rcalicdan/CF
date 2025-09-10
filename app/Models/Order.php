@@ -92,6 +92,30 @@ class Order extends Model
     }
 
     /**
+     * Get the client's address
+     */
+    public function getAddressAttribute()
+    {
+        return $this->client ? $this->client->full_address : 'N/A';
+    }
+
+    /**
+     * Get the client's coordinates [lat, lng]
+     */
+    public function getCoordinatesAttribute()
+    {
+        return $this->client ? $this->client->coordinates : null;
+    }
+
+    /**
+     * Check if order has valid coordinates for mapping
+     */
+    public function hasCoordinates()
+    {
+        return $this->client && $this->client->hasCoordinates();
+    }
+
+    /**
      * Get the driver's full name (from the associated user)
      */
     public function getDriverNameAttribute()
@@ -113,5 +137,25 @@ class Order extends Model
     public function getPriceListNameAttribute()
     {
         return $this->priceList ? $this->priceList->name : 'N/A';
+    }
+
+    /**
+     * Scope for orders with coordinates
+     */
+    public function scopeWithCoordinates($query)
+    {
+        return $query->whereHas('client', function ($q) {
+            $q->withCoordinates();
+        });
+    }
+
+    /**
+     * Scope for orders without coordinates
+     */
+    public function scopeWithoutCoordinates($query)
+    {
+        return $query->whereHas('client', function ($q) {
+            $q->withoutCoordinates();
+        });
     }
 }

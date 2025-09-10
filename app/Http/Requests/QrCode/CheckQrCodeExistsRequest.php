@@ -32,10 +32,10 @@ class CheckQrCodeExistsRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'qr_code.required' => 'Reference code is required.',
-            'qr_code.string' => 'Reference code must be a string.',
-            'qr_code.min' => 'Reference code must be at least 3 characters long.',
-            'qr_code.max' => 'Reference code cannot exceed 50 characters.',
+            'qr_code.required' => 'Qr Code is required.',
+            'qr_code.string' => 'Qr Code must be a string.',
+            'qr_code.min' => 'Qr Code must be at least 3 characters long.',
+            'qr_code.max' => 'Qr Code cannot exceed 50 characters.',
         ];
     }
 
@@ -45,7 +45,7 @@ class CheckQrCodeExistsRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'qr_code' => 'reference code',
+            'qr_code' => 'Qr Code',
         ];
     }
 }

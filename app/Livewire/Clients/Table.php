@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Clients;
 
+use App\ActionService\MonthlyClientReportService;
 use App\DataTable\DataTableFactory;
 use App\Models\Client;
 use App\Traits\Livewire\WithDataTable;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -12,6 +14,9 @@ use Livewire\WithPagination;
 class Table extends Component
 {
     use WithDataTable, WithPagination;
+
+    public $selectedMonth = '';
+    public $selectedYear = '';
 
     public function boot()
     {
@@ -58,6 +63,59 @@ class Table extends Component
         return $this->rowsQuery()->paginate($this->perPage);
     }
 
+    public function getClientsCountProperty()
+    {
+        if (!$this->selectedMonth || !$this->selectedYear) {
+            return 0;
+        }
+
+        return Client::whereHas('orders', function ($query) {
+            $startOfMonth = Carbon::create($this->selectedYear, $this->selectedMonth, 1)->startOfMonth();
+            $endOfMonth = Carbon::create($this->selectedYear, $this->selectedMonth, 1)->endOfMonth();
+
+            $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+        })->count();
+    }
+
+    public function generateMonthlyPdfReport()
+    {
+        if (!$this->selectedMonth || !$this->selectedYear) {
+            session()->flash('error', __('Please select both month and year.'));
+            return;
+        }
+
+        try {
+            $reportService = new MonthlyClientReportService();
+            $filename = $reportService->generateMonthlyPdfReport($this->selectedMonth, $this->selectedYear);
+
+            session()->flash('success', __('PDF report generated successfully.'));
+
+            return response()->download(storage_path('app/public/' . $filename));
+        } catch (\Exception $e) {
+            session()->flash('error', __('Failed to generate PDF report: ') . $e->getMessage());
+        }
+    }
+
+    public function generateMonthlyCsvReport()
+    {
+        if (!$this->selectedMonth || !$this->selectedYear) {
+            session()->flash('error', __('Please select both month and year.'));
+            return;
+        }
+
+        try {
+            $reportService = new MonthlyClientReportService();
+            $filename = $reportService->generateMonthlyCsvReport($this->selectedMonth, $this->selectedYear);
+
+            session()->flash('success', __('CSV report generated successfully.'));
+
+            return response()->download(storage_path('app/public/' . $filename))
+                ->deleteFileAfterSend();
+        } catch (\Exception $e) {
+            session()->flash('error', __('Failed to generate CSV report: ') . $e->getMessage());
+        }
+    }
+
     public function render()
     {
         $this->authorize('viewAny', Client::class);
@@ -67,6 +125,7 @@ class Table extends Component
         return view('livewire.clients.table', [
             'dataTable' => $dataTable,
             'selectedRowsCount' => $selectedRowsCount,
+            'clientsCount' => $this->getClientsCountProperty(),
         ]);
     }
 

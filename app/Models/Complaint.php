@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\ActionService\EnumTranslationService;
+use App\Enums\ComplaintStatus;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -27,6 +30,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Complaint extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'order_carpet_id',
         'complaint_details',
@@ -36,5 +41,15 @@ class Complaint extends Model
     public function orderCarpet()
     {
         return $this->belongsTo(OrderCarpet::class, 'order_carpet_id');
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return $this->status ? EnumTranslationService::translate(ComplaintStatus::from($this->status)) : '';
+    }
+
+    public function getClientNameAttribute():string
+    {
+        return $this->orderCarpet->order->client->full_name;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Livewire\Orders\Carpets;
 
 use App\Models\OrderCarpet;
+use App\Observers\OrderCarpetObserver;
 use App\Rules\ValidImageFile;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -25,6 +26,9 @@ class ShowPage extends Component
             'services' => function ($q) {
                 $q->withPivot(['total_price']);
             },
+            'histories' => function ($q) {
+                $q->with('user')->orderBy('created_at', 'desc');
+            }
         ])->findOrFail($carpet->id);
     }
 
@@ -58,6 +62,8 @@ class ShowPage extends Component
         ]);
 
         try {
+            $photoCount = count($this->newPhotos);
+
             foreach ($this->newPhotos as $photo) {
                 $path = $photo->store('carpet-photos', 'public');
                 $this->orderCarpet->orderCarpetPhotos()->create([
@@ -66,6 +72,8 @@ class ShowPage extends Component
                 ]);
             }
 
+            OrderCarpetObserver::logPhotoAdded($this->orderCarpet, $photoCount);
+
             $this->reset('newPhotos');
             $this->orderCarpet->refresh();
 
@@ -73,7 +81,6 @@ class ShowPage extends Component
             session()->flash('message-type', 'success');
 
             $this->dispatch('photos-uploaded');
-
             $this->dispatch('close-photo-modal');
         } catch (\Exception $e) {
             session()->flash('message', __('messages.photos_upload_failed', ['error' => $e->getMessage()]));
@@ -81,12 +88,16 @@ class ShowPage extends Component
         }
     }
 
+
     public function generateQrCode()
     {
         $this->isGeneratingQr = true;
         try {
             $this->orderCarpet->generateQrCode();
             $this->orderCarpet->refresh();
+
+            OrderCarpetObserver::logQrGenerated($this->orderCarpet);
+
             session()->flash('message', __('messages.qr_code_generated_success'));
             session()->flash('message-type', 'success');
         } catch (\Exception $e) {

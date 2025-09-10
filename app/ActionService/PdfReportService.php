@@ -68,6 +68,7 @@ class PdfReportService
         $pdf->Cell($col3_width, 8, '', 1, 1, 'R');
         $pdf->Ln(3);
 
+
         // --- Detailed Data Section ---
         $pdf->SetFont('dejavusans', 'B', 12);
         $pdf->Cell(0, 10, 'Szczegółowe dane', 0, 1, 'L');
@@ -97,6 +98,7 @@ class PdfReportService
             $avg_cost_col_width *= $scale_factor;
         }
 
+
         $pdf->SetFillColor(245, 245, 245);
         $pdf->Cell($day_col_width, 7, 'Dzień', 1, 0, 'C', true);
         $pdf->Cell($amount_col_width, 7, 'Kwota', 1, 0, 'C', true);
@@ -105,16 +107,15 @@ class PdfReportService
         $pdf->Cell($carpets_col_width, 7, 'Dywanów', 1, 0, 'C', true);
         $pdf->Cell($avg_cost_col_width, 7, 'Śr. koszt/dyw.', 1, 1, 'C', true);
 
-        if (isset($data['weeklyData'])) {
-            foreach ($data['weeklyData'] as $item) {
-                $pdf->SetFont('dejavusans', '', 8);
-                $pdf->Cell($day_col_width, 6, $item['full_name'] ?? '', 1, 0, 'L');
-                $pdf->Cell($amount_col_width, 6, number_format($item['value'] ?? 0, 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($trans_col_width, 6, $item['count'] ?? 0, 1, 0, 'R');
-                $pdf->Cell($avg_col_width, 6, number_format($item['average'] ?? 0, 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($carpets_col_width, 6, $item['processed_count'] ?? 0, 1, 0, 'R');
-                $pdf->Cell($avg_cost_col_width, 6, number_format($item['avg_cost_per_carpet'] ?? 0, 2, ',', ' ') . ' zł', 1, 1, 'R');
-            }
+        foreach ($data['weeklyData'] as $item) {
+            $pdf->SetFont('dejavusans', '', 8);
+
+            $pdf->Cell($day_col_width, 6, $item['full_name'], 1, 0, 'L');
+            $pdf->Cell($amount_col_width, 6, number_format($item['value'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($trans_col_width, 6, $item['count'], 1, 0, 'R');
+            $pdf->Cell($avg_col_width, 6, number_format($item['average'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($carpets_col_width, 6, $item['processed_count'], 1, 0, 'R');
+            $pdf->Cell($avg_cost_col_width, 6, number_format($item['avg_cost_per_carpet'], 2, ',', ' ') . ' zł', 1, 1, 'R');
         }
         $pdf->Ln(2);
 
@@ -157,18 +158,16 @@ class PdfReportService
         $pdf->Cell($carpets_col_width, 7, 'Dywanów', 1, 0, 'C', true);
         $pdf->Cell($avg_cost_col_width, 7, 'Śr. koszt/dyw.', 1, 1, 'C', true);
 
-        if (isset($data['monthlyData'])) {
-            foreach ($data['monthlyData'] as $item) {
-                $pdf->SetFont('dejavusans', '', 8);
-                $pdf->Cell($month_col_width, 6, $item['full_name'] ?? '', 1, 0, 'L');
-                $pdf->Cell($amount_col_width, 6, number_format($item['value'] ?? 0, 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($trans_col_width, 6, $item['count'] ?? 0, 1, 0, 'R');
-                $pdf->Cell($avg_col_width, 6, number_format($item['average'] ?? 0, 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($min_col_width, 6, number_format($item['min'] ?? 0, 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($max_col_width, 6, number_format($item['max'] ?? 0, 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($carpets_col_width, 6, $item['processed_count'] ?? 0, 1, 0, 'R');
-                $pdf->Cell($avg_cost_col_width, 6, number_format($item['avg_cost_per_carpet'] ?? 0, 2, ',', ' ') . ' zł', 1, 1, 'R');
-            }
+        foreach ($data['monthlyData'] as $item) {
+            $pdf->SetFont('dejavusans', '', 8);
+            $pdf->Cell($month_col_width, 6, $item['full_name'], 1, 0, 'L');
+            $pdf->Cell($amount_col_width, 6, number_format($item['value'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($trans_col_width, 6, $item['count'], 1, 0, 'R');
+            $pdf->Cell($avg_col_width, 6, number_format($item['average'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($min_col_width, 6, number_format($item['min'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($max_col_width, 6, number_format($item['max'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($carpets_col_width, 6, $item['processed_count'], 1, 0, 'R');
+            $pdf->Cell($avg_cost_col_width, 6, number_format($item['avg_cost_per_carpet'], 2, ',', ' ') . ' zł', 1, 1, 'R');
         }
         $pdf->Ln(2);
 
@@ -201,6 +200,7 @@ class PdfReportService
             $avg_cost_col_width *= $scale_factor;
         }
 
+
         $pdf->SetFillColor(245, 245, 245);
         $pdf->Cell($year_col_width, 7, 'Rok', 1, 0, 'C', true);
         $pdf->Cell($amount_col_width, 7, 'Kwota', 1, 0, 'C', true);
@@ -211,18 +211,16 @@ class PdfReportService
         $pdf->Cell($carpets_col_width, 7, 'Dywanów', 1, 0, 'C', true);
         $pdf->Cell($avg_cost_col_width, 7, 'Śr. koszt/dyw.', 1, 1, 'C', true);
 
-        if (isset($data['yearlyData'])) {
-            foreach ($data['yearlyData'] as $item) {
-                $pdf->SetFont('dejavusans', '', 8);
-                $pdf->Cell($year_col_width, 6, $item['label'] ?? '', 1, 0, 'L');
-                $pdf->Cell($amount_col_width, 6, number_format($item['value'] ?? 0, 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($trans_col_width, 6, $item['count'] ?? 0, 1, 0, 'R');
-                $pdf->Cell($avg_col_width, 6, number_format($item['average'] ?? 0, 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($q1_col_width, 6, number_format(($item['quarters']['q1'] ?? 0), 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($q2_col_width, 6, number_format(($item['quarters']['q2'] ?? 0), 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($carpets_col_width, 6, $item['processed_count'] ?? 0, 1, 0, 'R');
-                $pdf->Cell($avg_cost_col_width, 6, number_format($item['avg_cost_per_carpet'] ?? 0, 2, ',', ' ') . ' zł', 1, 1, 'R');
-            }
+        foreach ($data['yearlyData'] as $item) {
+            $pdf->SetFont('dejavusans', '', 8);
+            $pdf->Cell($year_col_width, 6, $item['label'], 1, 0, 'L');
+            $pdf->Cell($amount_col_width, 6, number_format($item['value'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($trans_col_width, 6, $item['count'], 1, 0, 'R');
+            $pdf->Cell($avg_col_width, 6, number_format($item['average'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($q1_col_width, 6, number_format($item['quarters']['q1'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($q2_col_width, 6, number_format($item['quarters']['q2'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($carpets_col_width, 6, $item['processed_count'], 1, 0, 'R');
+            $pdf->Cell($avg_cost_col_width, 6, number_format($item['avg_cost_per_carpet'], 2, ',', ' ') . ' zł', 1, 1, 'R');
         }
         $pdf->Ln(2);
 
@@ -252,17 +250,17 @@ class PdfReportService
         $pdf->Cell($trans_col_width, 8, 'Transakcje', 1, 0, 'C', true);
         $pdf->Cell($percent_col_width, 8, 'Procent', 1, 1, 'C', true);
 
-        if (isset($data['costTypeData'])) {
-            foreach ($data['costTypeData'] as $item) {
-                $pdf->Cell($type_col_width, 7, $item['label'] ?? '', 1, 0, 'L');
-                $pdf->Cell($amount_col_width, 7, number_format($item['value'] ?? 0, 2, ',', ' ') . ' zł', 1, 0, 'R');
-                $pdf->Cell($trans_col_width, 7, $item['count'] ?? 0, 1, 0, 'R');
-                $pdf->Cell($percent_col_width, 7, number_format($item['percentage'] ?? 0, 1, ',', ' ') . '%', 1, 1, 'R');
-            }
+        foreach ($data['costTypeData'] as $item) {
+            $pdf->Cell($type_col_width, 7, $item['label'], 1, 0, 'L'); // Slightly smaller row height
+            $pdf->Cell($amount_col_width, 7, number_format($item['value'], 2, ',', ' ') . ' zł', 1, 0, 'R');
+            $pdf->Cell($trans_col_width, 7, $item['count'], 1, 0, 'R');
+            $pdf->Cell($percent_col_width, 7, number_format($item['percentage'], 1, ',', ' ') . '%', 1, 1, 'R');
         }
 
         $filename = 'raport_kosztow_' . Carbon::now()->format('Y-m-d_H-i') . '.pdf';
+
         $pdfContent = $pdf->Output('', 'S');
+
         Storage::disk('public')->put($filename, $pdfContent);
 
         return $filename;
@@ -334,13 +332,13 @@ class PdfReportService
         $pdf->SetDrawColor(200, 200, 200);
 
         $summaryRows = [
-            ['Dywany - bieżący miesiąc', number_format($summary['current_month_carpets'] ?? 0, 0, ',', ' ')],
-            ['Dywany - poprzedni miesiąc', number_format($summary['previous_month_carpets'] ?? 0, 0, ',', ' ')],
-            ['Zmiana liczby dywanów', (($summary['carpets_change_percentage'] ?? 0) >= 0 ? '+' : '') . number_format($summary['carpets_change_percentage'] ?? 0, 1, ',', ' ') . '%'],
-            ['Przychody - bieżący miesiąc', number_format($summary['current_month_revenue'] ?? 0, 2, ',', ' ') . ' zł'],
-            ['Przychody - poprzedni miesiąc', number_format($summary['previous_month_revenue'] ?? 0, 2, ',', ' ') . ' zł'],
-            ['Zmiana przychodów', (($summary['revenue_change_percentage'] ?? 0) >= 0 ? '+' : '') . number_format($summary['revenue_change_percentage'] ?? 0, 1, ',', ' ') . '%'],
-            ['Średnia wartość zamówienia', number_format($summary['avg_order_value'] ?? 0, 2, ',', ' ') . ' zł'],
+            ['Dywany - bieżący miesiąc', number_format($summary['current_month_carpets'], 0, ',', ' ')],
+            ['Dywany - poprzedni miesiąc', number_format($summary['previous_month_carpets'], 0, ',', ' ')],
+            ['Zmiana liczby dywanów', ($summary['carpets_change_percentage'] >= 0 ? '+' : '') . number_format($summary['carpets_change_percentage'], 1, ',', ' ') . '%'],
+            ['Przychody - bieżący miesiąc', number_format($summary['current_month_revenue'], 2, ',', ' ') . ' zł'],
+            ['Przychody - poprzedni miesiąc', number_format($summary['previous_month_revenue'], 2, ',', ' ') . ' zł'],
+            ['Zmiana przychodów', ($summary['revenue_change_percentage'] >= 0 ? '+' : '') . number_format($summary['revenue_change_percentage'], 1, ',', ' ') . '%'],
+            ['Średnia wartość zamówienia', number_format($summary['avg_order_value'], 2, ',', ' ') . ' zł'],
         ];
 
         foreach ($summaryRows as $row) {
@@ -394,13 +392,13 @@ class PdfReportService
         $pdf->Cell($total_area_col_width, 7, 'Łączna M²', 1, 1, 'C', true);
 
         foreach (array_slice($data, 0, 15) as $item) { // Limit rows to prevent page overflow
-            $pdf->Cell($period_col_width, 6, $item['label'] ?? '', 1, 0, 'L');
-            $pdf->Cell($carpets_col_width, 6, $item['value'] ?? 0, 1, 0, 'R');
-            $pdf->Cell($area_col_width, 6, number_format($item['avg_area'] ?? 0, 2, ',', ' '), 1, 0, 'R');
-            $pdf->Cell($weight_col_width, 6, number_format($item['weight_estimate'] ?? 0, 2, ',', ' '), 1, 0, 'R');
-            $pdf->Cell($completion_col_width, 6, $item['completed_count'] ?? 0, 1, 0, 'R');
-            $pdf->Cell($avg_area_col_width, 6, number_format($item['avg_carpet_size'] ?? 0, 2, ',', ' '), 1, 0, 'R');
-            $pdf->Cell($total_area_col_width, 6, number_format($item['total_area'] ?? 0, 2, ',', ' '), 1, 1, 'R');
+            $pdf->Cell($period_col_width, 6, $item['label'], 1, 0, 'L');
+            $pdf->Cell($carpets_col_width, 6, $item['value'], 1, 0, 'R');
+            $pdf->Cell($area_col_width, 6, number_format($item['avg_area'], 2, ',', ' '), 1, 0, 'R');
+            $pdf->Cell($weight_col_width, 6, number_format($item['weight_estimate'], 2, ',', ' '), 1, 0, 'R');
+            $pdf->Cell($completion_col_width, 6, $item['completed_count'], 1, 0, 'R');
+            $pdf->Cell($avg_area_col_width, 6, number_format($item['avg_carpet_size'], 2, ',', ' '), 1, 0, 'R');
+            $pdf->Cell($total_area_col_width, 6, number_format($item['total_area'], 2, ',', ' '), 1, 1, 'R');
         }
         $pdf->Ln(2);
     }
@@ -431,10 +429,10 @@ class PdfReportService
         $pdf->Cell($avg_col_width, 7, 'Śr. wartość', 1, 1, 'C', true);
 
         foreach (array_slice($data, 0, 15) as $item) {
-            $pdf->Cell($period_col_width, 6, $item['label'] ?? '', 1, 0, 'L');
-            $pdf->Cell($revenue_col_width, 6, number_format($item['value'] ?? 0, 2, ',', ' '), 1, 0, 'R');
-            $pdf->Cell($orders_col_width, 6, $item['order_count'] ?? 0, 1, 0, 'R');
-            $pdf->Cell($avg_col_width, 6, number_format($item['avg_order_value'] ?? 0, 2, ',', ' '), 1, 1, 'R');
+            $pdf->Cell($period_col_width, 6, $item['label'], 1, 0, 'L');
+            $pdf->Cell($revenue_col_width, 6, number_format($item['value'], 2, ',', ' '), 1, 0, 'R');
+            $pdf->Cell($orders_col_width, 6, $item['order_count'], 1, 0, 'R');
+            $pdf->Cell($avg_col_width, 6, number_format($item['avg_order_value'], 2, ',', ' '), 1, 1, 'R');
         }
         $pdf->Ln(2);
     }
@@ -471,23 +469,14 @@ class PdfReportService
         $pdf->Cell($avg_col_width, 7, 'Śr. zam.', 1, 1, 'C', true);
 
         foreach ($data as $item) {
-            $clientName = $item['client_name'] ?? 'Unknown Client';
-            if ($clientName === 'Unknown Client' && isset($item['debug_info'])) {
-                $firstName = trim($item['debug_info']['first_name'] ?? '');
-                $lastName = trim($item['debug_info']['last_name'] ?? '');
-                if (!empty($firstName) || !empty($lastName)) {
-                    $clientName = trim($firstName . ' ' . $lastName);
-                }
-            }
-
-            $pdf->Cell($name_col_width, 6, substr($clientName, 0, 20), 1, 0, 'L');
-            $pdf->Cell($city_col_width, 6, substr($item['city'] ?? 'N/A', 0, 12), 1, 0, 'L');
-            $pdf->Cell($orders_col_width, 6, $item['order_count'] ?? 0, 1, 0, 'R');
-            $pdf->Cell($carpets_col_width, 6, $item['carpet_count'] ?? 0, 1, 0, 'R');
-            $pdf->Cell($area_col_width, 6, number_format($item['total_area'] ?? 0, 1, ',', ' '), 1, 0, 'R');
-            $pdf->Cell($weight_col_width, 6, number_format($item['weight_estimate'] ?? 0, 1, ',', ' '), 1, 0, 'R');
-            $pdf->Cell($revenue_col_width, 6, number_format($item['total_revenue'] ?? 0, 0, ',', ' '), 1, 0, 'R');
-            $pdf->Cell($avg_col_width, 6, number_format($item['avg_order_value'] ?? 0, 0, ',', ' '), 1, 1, 'R');
+            $pdf->Cell($name_col_width, 6, substr($item['client_name'], 0, 20), 1, 0, 'L');
+            $pdf->Cell($city_col_width, 6, substr($item['city'], 0, 12), 1, 0, 'L');
+            $pdf->Cell($orders_col_width, 6, $item['order_count'], 1, 0, 'R');
+            $pdf->Cell($carpets_col_width, 6, $item['carpet_count'], 1, 0, 'R');
+            $pdf->Cell($area_col_width, 6, number_format($item['total_area'], 1, ',', ' '), 1, 0, 'R');
+            $pdf->Cell($weight_col_width, 6, number_format($item['weight_estimate'], 1, ',', ' '), 1, 0, 'R');
+            $pdf->Cell($revenue_col_width, 6, number_format($item['total_revenue'], 0, ',', ' '), 1, 0, 'R');
+            $pdf->Cell($avg_col_width, 6, number_format($item['avg_order_value'], 0, ',', ' '), 1, 1, 'R');
         }
     }
 }

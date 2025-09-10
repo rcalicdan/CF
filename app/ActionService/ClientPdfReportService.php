@@ -12,13 +12,27 @@ use Illuminate\Support\Facades\Storage;
 
 class ClientPdfReportService
 {
-    public function generateClientReport(Client $client): string
+    public function generateClientReport(Client $client, $dateFrom = null, $dateTo = null): string
     {
         $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
 
         $pdf->SetCreator(PDF_CREATOR);
         $pdf->SetAuthor('System');
-        $pdf->SetTitle('Raport Klienta - ' . $client->full_name);
+
+        // Update title based on date filter
+        $titleSuffix = '';
+        if ($dateFrom || $dateTo) {
+            $titleSuffix = ' - ';
+            if ($dateFrom && $dateTo) {
+                $titleSuffix .= $dateFrom->format('d.m.Y') . ' - ' . $dateTo->format('d.m.Y');
+            } elseif ($dateFrom) {
+                $titleSuffix .= 'od ' . $dateFrom->format('d.m.Y');
+            } else {
+                $titleSuffix .= 'do ' . $dateTo->format('d.m.Y');
+            }
+        }
+
+        $pdf->SetTitle('Raport Klienta - ' . $client->full_name . $titleSuffix);
         $pdf->SetSubject('Raport szczegółowy klienta');
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
@@ -27,14 +41,19 @@ class ClientPdfReportService
         $pdf->SetFont('dejavusans', '', 10);
         $pdf->AddPage();
 
-        // Get client data
-        $clientData = $this->getClientData($client);
+        // Get client data with date filters
+        $clientData = $this->getClientData($client, $dateFrom, $dateTo);
 
         // Title Section
-        $this->addTitleSection($pdf, $client);
+        $this->addTitleSection($pdf, $client, $dateFrom, $dateTo);
 
         // Client Information Section
         $this->addClientInformationSection($pdf, $client);
+
+        // Date Range Section (if filtered)
+        if ($dateFrom || $dateTo) {
+            $this->addDateRangeSection($pdf, $dateFrom, $dateTo);
+        }
 
         // Summary Statistics Section
         $this->addSummarySection($pdf, $clientData['stats']);
@@ -51,35 +70,53 @@ class ClientPdfReportService
         // Revenue Analysis Section
         $this->addRevenueAnalysisSection($pdf, $clientData['revenueAnalysis']);
 
-        $filename = 'raport_klienta_' . $client->id . '_' . Carbon::now()->format('Y-m-d_H-i') . '.pdf';
+        $periodSuffix = '';
+        if ($dateFrom || $dateTo) {
+            $periodSuffix = '_' . ($dateFrom ? $dateFrom->format('Y-m-d') : 'do') .
+                '_' . ($dateTo ? $dateTo->format('Y-m-d') : 'od');
+        }
+
+        $filename = 'raport_klienta_' . $client->id . $periodSuffix . '_' . Carbon::now()->format('Y-m-d_H-i') . '.pdf';
         $pdfContent = $pdf->Output('', 'S');
         Storage::disk('public')->put($filename, $pdfContent);
 
         return $filename;
     }
 
-    private function getClientData(Client $client): array
+    private function getClientData(Client $client, $dateFrom = null, $dateTo = null): array
     {
-        // Basic stats
+        $ordersQuery = $client->orders();
+        $carpetsQuery = OrderCarpet::whereHas('order', function ($query) use ($client) {
+            $query->where('client_id', $client->id);
+        });
+
+        if ($dateFrom) {
+            $ordersQuery->where('created_at', '>=', $dateFrom);
+            $carpetsQuery->whereHas('order', function ($query) use ($client, $dateFrom) {
+                $query->where('client_id', $client->id)
+                    ->where('created_at', '>=', $dateFrom);
+            });
+        }
+
+        if ($dateTo) {
+            $ordersQuery->where('created_at', '<=', $dateTo);
+            $carpetsQuery->whereHas('order', function ($query) use ($client, $dateTo) {
+                $query->where('client_id', $client->id)
+                    ->where('created_at', '<=', $dateTo);
+            });
+        }
+
         $stats = [
-            'total_orders' => $client->orders()->count(),
-            'completed_orders' => $client->orders()->where('status', 'completed')->count(),
-            'total_carpets' => OrderCarpet::whereHas('order', function ($query) use ($client) {
-                $query->where('client_id', $client->id);
-            })->count(),
-            'completed_carpets' => OrderCarpet::whereHas('order', function ($query) use ($client) {
-                $query->where('client_id', $client->id);
-            })->where('status', 'completed')->count(),
-            'total_spent' => $client->orders()->sum('total_amount') ?? 0,
-            'avg_order_value' => $client->orders()->avg('total_amount') ?? 0,
-            'total_area' => OrderCarpet::whereHas('order', function ($query) use ($client) {
-                $query->where('client_id', $client->id);
-            })->sum('total_area') ?? 0,
+            'total_orders' => $ordersQuery->count(),
+            'completed_orders' => (clone $ordersQuery)->where('status', 'completed')->count(),
+            'total_carpets' => $carpetsQuery->count(),
+            'completed_carpets' => (clone $carpetsQuery)->where('status', 'completed')->count(),
+            'total_spent' => $ordersQuery->sum('total_amount') ?? 0,
+            'avg_order_value' => $ordersQuery->avg('total_amount') ?? 0,
+            'total_area' => $carpetsQuery->sum('total_area') ?? 0,
         ];
 
-        // Recent orders (last 10)
-        $orders = $client->orders()
-            ->with(['orderCarpets'])
+        $orders = $ordersQuery->with(['orderCarpets'])
             ->latest('created_at')
             ->take(10)
             ->get()
@@ -93,16 +130,17 @@ class ClientPdfReportService
                 ];
             });
 
-        // Monthly performance (last 12 months) - PostgreSQL compatible
         $monthlyPerformance = $client->orders()
+            ->when($dateFrom, fn($query) => $query->where('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn($query) => $query->where('created_at', '<=', $dateTo))
+            ->when(!$dateFrom && !$dateTo, fn($query) => $query->where('created_at', '>=', Carbon::now()->subMonths(12)))
             ->select(
                 DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"),
                 DB::raw('COUNT(*) as orders_count'),
                 DB::raw('COALESCE(SUM(total_amount), 0) as total_amount'),
                 DB::raw('COALESCE(AVG(total_amount), 0) as avg_amount')
             )
-            ->where('created_at', '>=', Carbon::now()->subMonths(12))
-            ->groupBy('month')
+            ->groupBy(DB::raw("TO_CHAR(created_at, 'YYYY-MM')"))
             ->orderBy('month', 'desc')
             ->get()
             ->map(function ($item) {
@@ -114,11 +152,7 @@ class ClientPdfReportService
                 ];
             });
 
-        // Carpets data
-        $carpets = OrderCarpet::whereHas('order', function ($query) use ($client) {
-            $query->where('client_id', $client->id);
-        })
-            ->with(['order', 'services'])
+        $carpets = $carpetsQuery->with(['order', 'services'])
             ->latest('created_at')
             ->take(15)
             ->get()
@@ -134,11 +168,10 @@ class ClientPdfReportService
                 ];
             });
 
-        // Revenue analysis by status
         $revenueAnalysis = [
-            'completed' => $client->orders()->where('status', 'completed')->sum('total_amount') ?? 0,
-            'pending' => $client->orders()->where('status', 'pending')->sum('total_amount') ?? 0,
-            'in_progress' => $client->orders()->where('status', 'in_progress')->sum('total_amount') ?? 0,
+            'completed' => (clone $ordersQuery)->where('status', 'completed')->sum('total_amount') ?? 0,
+            'pending' => (clone $ordersQuery)->where('status', 'pending')->sum('total_amount') ?? 0,
+            'in_progress' => (clone $ordersQuery)->where('status', 'in_progress')->sum('total_amount') ?? 0,
         ];
 
         return [
@@ -150,7 +183,7 @@ class ClientPdfReportService
         ];
     }
 
-    private function addTitleSection(TCPDF $pdf, Client $client): void
+    private function addTitleSection(TCPDF $pdf, Client $client, $dateFrom = null, $dateTo = null): void
     {
         $pdf->SetFont('dejavusans', 'B', 18);
         $pdf->Cell(0, 15, 'Raport Klienta', 0, 1, 'C');
@@ -161,6 +194,42 @@ class ClientPdfReportService
         $pdf->SetFont('dejavusans', '', 10);
         $pdf->Cell(0, 8, 'ID Klienta: #' . $client->id, 0, 1, 'C');
         $pdf->Cell(0, 8, 'Wygenerowano: ' . Carbon::now()->format('d.m.Y H:i'), 0, 1, 'C');
+
+        // Add period info if filtered
+        if ($dateFrom || $dateTo) {
+            $periodText = 'Okres: ';
+            if ($dateFrom && $dateTo) {
+                $periodText .= $dateFrom->format('d.m.Y') . ' - ' . $dateTo->format('d.m.Y');
+            } elseif ($dateFrom) {
+                $periodText .= 'od ' . $dateFrom->format('d.m.Y');
+            } else {
+                $periodText .= 'do ' . $dateTo->format('d.m.Y');
+            }
+            $pdf->SetFont('dejavusans', 'B', 10);
+            $pdf->Cell(0, 8, $periodText, 0, 1, 'C');
+        }
+
+        $pdf->Ln(5);
+    }
+
+    private function addDateRangeSection(TCPDF $pdf, $dateFrom = null, $dateTo = null): void
+    {
+        $pdf->SetFont('dejavusans', 'B', 12);
+        $pdf->Cell(0, 10, 'Zakres dat raportu', 0, 1, 'L');
+
+        $pdf->SetFont('dejavusans', '', 10);
+        $pdf->SetFillColor(245, 245, 245);
+
+        $pageWidth = $pdf->getPageWidth() - $pdf->getMargins()['left'] - $pdf->getMargins()['right'];
+        $col1_width = $pageWidth * 0.3;
+        $col2_width = $pageWidth * 0.7;
+
+        $pdf->Cell($col1_width, 8, 'Data od', 1, 0, 'L', true);
+        $pdf->Cell($col2_width, 8, $dateFrom ? $dateFrom->format('d.m.Y') : 'Nie określono', 1, 1, 'L');
+
+        $pdf->Cell($col1_width, 8, 'Data do', 1, 0, 'L', true);
+        $pdf->Cell($col2_width, 8, $dateTo ? $dateTo->format('d.m.Y') : 'Nie określono', 1, 1, 'L');
+
         $pdf->Ln(5);
     }
 
@@ -276,7 +345,7 @@ class ClientPdfReportService
         }
 
         $pdf->SetFont('dejavusans', 'B', 12);
-        $pdf->Cell(0, 10, 'Wydajność miesięczna (ostatnie 12 miesięcy)', 0, 1, 'L');
+        $pdf->Cell(0, 10, 'Wydajność miesięczna', 0, 1, 'L');
 
         $pdf->SetFont('dejavusans', '', 9);
         $pdf->SetFillColor(245, 245, 245);

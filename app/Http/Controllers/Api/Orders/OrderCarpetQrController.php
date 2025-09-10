@@ -315,7 +315,6 @@ class OrderCarpetQrController extends Controller
      *                     @OA\Property(property="measured_at", type="string", format="date-time", example="2025-08-31T10:30:00.000000Z", nullable=true),
      *                     @OA\Property(property="qr_code", type="string", example="ORD-123-4567"),
      *                     @OA\Property(property="qr_code_url", type="string", example="https://domain.com/storage/qr-codes/ORD-123-4567.png", nullable=true),
-     *                     @OA\Property(property="qr_code", type="string", example="ORD-123-4567", nullable=true),
      *                     @OA\Property(property="services_count", type="integer", example=2),
      *                     @OA\Property(property="total_price", type="number", format="float", example=150.00),
      *                     @OA\Property(property="remarks", type="string", example="Special handling required", nullable=true),
@@ -362,15 +361,14 @@ class OrderCarpetQrController extends Controller
     {
         try {
             $referenceCode = $request->validated()['qr_code'];
-            
+
             $result = $action->execute($referenceCode);
-            
+
             return $this->successResponse([
                 'status' => 'success',
                 'message' => 'QR code availability checked successfully',
                 'data' => $result
             ], 200);
-            
         } catch (\Exception $e) {
             return $this->errorResponse([
                 'status' => 'error',

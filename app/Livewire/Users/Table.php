@@ -50,8 +50,13 @@ class Table extends Component
                     'accesor' => true,
                     'type' => 'badge'
                 ],
-                ['key' =>
-                'created_at', 'label' => __('Created'), 'sortable' => true, 'type' => 'datetime'],
+                [
+                    'key' =>
+                    'created_at',
+                    'label' => __('Created'),
+                    'sortable' => true,
+                    'type' => 'datetime'
+                ],
             ])
             ->deleteAction('deleteUser')
             ->searchPlaceholder(__('Search users...'))

@@ -72,7 +72,7 @@ class Login extends Component
 
                 $this->dispatch('user-logged-in', $user->toArray());
 
-                return $this->redirectIntended('/', true);
+                return $this->redirectIntended('/', false);
             } else {
                 $this->dispatchFlashMessage('error', 'Invalid credentials');
             }

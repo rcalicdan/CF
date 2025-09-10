@@ -156,7 +156,7 @@ class OrderCarpet extends Model
         $filename = pathinfo($this->qr_code, PATHINFO_FILENAME);
         return $filename;
     }
-    
+
     /**
      * Find carpet by reference code.
      * Supports both with and without .png extension
@@ -206,5 +206,10 @@ class OrderCarpet extends Model
     public function hasValidQrCode(): bool
     {
         return !empty($this->qr_code) && Storage::disk('public')->exists($this->getQrCodePathAttribute());
+    }
+
+    public function histories()
+    {
+        return $this->hasMany(OrderCarpetHistory::class);
     }
 }

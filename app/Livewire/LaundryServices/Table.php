@@ -42,10 +42,8 @@ class Table extends Component
             ->sortColumn($this->sortColumn)
             ->sortDirection($this->sortDirection)
             ->showBulkActions(Auth::user()->isAdmin())
-            ->showCreate(Auth::user()->can('create', Service::class))
-            ->createRoute('services.create')
-            ->editRoute('services.edit')
-            ->bulkDeleteAction('bulkDelete');
+            ->showCreate(false)
+            ->showActions(false);
     }
 
     public function rowsQuery()
