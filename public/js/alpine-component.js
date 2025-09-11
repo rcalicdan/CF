@@ -14,9 +14,7 @@ function routeOptimizer() {
         init() {
             console.log("RouteOptimizer component initializing...");
 
-            if (this.drivers.length > 0) {
-                this.selectedDriver = this.drivers[0];
-            }
+            this.waitForInitialData();
 
             this.updateOrders();
 
@@ -51,15 +49,22 @@ function routeOptimizer() {
             });
         },
 
+        waitForInitialData() {
+            const checkData = () => {
+                if (this.dataLoaded && this.drivers.length > 0 && !this.selectedDriver) {
+                    this.selectedDriver = this.drivers[0];
+                    console.log(`Initial driver set to: ${this.selectedDriver.full_name}`);
+                    this.updateOrders();
+                } else if (!this.dataLoaded && !this.loadingError) {
+                    // Keep checking until data loads
+                    setTimeout(checkData, 100);
+                }
+            };
+            checkData();
+        },
+    
         getOrdersForDriverAndDate(driverId, date) {
-            if (!driverId || !date) {
-                return [];
-            }
-        
-            return this.allOrders.filter(
-                (order) =>
-                    order.driver_id === driverId && order.delivery_date === date
-            );
+            return data.getOrdersForDriverAndDate(driverId, date);
         },
 
         updateOrders() {

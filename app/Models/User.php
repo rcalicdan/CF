@@ -96,6 +96,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function bearerToken(): string
+    {
+        return $this->token()->token ?? session('api_token');
+    }
+
     public function getRoleLabelAttribute(): string
     {
         return $this->role ? EnumTranslationService::translate(UserRoles::from($this->role)) : '';

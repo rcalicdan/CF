@@ -1,48 +1,18 @@
 class RouteOptimizerData {
     constructor() {
-        this.drivers = [
-            {
-                id: 1,
-                user_id: 101,
-                full_name: "Marek Kowalski",
-                license_number: "WAW123456",
-                vehicle_details: "Ford Transit - WX 1234A",
-                phone_number: "+48 123 456 789"
-            },
-            {
-                id: 2,
-                user_id: 102,
-                full_name: "Anna Nowak",
-                license_number: "KRK789012",
-                vehicle_details: "Mercedes Sprinter - KR 5678B",
-                phone_number: "+48 987 654 321"
-            },
-            {
-                id: 3,
-                user_id: 103,
-                full_name: "Piotr Wiśniewski",
-                license_number: "GDA345678",
-                vehicle_details: "Iveco Daily - GD 9012C",
-                phone_number: "+48 555 444 333"
-            }
-        ];
-
-        this.allOrders = [
-            { id: 1001, driver_id: 1, client_name: "Jan Kowalczyk", address: "Warszawa, ul. Krakowskie Przedmieście 5", coordinates: [52.2370, 21.0170], total_amount: 340, status: "pending", priority: "high", delivery_date: "2025-09-08" },
-            { id: 1002, driver_id: 1, client_name: "Maria Szymańska", address: "Warszawa, ul. Nowy Świat 15", coordinates: [52.2297, 21.0122], total_amount: 580, status: "pending", priority: "medium", delivery_date: "2025-09-08" },
-            { id: 1003, driver_id: 1, client_name: "Andrzej Duda", address: "Warszawa, ul. Marszałkowska 100", coordinates: [52.2319, 21.0067], total_amount: 750, status: "pending", priority: "high", delivery_date: "2025-09-09" },
-            { id: 2001, driver_id: 2, client_name: "Tomasz Zieliński", address: "Warszawa, ul. Puławska 15", coordinates: [52.2096, 21.0252], total_amount: 680, status: "pending", priority: "medium", delivery_date: "2025-09-08" },
-            { id: 2002, driver_id: 2, client_name: "Barbara Kowalska", address: "Warszawa, ul. Mokotowska 50", coordinates: [52.2180, 21.0155], total_amount: 920, status: "pending", priority: "high", delivery_date: "2025-09-08" },
-            { id: 2003, driver_id: 2, client_name: "Michał Nowak", address: "Warszawa, ul. Złota 44", coordinates: [52.2298, 21.0067], total_amount: 365, status: "pending", priority: "low", delivery_date: "2025-09-10" },
-            { id: 3001, driver_id: 3, client_name: "Agnieszka Wiśniewska", address: "Warszawa, ul. Żurawia 20", coordinates: [52.2340, 21.0089], total_amount: 1200, status: "pending", priority: "high", delivery_date: "2025-09-08" },
-            { id: 3002, driver_id: 3, client_name: "Robert Krawczyk", address: "Warszawa, ul. Bracka 25", coordinates: [52.2287, 21.0089], total_amount: 480, status: "pending", priority: "medium", delivery_date: "2025-09-11" }
-        ];
+        this.dataService = new RouteDataService();
+        
+        this.drivers = [];
+        this.allOrders = [];
 
         this.selectedDate = this.getTodayDate();
         this.selectedDriver = null;
         this.orders = [];
 
         this.loading = false;
+        this.dataLoaded = false;
+        this.loadingError = null;
+        
         this.optimizationResult = null;
         this.optimizationError = null;
         this.showRouteSummary = false;
@@ -50,6 +20,118 @@ class RouteOptimizerData {
         this.markers = [];
         this.routingControl = null;
         this.mapInitialized = false;
+
+        this.loadInitialData();
+    }
+
+    /**
+     * Load initial data from API
+     */
+    async loadInitialData() {
+        try {
+            this.loading = true;
+            this.loadingError = null;
+            
+            console.log('Loading initial data from server...');
+            
+            console.log('Loading drivers...');
+            this.drivers = await this.dataService.getDrivers();
+            console.log(`Loaded ${this.drivers.length} drivers:`, this.drivers);
+            
+            console.log('Loading orders...');
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + 30);
+            
+            this.allOrders = await this.dataService.getAllOrdersForDateRange(
+                this.getTodayDate(),
+                endDate.toISOString().split('T')[0]
+            );
+            
+            console.log(`Loaded ${this.allOrders.length} orders:`, this.allOrders);
+
+            this.dataLoaded = true;
+            console.log('✅ Initial data loaded successfully');
+            
+        } catch (error) {
+            console.error('❌ Failed to load initial data:', error);
+            this.loadingError = 'Failed to load data from server: ' + error.message;
+        } finally {
+            this.loading = false;
+        }
+    }
+
+    /**
+     * Refresh orders for current driver and date from API
+     */
+    async refreshOrdersFromAPI(forceRefresh = false) {
+        if (!this.selectedDriver || !this.selectedDate) {
+            return;
+        }
+
+        try {
+            console.log(`Refreshing orders for driver ${this.selectedDriver.id} on ${this.selectedDate}`);
+            
+            if (forceRefresh) {
+                this.dataService.clearCacheByPattern(`orders_${this.selectedDriver.id}_${this.selectedDate}`);
+            }
+            
+            const orders = await this.dataService.getOrdersForDriverAndDate(
+                this.selectedDriver.id, 
+                this.selectedDate
+            );
+            
+            this.allOrders = this.allOrders.filter(
+                order => !(order.driver_id === this.selectedDriver.id && order.delivery_date === this.selectedDate)
+            );
+            
+            this.allOrders.push(...orders);
+            
+            console.log(`✅ Refreshed ${orders.length} orders from API`);
+            
+            return orders;
+            
+        } catch (error) {
+            console.error('❌ Failed to refresh orders:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get orders for driver and date from local cache
+     */
+    getOrdersForDriverAndDate(driverId, date) {
+        if (!driverId || !date) {
+            return [];
+        }
+
+        return this.allOrders.filter(
+            (order) =>
+                order.driver_id === driverId && order.delivery_date === date
+        );
+    }
+
+    /**
+     * Get statistics
+     */
+    async getStatistics(driverId = null, date = null) {
+        try {
+            return await this.dataService.getRouteStatistics(driverId, date);
+        } catch (error) {
+            console.error('Failed to get statistics:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Trigger geocoding process
+     */
+    async triggerGeocoding() {
+        try {
+            return await this.dataService.triggerGeocoding();
+        } catch (error) {
+            console.error('Failed to trigger geocoding:', error);
+            throw error;
+        }
     }
 
     getTodayDate() {

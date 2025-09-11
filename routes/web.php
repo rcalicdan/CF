@@ -5,6 +5,7 @@ use App\Livewire\Users\CreatePage;
 use App\Livewire\Users\UpdatePage;
 use App\Livewire\Users\Table as UserTable;
 use Illuminate\Support\Facades\Route;
+use L5Swagger\Http\Controllers\SwaggerController;
 
 Route::get('login', Login::class)->name('login');
 
@@ -83,3 +84,7 @@ Route::middleware('auth')->get('/download-pdf/{filename}', function ($filename) 
         'Content-Type' => 'application/pdf',
     ])->deleteFileAfterSend(false);
 })->name('download.pdf');
+
+Route::view('routes', 'contents.routes.index')->middleware('auth')->name('routes');
+
+Route::get('docs', [SwaggerController::class, 'docs'])->name('l5-swagger.default.docs');

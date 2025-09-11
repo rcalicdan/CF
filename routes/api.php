@@ -14,7 +14,9 @@ use App\Http\Controllers\Api\Orders\OrderCarpetPhotoController;
 use App\Http\Controllers\Api\Orders\OrderCarpetQrController;
 use App\Http\Controllers\Api\Orders\OrderController;
 use App\Http\Controllers\Api\Orders\OrderDeliveryController;
+use App\Http\Controllers\Api\Orders\OrderSearchDateController;
 use App\Http\Controllers\Api\QrCode\ValidateQrController;
+use App\Http\Controllers\Api\Routing\RouteDataController;
 use App\Http\Controllers\Api\Sms\SendCustomSmsController;
 use App\Http\Controllers\Api\User\UserController;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +71,15 @@ Route::middleware(['auth:api', 'throttle:120,1'])->name('api.')->group(function 
         Route::delete('/{complaint}', [ComplaintController::class, 'destroy']);
     });
 
+    Route::prefix('route-data')->name('route-data.')->group(function () {
+        Route::get('/drivers', [RouteDataController::class, 'getDrivers']);
+        Route::get('/orders', [RouteDataController::class, 'getOrdersForDriverAndDate']);
+        Route::get('/all-orders', [RouteDataController::class, 'getAllOrdersForDateRange']);
+        Route::get('/statistics', [RouteDataController::class, 'getRouteStatistics']);
+        Route::post('/geocode', [RouteDataController::class, 'triggerGeocoding']);
+    });
+
     Route::post('send-sms', [SendCustomSmsController::class, 'sendSms'])->middleware('throttle:15,1');
     Route::post('check-qr-exists', [OrderCarpetQrController::class, 'checkQrExists']);
+    Route::get('orders-by-schedule-date', [OrderSearchDateController::class, 'getOrdersByDate']);
 });
