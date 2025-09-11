@@ -5,6 +5,7 @@ namespace App\ActionService;
 use App\Models\Driver;
 use App\Models\Order;
 use App\Models\Client;
+use App\Models\RouteOptimization;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -78,12 +79,74 @@ class RouteDataService
     }
 
     /**
+     * Save route optimization result
+     */
+    public function saveRouteOptimization(array $data): RouteOptimization
+    {
+        return RouteOptimization::updateOrCreate(
+            [
+                'driver_id' => $data['driver_id'],
+                'optimization_date' => $data['optimization_date']
+            ],
+            [
+                'optimization_result' => $data['optimization_result'],
+                'order_sequence' => $data['order_sequence'] ?? [],
+                'total_distance' => $data['total_distance'] ?? null,
+                'total_time' => $data['total_time'] ?? null,
+                'estimated_fuel_cost' => $data['estimated_fuel_cost'] ?? null,
+                'carbon_footprint' => $data['carbon_footprint'] ?? null,
+                'is_manual_edit' => $data['is_manual_edit'] ?? false,
+                'manual_modifications' => $data['manual_modifications'] ?? null
+            ]
+        );
+    }
+
+    /**
+     * Get saved route optimization
+     */
+    public function getSavedRouteOptimization(int $driverId, string $date): ?RouteOptimization
+    {
+        return RouteOptimization::where('driver_id', $driverId)
+            ->where('optimization_date', $date)
+            ->first();
+    }
+
+    /**
+     * Transform order model for VROOM optimization
+     */
+    private function transformOrderForVroomData(Order $order): array
+    {
+        $baseData = $this->transformOrderForRouteData($order);
+
+        if ($order->client && $order->client->hasCoordinates()) {
+            $baseData['coordinates'] = $order->client->vroom_coordinates; // [lng, lat]
+        }
+
+        return $baseData;
+    }
+
+    /**
+     * Get orders formatted specifically for VROOM optimization
+     */
+    public function getVroomOptimizedOrdersForDriverAndDate(int $driverId, string $date): Collection
+    {
+        return Order::with(['client', 'driver.user'])
+            ->where('assigned_driver_id', $driverId)
+            ->whereDate('schedule_date', $date)
+            ->whereIn('status', ['pending', 'confirmed', 'in_progress'])
+            ->get()
+            ->map(function ($order) {
+                return $this->transformOrderForVroomData($order);
+            });
+    }
+
+    /**
      * Transform order model for route data
      */
     private function transformOrderForRouteData(Order $order): array
     {
         $priority = $this->calculateOrderPriority($order);
-        
+
         return [
             'id' => $order->id,
             'driver_id' => $order->assigned_driver_id,
@@ -198,7 +261,7 @@ class RouteDataService
     public function geocodeMissingCoordinates(int $limit = 20): array
     {
         $clientsWithoutCoordinates = Client::withoutCoordinates()->limit($limit)->get();
-        
+
         $geocoded = 0;
         $failed = 0;
         $errors = [];
@@ -208,7 +271,7 @@ class RouteDataService
                 if ($client->geocodeAddress()) {
                     $client->save();
                     $geocoded++;
-                    
+
                     Log::info('Successfully geocoded client', [
                         'client_id' => $client->id,
                         'address' => $client->full_address
@@ -217,15 +280,14 @@ class RouteDataService
                     $failed++;
                     $errors[] = "Failed to geocode client {$client->id}: {$client->full_address}";
                 }
-                
+
                 // Rate limiting - sleep for 1 second between requests to respect Nominatim limits
                 sleep(1);
-                
             } catch (\Exception $e) {
                 $failed++;
                 $errorMsg = "Geocoding failed for client {$client->id}: {$e->getMessage()}";
                 $errors[] = $errorMsg;
-                
+
                 Log::error('Geocoding failed for client', [
                     'client_id' => $client->id,
                     'error' => $e->getMessage()

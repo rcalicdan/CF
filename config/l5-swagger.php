@@ -13,6 +13,7 @@ return [
                  * Route for accessing api documentation interface
                  */
                 'api' => 'api/documentation',
+                'docs' => 'docs',
             ],
             'paths' => [
                 /*
@@ -45,7 +46,6 @@ return [
                  */
                 'annotations' => [
                     base_path('app'),
-                    // base_path('app/Swagger/swagger.php'),
                 ],
             ],
         ],
@@ -171,11 +171,6 @@ return [
         */
         'securityDefinitions' => [
             'securitySchemes' => [
-                'bearerAuth' => [
-                    'type' => 'http',
-                    'scheme' => 'bearer',
-                    'bearerFormat' => 'JWT',
-                ],
                 /*
                  * Examples of Security schemes
                  */
@@ -227,17 +222,15 @@ return [
                  * Examples of Securities
                  */
                 [
-                    'bearerAuth' => [],
-                ],
-                [
-                /*
+                    /*
                     'oauth2_security_example' => [
                         'read',
                         'write'
                     ],
 
                     'passport' => []
-                    */],
+                    */
+                ],
             ],
         ],
 

@@ -20,7 +20,7 @@ class RouteDataController extends Controller
     {
         try {
             $drivers = $this->routeDataService->getAllDrivers();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $drivers
@@ -155,6 +155,70 @@ class RouteDataController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Geocoding process failed',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Save route optimization result
+     */
+    public function saveRouteOptimization(Request $request): JsonResponse
+    {
+        $request->validate([
+            'driver_id' => 'required|integer|exists:drivers,id',
+            'optimization_date' => 'required|date',
+            'optimization_result' => 'required|array',
+            'order_sequence' => 'nullable|array',
+            'total_distance' => 'nullable|numeric',
+            'total_time' => 'nullable|integer',
+            'estimated_fuel_cost' => 'nullable|numeric',
+            'carbon_footprint' => 'nullable|numeric',
+            'is_manual_edit' => 'boolean',
+            'manual_modifications' => 'nullable|array'
+        ]);
+
+        try {
+            $optimization = $this->routeDataService->saveRouteOptimization($request->all());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Route optimization saved successfully',
+                'data' => $optimization
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save route optimization',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get saved route optimization
+     */
+    public function getSavedRouteOptimization(Request $request): JsonResponse
+    {
+        $request->validate([
+            'driver_id' => 'required|integer|exists:drivers,id',
+            'date' => 'required|date'
+        ]);
+
+        try {
+            $optimization = $this->routeDataService->getSavedRouteOptimization(
+                $request->driver_id,
+                $request->date
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => $optimization
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve saved optimization',
                 'error' => $e->getMessage()
             ], 500);
         }

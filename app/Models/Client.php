@@ -41,7 +41,7 @@ class Client extends Model
             $this->postal_code,
             $this->city
         ]);
-        
+
         return implode(', ', $parts);
     }
 
@@ -54,7 +54,7 @@ class Client extends Model
     }
 
     /**
-     * Get coordinates as array [lat, lng]
+     * Get coordinates as array [lat, lng] - keeping this format for frontend consistency
      */
     public function getCoordinatesAttribute()
     {
@@ -65,12 +65,23 @@ class Client extends Model
     }
 
     /**
+     * Get coordinates in VROOM format [lng, lat] 
+     */
+    public function getVroomCoordinatesAttribute()
+    {
+        if ($this->latitude && $this->longitude) {
+            return [(float) $this->longitude, (float) $this->latitude];
+        }
+        return null;
+    }
+
+    /**
      * Geocode the client's address and update coordinates
      */
     public function geocodeAddress()
     {
         $address = $this->full_address;
-        
+
         if (empty($address)) {
             Log::warning('Cannot geocode empty address for client', ['client_id' => $this->id]);
             return false;
@@ -87,13 +98,13 @@ class Client extends Model
             if ($coordinates) {
                 $this->latitude = $coordinates['lat'];
                 $this->longitude = $coordinates['lng'];
-                
+
                 Log::info('Successfully geocoded address', [
                     'client_id' => $this->id,
                     'address' => $address,
                     'coordinates' => $coordinates
                 ]);
-                
+
                 return true;
             }
         } catch (\Exception $e) {
@@ -128,7 +139,7 @@ class Client extends Model
 
             if ($response->successful()) {
                 $results = $response->json();
-                
+
                 if (!empty($results) && isset($results[0]['lat'], $results[0]['lon'])) {
                     return [
                         'lat' => (float) $results[0]['lat'],
@@ -151,7 +162,7 @@ class Client extends Model
     {
         $address = $this->full_address;
         $cacheKey = 'geocode_' . md5($address);
-        
+
         Cache::forget($cacheKey);
         return $this->geocodeAddress();
     }
@@ -161,8 +172,8 @@ class Client extends Model
      */
     public function hasCoordinates()
     {
-        return !is_null($this->latitude) && !is_null($this->longitude) 
-               && $this->latitude != 0 && $this->longitude != 0;
+        return !is_null($this->latitude) && !is_null($this->longitude)
+            && $this->latitude != 0 && $this->longitude != 0;
     }
 
     /**
@@ -171,9 +182,9 @@ class Client extends Model
     public function scopeWithCoordinates($query)
     {
         return $query->whereNotNull('latitude')
-                     ->whereNotNull('longitude')
-                     ->where('latitude', '!=', 0)
-                     ->where('longitude', '!=', 0);
+            ->whereNotNull('longitude')
+            ->where('latitude', '!=', 0)
+            ->where('longitude', '!=', 0);
     }
 
     /**
@@ -181,11 +192,11 @@ class Client extends Model
      */
     public function scopeWithoutCoordinates($query)
     {
-        return $query->where(function($q) {
+        return $query->where(function ($q) {
             $q->whereNull('latitude')
-              ->orWhereNull('longitude')
-              ->orWhere('latitude', 0)
-              ->orWhere('longitude', 0);
+                ->orWhereNull('longitude')
+                ->orWhere('latitude', 0)
+                ->orWhere('longitude', 0);
         });
     }
 
