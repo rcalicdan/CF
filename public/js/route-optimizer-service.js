@@ -6,48 +6,45 @@ class RouteOptimizerService {
     }
 
     async optimizeRoutes() {
-        if (!this.routeComponent.selectedDriver) {
-            throw new Error('No driver selected');
+        console.log("🚀 Starting optimization process...");
+        console.log("Orders count:", this.orders.length);
+        console.log("Selected driver:", this.selectedDriver);
+        console.log("Selected date:", this.selectedDate);
+
+        if (this.orders.length === 0) {
+            alert(`No orders available for ${this.formattedSelectedDate}`);
+            return;
         }
 
-        if (this.routeComponent.orders.length === 0) {
-            throw new Error('No orders to optimize');
+        if (!window.optimizerService || !window.optimizerService.canOptimize()) {
+            console.warn("Cannot optimize routes - missing service or requirements");
+            console.log("Optimizer service exists:", !!window.optimizerService);
+            if (window.optimizerService) {
+                console.log("Can optimize:", window.optimizerService.canOptimize());
+            }
+            return;
         }
 
-        const validOrders = this.routeComponent.orders.filter(order =>
-            order.coordinates &&
-            Array.isArray(order.coordinates) &&
-            order.coordinates.length === 2 &&
-            !isNaN(order.coordinates[0]) &&
-            !isNaN(order.coordinates[1])
-        );
+        console.log("✅ All checks passed, starting optimization...");
 
-        if (validOrders.length === 0) {
-            throw new Error('No orders have valid coordinates for optimization. Please geocode addresses first.');
-        }
-
-        console.log('Starting route optimization with VROOM API...');
-        console.log('Valid orders for optimization:', validOrders.length, 'out of', this.routeComponent.orders.length);
-        console.log('Selected driver:', this.routeComponent.selectedDriver);
+        this.loading = true;
+        this.optimizationError = null;
 
         try {
-            const vroomResult = await this.callVroomAPI();
-            this.routeComponent.optimizationResult = this.processVroomResult(vroomResult);
+            console.log("📞 Calling optimizer service...");
+            await window.optimizerService.optimizeRoutes();
 
-            await this.saveOptimizationToServer();
-
-            console.log('Route optimization completed:', this.routeComponent.optimizationResult);
-
+            console.log("✅ Optimization completed successfully");
             setTimeout(() => {
-                if (window.mapManager) {
-                    window.mapManager.visualizeOptimizedRoute();
-                }
+                this.showRouteSummary = true;
             }, 100);
 
         } catch (error) {
-            console.error('Optimization failed:', error);
-            this.handleOptimizationError(error);
-            throw error;
+            console.error("❌ Route optimization failed:", error);
+            this.optimizationError = error.message;
+        } finally {
+            console.log("🔄 Setting loading to false");
+            this.loading = false;
         }
     }
 
@@ -84,6 +81,7 @@ class RouteOptimizerService {
             console.log('✅ Optimization saved to server');
         } catch (error) {
             console.warn('⚠️ Failed to save optimization to server:', error);
+            // Don't throw - optimization should work even if saving fails
         }
     }
 
@@ -343,6 +341,22 @@ class RouteOptimizerService {
             !isNaN(order.coordinates[1])
         );
         const notLoading = !this.routeComponent.loading;
+
+        console.log("🔍 canOptimize check:", {
+            hasDriver,
+            hasOrders,
+            hasValidCoordinates,
+            notLoading,
+            driverInfo: this.routeComponent.selectedDriver,
+            ordersCount: this.routeComponent.orders.length,
+            ordersWithCoordinates: this.routeComponent.orders.filter(order =>
+                order.coordinates &&
+                Array.isArray(order.coordinates) &&
+                order.coordinates.length === 2 &&
+                !isNaN(order.coordinates[0]) &&
+                !isNaN(order.coordinates[1])
+            ).length
+        });
 
         return hasDriver && hasOrders && hasValidCoordinates && notLoading;
     }

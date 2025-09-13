@@ -35,6 +35,11 @@ class Order extends Model
         return $this->status ? EnumTranslationService::translate(OrderStatus::from($this->status)) : '';
     }
 
+    public function orderHistories()
+    {
+        return $this->hasMany(OrderHistory::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');

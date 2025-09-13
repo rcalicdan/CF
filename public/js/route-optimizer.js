@@ -1,7 +1,7 @@
 class RouteOptimizerData {
     constructor() {
         this.dataService = new RouteDataService();
-        
+
         this.drivers = [];
         this.allOrders = [];
 
@@ -12,7 +12,7 @@ class RouteOptimizerData {
         this.loading = false;
         this.dataLoaded = false;
         this.loadingError = null;
-        
+
         this.optimizationResult = null;
         this.optimizationError = null;
         this.showRouteSummary = false;
@@ -28,35 +28,48 @@ class RouteOptimizerData {
      * Load initial data from API
      */
     async loadInitialData() {
+        console.log("📥 Starting loadInitialData...");
+
         try {
             this.loading = true;
             this.loadingError = null;
-            
+
             console.log('Loading initial data from server...');
-            
+
             console.log('Loading drivers...');
             this.drivers = await this.dataService.getDrivers();
-            console.log(`Loaded ${this.drivers.length} drivers:`, this.drivers);
-            
+            console.log(`✅ Loaded ${this.drivers.length} drivers:`, this.drivers);
+
             console.log('Loading orders...');
             const endDate = new Date();
             endDate.setDate(endDate.getDate() + 30);
-            
+
             this.allOrders = await this.dataService.getAllOrdersForDateRange(
                 this.getTodayDate(),
                 endDate.toISOString().split('T')[0]
             );
-            
-            console.log(`Loaded ${this.allOrders.length} orders:`, this.allOrders);
+
+            console.log(`✅ Loaded ${this.allOrders.length} orders:`, this.allOrders);
 
             this.dataLoaded = true;
-            console.log('✅ Initial data loaded successfully');
-            
+            console.log('✅ Data loading completed successfully');
+
+            // Add a small delay to ensure Alpine detects the change
+            await new Promise(resolve => setTimeout(resolve, 100));
+
         } catch (error) {
             console.error('❌ Failed to load initial data:', error);
             this.loadingError = 'Failed to load data from server: ' + error.message;
         } finally {
+            console.log('🔄 Setting loading to false');
             this.loading = false;
+
+            // Force a reactivity trigger if we're in Alpine context
+            if (window.routeOptimizerInstance) {
+                window.routeOptimizerInstance.loading = false;
+            }
+
+            console.log('Final loading state:', this.loading);
         }
     }
 
@@ -70,26 +83,26 @@ class RouteOptimizerData {
 
         try {
             console.log(`Refreshing orders for driver ${this.selectedDriver.id} on ${this.selectedDate}`);
-            
+
             if (forceRefresh) {
                 this.dataService.clearCacheByPattern(`orders_${this.selectedDriver.id}_${this.selectedDate}`);
             }
-            
+
             const orders = await this.dataService.getOrdersForDriverAndDate(
-                this.selectedDriver.id, 
+                this.selectedDriver.id,
                 this.selectedDate
             );
-            
+
             this.allOrders = this.allOrders.filter(
                 order => !(order.driver_id === this.selectedDriver.id && order.delivery_date === this.selectedDate)
             );
-            
+
             this.allOrders.push(...orders);
-            
+
             console.log(`✅ Refreshed ${orders.length} orders from API`);
-            
+
             return orders;
-            
+
         } catch (error) {
             console.error('❌ Failed to refresh orders:', error);
             throw error;

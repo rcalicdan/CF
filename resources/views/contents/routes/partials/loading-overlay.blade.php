@@ -1,8 +1,7 @@
 <!-- Loading Overlay -->
-<div x-show="loading" x-transition:enter="transition ease-out duration-300"
-    x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-    x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 scale-100"
-    x-transition:leave-end="opacity-0 scale-95"
+<div x-show="loading" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
+    x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-200"
+    x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
     class="loading-overlay fixed inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center"
     style="z-index: 9999 !important;">
 
@@ -17,8 +16,7 @@
 
         <h3 class="text-lg lg:text-xl font-bold text-gray-800 mb-3">Optimizing Routes</h3>
         <p class="text-sm lg:text-base text-gray-600 mb-4">
-            Calculating the best delivery path for <span x-text="formattedSelectedDate"
-                class="font-medium"></span>
+            Calculating the best delivery path for <span x-text="formattedSelectedDate" class="font-medium"></span>
         </p>
 
         <div class="space-y-2">
@@ -43,5 +41,10 @@
                 </div>
             </div>
         </div>
+
+        <button @click="loading = false; console.log('Manual loading override')"
+            class="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+            Force Stop Loading (Debug)
+        </button>
     </div>
 </div>
