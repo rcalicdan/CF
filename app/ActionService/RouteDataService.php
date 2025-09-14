@@ -16,9 +16,15 @@ class RouteDataService
     /**
      * Get all drivers with their user information
      */
+    /**
+     * Get all drivers with their user information who have completed or undelivered orders
+     */
     public function getAllDrivers(): Collection
     {
         return Driver::with('user')
+            ->whereHas('orders', function ($query) {
+                $query->whereIn('status', ['completed', 'undelivered']);
+            })
             ->get()
             ->map(function ($driver) {
                 return [
@@ -42,12 +48,13 @@ class RouteDataService
         return Order::with(['client', 'driver.user'])
             ->where('assigned_driver_id', $driverId)
             ->whereDate('schedule_date', $date)
-            ->whereIn('status', ['pending', 'confirmed', 'in_progress'])
+            ->whereIn('status', ['completed', 'undelivered'])
             ->get()
             ->map(function ($order) {
                 return $this->transformOrderForRouteData($order);
             });
     }
+
 
     /**
      * Get all orders within a date range
@@ -56,7 +63,7 @@ class RouteDataService
     {
         $query = Order::with(['client', 'driver.user'])
             ->whereNotNull('assigned_driver_id')
-            ->whereIn('status', ['pending', 'confirmed', 'in_progress']);
+            ->whereIn('status', ['completed', 'undelivered']);
 
         if ($startDate) {
             $query->whereDate('schedule_date', '>=', $startDate);

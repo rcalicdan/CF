@@ -5,6 +5,39 @@
         Driver Assignment
     </h2>
 
+    <!-- Debug Info -->
+    <div x-show="!dataLoaded" class="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
+        <div class="text-sm text-yellow-800">
+            <i class="fas fa-spinner fa-spin mr-2"></i>
+            Loading drivers... 
+            <span class="text-xs" x-text="`(${drivers.length} drivers loaded)`"></span>
+        </div>
+    </div>
+
+    <div x-show="dataLoaded && (!drivers || drivers.length === 0)" class="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+        <div class="text-sm text-red-800">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            No drivers found with completed or undelivered orders
+        </div>
+    </div>
+
+    <!-- Debug Button (remove in production) -->
+    <div class="mb-4">
+        <button @click="console.log('Debug State:', { 
+            dataLoaded, 
+            loading, 
+            driversCount: drivers.length, 
+            selectedDriver: selectedDriver?.full_name,
+            orders: orders.length 
+        }); 
+        if (!selectedDriver && drivers.length > 0) { 
+            selectDriver(drivers[0]); 
+        }"
+        class="bg-orange-500 text-white px-3 py-1 rounded text-xs">
+            Debug State & Force Select
+        </button>
+    </div>
+
     <!-- Selected Driver Card -->
     <div x-show="selectedDriver && selectedDriver.id" class="p-4 rounded-lg border border-indigo-200 bg-indigo-50 mb-4">
         <div class="flex items-center justify-between">
@@ -14,7 +47,7 @@
                     <span x-text="selectedDriver?.full_name || 'Loading...'"></span>
                 </div>
                 <div class="text-sm text-slate-600 truncate mt-1"
-                    x-text="selectedDriver?.vehicle_details || 'Loading vehicle details...'"></div>
+                    x-text="selectedDriver?.vehicle_details || 'No vehicle details'"></div>
                 <div class="text-xs text-indigo-800 font-medium mt-2">
                     License: <span x-text="selectedDriver?.license_number || 'N/A'"></span>
                 </div>
@@ -23,7 +56,7 @@
     </div>
 
     <!-- No Driver Selected Placeholder -->
-    <div x-show="!selectedDriver || !selectedDriver.id"
+    <div x-show="dataLoaded && (!selectedDriver || !selectedDriver.id)"
         class="p-6 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 mb-4 text-center">
         <div class="text-slate-500">
             <i class="fas fa-user-plus text-3xl text-slate-400 mb-3"></i>
@@ -33,8 +66,12 @@
     </div>
 
     <!-- Action Button -->
-    <button @click="open = true"
-        class="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 flex items-center justify-center shadow-sm hover:shadow-md">
+    <button @click="open = true" 
+        :disabled="!dataLoaded || !drivers || drivers.length === 0"
+        :class="(!dataLoaded || !drivers || drivers.length === 0) 
+            ? 'bg-gray-400 cursor-not-allowed' 
+            : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md'"
+        class="w-full text-white py-3 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 flex items-center justify-center shadow-sm">
         <i class="fas fa-user-cog mr-2"></i>
         <span x-text="(selectedDriver && selectedDriver.id) ? 'Change Driver' : 'Select Driver'"></span>
         <span x-show="drivers && drivers.length > 0"
@@ -70,7 +107,7 @@
             <!-- Drivers List -->
             <div class="p-3 overflow-y-auto space-y-2 flex-grow">
                 <template x-for="driver in (drivers || [])" :key="driver.id">
-                    <div @click="selectedDriver = driver; open = false"
+                    <div @click="selectDriver(driver); open = false;"
                         :class="(selectedDriver && selectedDriver.id === driver.id) ?
                         'ring-2 ring-indigo-500 bg-indigo-50 border-indigo-300' :
                         'hover:bg-slate-100 border-slate-200 hover:border-indigo-400'"
@@ -91,6 +128,13 @@
                         </div>
                     </div>
                 </template>
+
+                <!-- Empty state -->
+                <div x-show="!drivers || drivers.length === 0" class="p-6 text-center text-slate-500">
+                    <i class="fas fa-user-slash text-3xl mb-3"></i>
+                    <div class="font-medium">No Drivers Available</div>
+                    <div class="text-sm mt-1">No drivers have completed or undelivered orders</div>
+                </div>
             </div>
 
             <!-- Modal Footer -->
@@ -100,17 +144,6 @@
                     Close
                 </button>
             </div>
-            <button
-                @click="console.log('Debug:', { 
-    dataLoaded, 
-    driversCount: drivers.length, 
-    selectedDriver: selectedDriver?.full_name,
-    ordersCount: orders.length,
-    allOrdersCount: allOrders?.length 
-}); if (!selectedDriver && drivers.length > 0) { selectedDriver = drivers[0]; updateOrders(); }"
-                class="bg-red-500 text-white px-4 py-2 rounded">
-                Debug & Force Driver Selection
-            </button>
         </div>
     </div>
 </div>

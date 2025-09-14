@@ -6249,35 +6249,37 @@
                 ]
             }
         },
-        "/api/order-carpets/assign-qr": {
-            "get": {
+        "/api/order-carpets/{orderCarpet}/assign-qr": {
+            "post": {
                 "tags": [
-                    "Order Carpets"
+                    "Order Carpet Qr assignment and handling"
                 ],
                 "summary": "Assign QR code to a carpet",
-                "operationId": "a56a910ac901f2ff37a56e59d7c68b07",
+                "operationId": "806e6fcda6ffd3667af0df2219e44aaa",
+                "parameters": [
+                    {
+                        "name": "orderCarpet",
+                        "in": "path",
+                        "description": "Order carpet ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "carpet_id",
-                                    "order_carpet_id",
                                     "qr_code"
                                 ],
                                 "properties": {
-                                    "carpet_id": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
-                                    "order_carpet_id": {
-                                        "type": "integer",
-                                        "example": 1
-                                    },
                                     "qr_code": {
                                         "type": "string",
-                                        "example": "QR123456"
+                                        "example": "ORD-123-4567"
                                     }
                                 },
                                 "type": "object"
@@ -6312,7 +6314,7 @@
                                                 },
                                                 "qr_code": {
                                                     "type": "string",
-                                                    "example": "QR123456"
+                                                    "example": "ORD-123-4567"
                                                 },
                                                 "status": {
                                                     "type": "string",
@@ -6369,7 +6371,7 @@
         "/api/find-carpet-by-qr": {
             "get": {
                 "tags": [
-                    "Order Carpets"
+                    "Order Carpet Qr assignment and handling"
                 ],
                 "summary": "Find carpet by QR code",
                 "description": "Retrieves details of a carpet based on its QR code, including related order, photos, and complaint information.",
@@ -6741,6 +6743,216 @@
                                         "error": {
                                             "type": "string",
                                             "example": "Detailed error message"
+                                        },
+                                        "error_code": {
+                                            "type": "integer",
+                                            "example": 500
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/check-qr-exists": {
+            "post": {
+                "tags": [
+                    "Order Carpet Qr assignment and handling"
+                ],
+                "summary": "Check if QR code reference exists",
+                "description": "Validates if a QR code Qr Code already exists in the system and returns carpet details if found",
+                "operationId": "34a4cf52052c80252beb9a226ced62db",
+                "requestBody": {
+                    "description": "QR code reference to check",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "qr_code"
+                                ],
+                                "properties": {
+                                    "qr_code": {
+                                        "description": "The QR code reference to check (case insensitive)",
+                                        "type": "string",
+                                        "maxLength": 50,
+                                        "minLength": 3,
+                                        "example": "ORD-123-4567"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "QR code check result",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "QR code availability checked successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "exists": {
+                                                    "description": "Whether the QR code exists",
+                                                    "type": "boolean",
+                                                    "example": false
+                                                },
+                                                "qr_code": {
+                                                    "description": "The checked Qr Code",
+                                                    "type": "string",
+                                                    "example": "ORD-123-4567"
+                                                },
+                                                "carpet": {
+                                                    "description": "Carpet details if QR code exists",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "example": 1
+                                                        },
+                                                        "order_id": {
+                                                            "type": "integer",
+                                                            "example": 123
+                                                        },
+                                                        "status": {
+                                                            "type": "string",
+                                                            "example": "measured"
+                                                        },
+                                                        "status_label": {
+                                                            "type": "string",
+                                                            "example": "Measured"
+                                                        },
+                                                        "height": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 2.5,
+                                                            "nullable": true
+                                                        },
+                                                        "width": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 3,
+                                                            "nullable": true
+                                                        },
+                                                        "total_area": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 7.5,
+                                                            "nullable": true
+                                                        },
+                                                        "measured_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2025-08-31T10:30:00.000000Z",
+                                                            "nullable": true
+                                                        },
+                                                        "qr_code": {
+                                                            "type": "string",
+                                                            "example": "ORD-123-4567"
+                                                        },
+                                                        "qr_code_url": {
+                                                            "type": "string",
+                                                            "example": "https://domain.com/storage/qr-codes/ORD-123-4567.png",
+                                                            "nullable": true
+                                                        },
+                                                        "services_count": {
+                                                            "type": "integer",
+                                                            "example": 2
+                                                        },
+                                                        "total_price": {
+                                                            "type": "number",
+                                                            "format": "float",
+                                                            "example": 150
+                                                        },
+                                                        "remarks": {
+                                                            "type": "string",
+                                                            "example": "Special handling required",
+                                                            "nullable": true
+                                                        },
+                                                        "created_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2025-08-31T08:00:00.000000Z"
+                                                        },
+                                                        "updated_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "example": "2025-08-31T10:30:00.000000Z"
+                                                        }
+                                                    },
+                                                    "type": "object",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "error_code": {
+                                            "type": "integer",
+                                            "example": 422
+                                        },
+                                        "errors": {
+                                            "properties": {
+                                                "qr_code": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string",
+                                                        "example": "Qr Code is required."
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "error"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "An error occurred while checking QR code existence"
                                         },
                                         "error_code": {
                                             "type": "integer",
@@ -9478,6 +9690,10 @@
             "description": "API Endpoints for managing carpet measurements"
         },
         {
+            "name": "Order Carpet Qr assignment and handling",
+            "description": "API Endpoints for Order Carpet QR operations"
+        },
+        {
             "name": "QR Code Validation",
             "description": "Endpoints for validating QR codes"
         },
@@ -9520,20 +9736,6 @@
         {
             "name": "Users",
             "description": "Users"
-        }
-    ],
-    "components": {
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT"
-            }
-        }
-    },
-    "security": [
-        {
-            "bearerAuth": []
         }
     ]
 }
