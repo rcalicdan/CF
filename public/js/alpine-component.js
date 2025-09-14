@@ -2,20 +2,86 @@ function routeOptimizer() {
     const data = new RouteOptimizerData();
 
     return {
-        ...data,
+        dataInstance: new RouteOptimizerData(),
 
         selectedDriver: null,
         showRouteSummary: false,
-
         manualEditMode: false,
         isDragging: false,
         draggedOrderIndex: null,
+
+        get drivers() {
+            return this.dataInstance.drivers;
+        },
+
+        get allOrders() {
+            return this.dataInstance.allOrders;
+        },
+
+        get dataLoaded() {
+            return this.dataInstance.dataLoaded;
+        },
+
+        get loading() {
+            return this.dataInstance.loading;
+        },
+
+        set loading(value) {
+            this.dataInstance.loading = value;
+        },
+
+        get loadingError() {
+            return this.dataInstance.loadingError;
+        },
+
+        get selectedDate() {
+            return this.dataInstance.selectedDate;
+        },
+
+        set selectedDate(value) {
+            this.dataInstance.selectedDate = value;
+        },
+
+        get orders() {
+            return this.dataInstance.orders;
+        },
+
+        set orders(value) {
+            this.dataInstance.orders = value;
+        },
+
+        get optimizationResult() {
+            return this.dataInstance.optimizationResult;
+        },
+
+        set optimizationResult(value) {
+            this.dataInstance.optimizationResult = value;
+        },
+
+        get optimizationError() {
+            return this.dataInstance.optimizationError;
+        },
+
+        set optimizationError(value) {
+            this.dataInstance.optimizationError = value;
+        },
 
         init() {
             console.log("🚀 RouteOptimizer Alpine component initializing...");
             console.log("Initial loading state:", this.loading);
 
             window.routeOptimizerInstance = this;
+
+            const syncCheck = setInterval(() => {
+                this.$nextTick(() => {
+                    // This will trigger Alpine's reactivity
+                });
+
+                if (this.dataLoaded && !this.loading) {
+                    console.log("✅ Data sync completed");
+                    clearInterval(syncCheck);
+                }
+            }, 200);
 
             const loadingCheck = setInterval(() => {
                 if (this.dataLoaded !== this.loading) {
@@ -83,12 +149,21 @@ function routeOptimizer() {
 
         waitForInitialData() {
             const checkData = () => {
+                console.log('🔍 Checking data:', {
+                    dataLoaded: this.dataLoaded,
+                    driversCount: this.drivers.length,
+                    selectedDriver: this.selectedDriver?.full_name,
+                    allOrdersCount: this.allOrders?.length
+                });
+
                 if (this.dataLoaded && this.drivers.length > 0 && !this.selectedDriver) {
                     this.selectedDriver = this.drivers[0];
-                    console.log(`Initial driver set to: ${this.selectedDriver.full_name}`);
-                    this.updateOrders();
+                    console.log(`✅ Initial driver set to: ${this.selectedDriver.full_name}`);
+
+                    this.$nextTick(() => {
+                        this.updateOrders();
+                    });
                 } else if (!this.dataLoaded && !this.loadingError) {
-                    // Keep checking until data loads
                     setTimeout(checkData, 100);
                 }
             };
@@ -96,7 +171,7 @@ function routeOptimizer() {
         },
 
         getOrdersForDriverAndDate(driverId, date) {
-            return data.getOrdersForDriverAndDate(driverId, date);
+            return this.dataInstance.getOrdersForDriverAndDate(driverId, date);
         },
 
         async updateOrders() {
@@ -107,27 +182,28 @@ function routeOptimizer() {
 
             if (this.selectedDriver && this.selectedDate) {
                 try {
-                    if (this.refreshCurrentOrders) {
-                        await this.refreshCurrentOrders();
-                    } else {
-                        this.orders = this.getOrdersForDriverAndDate(
-                            this.selectedDriver.id,
-                            this.selectedDate
-                        ) || [];
-                    }
+                    // Use the route data service method
+                    this.orders = this.getOrdersForDriverAndDate(
+                        this.selectedDriver.id,
+                        this.selectedDate
+                    ) || [];
 
                     console.log(`✅ Loaded ${this.orders.length} orders for driver ${this.selectedDriver.full_name} on ${this.selectedDate}`);
+
+                    // Force Alpine to detect changes
+                    this.$nextTick(() => {
+                        if (this.refreshOptimizedRoute) {
+                            this.refreshOptimizedRoute();
+                        }
+                    });
+
                 } catch (error) {
                     console.error('❌ Failed to load orders:', error);
                     this.orders = [];
                 }
             } else {
-                console.log('No driver or date selected, clearing orders');
+                console.log('❌ No driver or date selected, clearing orders');
                 this.orders = [];
-            }
-
-            if (this.refreshOptimizedRoute) {
-                this.refreshOptimizedRoute();
             }
         },
 
@@ -357,19 +433,19 @@ function routeOptimizer() {
                 alert(`No orders available for ${this.formattedSelectedDate}`);
                 return;
             }
-            if (
-                !window.optimizerService ||
-                !window.optimizerService.canOptimize()
-            ) {
-                console.warn(
-                    "Cannot optimize routes - missing service or requirements"
-                );
+
+            // Check canOptimize BEFORE setting loading to true
+            if (!window.optimizerService || !window.optimizerService.canOptimize()) {
+                console.warn("Cannot optimize routes - missing service or requirements");
                 return;
             }
+
             this.loading = true;
             this.optimizationError = null;
+
             try {
-                await window.optimizerService.optimizeRoutes();
+                // Call the existing optimizeRoutes method but skip the internal canOptimize check
+                await window.optimizerService.optimizeRoutes(true); // Pass true to skip internal checks
                 setTimeout(() => {
                     this.showRouteSummary = true;
                 }, 100);

@@ -1,55 +1,115 @@
 class RouteOptimizerService {
     constructor(routeComponent) {
         this.routeComponent = routeComponent;
-        this.apiEndpoint = 'http://147.135.252.51:3000';
+        this.vroomEndpoint = 'http://147.135.252.51:3000'; // VROOM API endpoint
+        this.serverEndpoint = window.location.origin; // Server/DB endpoint
         this.mockDelay = 0;
     }
 
-    async optimizeRoutes() {
+    canOptimize() {
+        const hasDriver = this.routeComponent.selectedDriver && this.routeComponent.selectedDriver.id;
+        const hasOrders = this.routeComponent.orders.length > 0;
+        const hasValidCoordinates = this.routeComponent.orders.some(order =>
+            order.coordinates &&
+            Array.isArray(order.coordinates) &&
+            order.coordinates.length === 2 &&
+            !isNaN(order.coordinates[0]) &&
+            !isNaN(order.coordinates[1])
+        );
+
+        console.log("🔍 canOptimize check:", {
+            hasDriver,
+            hasOrders,
+            hasValidCoordinates,
+            driverInfo: this.routeComponent.selectedDriver,
+            ordersCount: this.routeComponent.orders.length,
+            ordersWithCoordinates: this.routeComponent.orders.filter(order =>
+                order.coordinates &&
+                Array.isArray(order.coordinates) &&
+                order.coordinates.length === 2 &&
+                !isNaN(order.coordinates[0]) &&
+                !isNaN(order.coordinates[1])
+            ).length
+        });
+
+        return hasDriver && hasOrders && hasValidCoordinates;
+    }
+
+    async optimizeRoutes(skipChecks = false) {
         console.log("🚀 Starting optimization process...");
-        console.log("Orders count:", this.orders.length);
-        console.log("Selected driver:", this.selectedDriver);
-        console.log("Selected date:", this.selectedDate);
+        console.log("Orders count:", this.routeComponent.orders.length);
+        console.log("Selected driver:", this.routeComponent.selectedDriver);
+        console.log("Selected date:", this.routeComponent.selectedDate);
 
-        if (this.orders.length === 0) {
-            alert(`No orders available for ${this.formattedSelectedDate}`);
-            return;
-        }
-
-        if (!window.optimizerService || !window.optimizerService.canOptimize()) {
-            console.warn("Cannot optimize routes - missing service or requirements");
-            console.log("Optimizer service exists:", !!window.optimizerService);
-            if (window.optimizerService) {
-                console.log("Can optimize:", window.optimizerService.canOptimize());
+        if (!skipChecks) {
+            if (this.routeComponent.orders.length === 0) {
+                alert(`No orders available for ${this.routeComponent.formattedSelectedDate}`);
+                return;
             }
-            return;
+
+            if (!this.canOptimize()) {
+                console.warn("Cannot optimize routes - missing service or requirements");
+                return;
+            }
+
+            this.routeComponent.loading = true;
+            this.routeComponent.optimizationError = null;
         }
-
-        console.log("✅ All checks passed, starting optimization...");
-
-        this.loading = true;
-        this.optimizationError = null;
 
         try {
-            console.log("📞 Calling optimizer service...");
-            await window.optimizerService.optimizeRoutes();
+            console.log("📞 Calling VROOM API...");
+            const vroomResult = await this.callVroomAPI();
+
+            console.log("✅ VROOM API call successful, processing result...");
+            const optimizationResult = this.processVroomResult(vroomResult);
+
+            this.routeComponent.optimizationResult = optimizationResult;
+
+            await this.saveOptimizationToServer();
 
             console.log("✅ Optimization completed successfully");
-            setTimeout(() => {
-                this.showRouteSummary = true;
-            }, 100);
+
+            if (window.mapManager) {
+                setTimeout(() => {
+                    window.mapManager.visualizeOptimizedRoute();
+                }, 100);
+            }
 
         } catch (error) {
             console.error("❌ Route optimization failed:", error);
-            this.optimizationError = error.message;
+            this.routeComponent.optimizationError = error.message;
+            throw error;
         } finally {
-            console.log("🔄 Setting loading to false");
-            this.loading = false;
+            if (!skipChecks) {
+                console.log("🔄 Setting loading to false");
+                this.routeComponent.loading = false;
+            }
         }
     }
 
     async saveOptimizationToServer() {
+        console.log('🚀 Starting saveOptimizationToServer...');
+
         try {
+            // Debug: Check component state
+            console.log('🔍 Component state check:', {
+                hasSelectedDriver: !!this.routeComponent.selectedDriver,
+                selectedDriverId: this.routeComponent.selectedDriver?.id,
+                selectedDate: this.routeComponent.selectedDate,
+                hasOptimizationResult: !!this.routeComponent.optimizationResult,
+                ordersCount: this.routeComponent.orders?.length || 0,
+                serverEndpoint: this.serverEndpoint // Updated to show server endpoint
+            });
+
+            // Debug: Check optimization result structure
+            console.log('🔍 Optimization result structure:', {
+                optimizationResult: this.routeComponent.optimizationResult,
+                totalDistance: this.routeComponent.optimizationResult?.total_distance,
+                totalTime: this.routeComponent.optimizationResult?.total_time,
+                estimatedFuelCost: this.routeComponent.optimizationResult?.estimated_fuel_cost,
+                carbonFootprint: this.routeComponent.optimizationResult?.carbon_footprint
+            });
+
             const optimizationData = {
                 driver_id: this.routeComponent.selectedDriver.id,
                 optimization_date: this.routeComponent.selectedDate,
@@ -63,23 +123,157 @@ class RouteOptimizerService {
                 manual_modifications: null
             };
 
-            const response = await fetch(`${this.apiEndpoint}/api/route-data/save-optimization`, {
+            console.log('📦 Optimization data to send:', {
+                payload: optimizationData,
+                payloadSize: JSON.stringify(optimizationData).length + ' bytes'
+            });
+
+            // Debug: Check authentication tokens
+            const authToken = localStorage.getItem('auth_token');
+            const metaToken = document.querySelector('meta[name="token"]')?.content;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+            console.log('🔐 Authentication debug:', {
+                hasAuthTokenInLocalStorage: !!authToken,
+                authTokenLength: authToken?.length || 0,
+                hasMetaToken: !!metaToken,
+                metaTokenLength: metaToken?.length || 0,
+                hasCsrfToken: !!csrfToken,
+                csrfTokenLength: csrfToken?.length || 0,
+                authTokenPreview: authToken ? authToken.substring(0, 20) + '...' : 'none',
+                csrfTokenPreview: csrfToken ? csrfToken.substring(0, 20) + '...' : 'none'
+            });
+
+            const token = localStorage.getItem('auth_token') ||
+                document.querySelector('meta[name="token"]')?.content;
+
+            // Debug: Check final request configuration - NOW USING SERVER ENDPOINT
+            const requestUrl = `${this.serverEndpoint}/api/route-data/save-optimization`;
+            const requestHeaders = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : '',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            };
+
+            console.log('🌐 Request configuration:', {
+                url: requestUrl,
+                method: 'POST',
+                headers: {
+                    'Content-Type': requestHeaders['Content-Type'],
+                    'Accept': requestHeaders['Accept'],
+                    'Authorization': requestHeaders['Authorization'] ? 'Bearer [TOKEN_PRESENT]' : '[NO_TOKEN]',
+                    'X-CSRF-TOKEN': requestHeaders['X-CSRF-TOKEN'] ? '[CSRF_TOKEN_PRESENT]' : '[NO_CSRF_TOKEN]'
+                },
+                bodyLength: JSON.stringify(optimizationData).length
+            });
+
+            // Debug: Check if we're in the right origin
+            console.log('🔍 Origin and CORS info:', {
+                currentOrigin: window.location.origin,
+                targetHost: new URL(requestUrl).origin,
+                isCrossOrigin: window.location.origin !== new URL(requestUrl).origin,
+                userAgent: navigator.userAgent,
+                currentURL: window.location.href
+            });
+
+            console.log('📡 Making fetch request to server...');
+            const startTime = performance.now();
+
+            // UPDATED: Using serverEndpoint for database operations
+            const response = await fetch(`${this.serverEndpoint}/api/route-data/save-optimization`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+                    'Authorization': token ? `Bearer ${token}` : '',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
                 },
                 body: JSON.stringify(optimizationData)
             });
 
+            const endTime = performance.now();
+            console.log(`⏱️ Request completed in ${Math.round(endTime - startTime)}ms`);
+
+            // Debug: Response analysis
+            console.log('📨 Response received:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                type: response.type,
+                url: response.url,
+                redirected: response.redirected,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+
+            // Debug: Try to read response body for more info
+            let responseBody;
+            let responseText;
+            try {
+                responseText = await response.clone().text();
+                console.log('📄 Response body (text):', responseText);
+
+                // Try to parse as JSON if possible
+                if (responseText) {
+                    try {
+                        responseBody = JSON.parse(responseText);
+                        console.log('📄 Response body (parsed JSON):', responseBody);
+                    } catch (parseError) {
+                        console.log('📄 Response body is not valid JSON:', parseError.message);
+                    }
+                }
+            } catch (bodyReadError) {
+                console.warn('⚠️ Could not read response body:', bodyReadError.message);
+            }
+
             if (!response.ok) {
+                const errorInfo = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    responseBody: responseBody || responseText || 'No response body',
+                    headers: Object.fromEntries(response.headers.entries())
+                };
+
+                console.error('❌ Request failed with details:', errorInfo);
                 throw new Error(`Failed to save optimization: ${response.statusText}`);
             }
 
             console.log('✅ Optimization saved to server');
+
         } catch (error) {
+            // Enhanced error logging
+            console.error('❌ Comprehensive error details:', {
+                errorName: error.name,
+                errorMessage: error.message,
+                errorStack: error.stack,
+                errorType: typeof error,
+                isNetworkError: error instanceof TypeError && error.message.includes('fetch'),
+                isCORSError: error.message?.includes('CORS') || error.message?.includes('cross-origin'),
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                currentURL: window.location.href,
+                serverEndpoint: this.serverEndpoint // Updated to show server endpoint
+            });
+
+            // Additional CORS-specific debugging
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                console.error('🚫 Network/CORS Error - Additional Debug Info:', {
+                    possibleCauses: [
+                        'CORS policy blocking the request',
+                        'Server is not running or unreachable',
+                        'Network connectivity issues',
+                        'Server not configured to handle preflight requests',
+                        'Wrong API endpoint URL'
+                    ],
+                    recommendations: [
+                        'Check if the API server is running',
+                        'Verify CORS configuration on the server',
+                        'Check if the API endpoint URL is correct',
+                        'Ensure the server handles OPTIONS requests for CORS preflight'
+                    ]
+                });
+            }
+
             console.warn('⚠️ Failed to save optimization to server:', error);
             // Don't throw - optimization should work even if saving fails
         }
@@ -92,7 +286,8 @@ class RouteOptimizerService {
         console.log('VROOM Payload:', JSON.stringify(vroomPayload, null, 2));
 
         try {
-            const response = await fetch(`${this.apiEndpoint}/`, {
+            // UPDATED: Using vroomEndpoint for VROOM API calls
+            const response = await fetch(`${this.vroomEndpoint}/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

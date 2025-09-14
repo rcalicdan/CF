@@ -100,6 +100,17 @@
                     Close
                 </button>
             </div>
+            <button
+                @click="console.log('Debug:', { 
+    dataLoaded, 
+    driversCount: drivers.length, 
+    selectedDriver: selectedDriver?.full_name,
+    ordersCount: orders.length,
+    allOrdersCount: allOrders?.length 
+}); if (!selectedDriver && drivers.length > 0) { selectedDriver = drivers[0]; updateOrders(); }"
+                class="bg-red-500 text-white px-4 py-2 rounded">
+                Debug & Force Driver Selection
+            </button>
         </div>
     </div>
 </div>

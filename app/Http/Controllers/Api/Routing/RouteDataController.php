@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api\Routing;
 
 use App\Http\Controllers\Controller;
 use App\ActionService\RouteDataService;
+use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class RouteDataController extends Controller
 {
+    use ApiResponseTrait;
+
     public function __construct(
         private RouteDataService $routeDataService
     ) {}
@@ -50,7 +53,7 @@ class RouteDataController extends Controller
                 $request->date
             );
 
-            return response()->json([
+            return $this->successResponse([
                 'success' => true,
                 'data' => $orders,
                 'meta' => [
@@ -61,7 +64,7 @@ class RouteDataController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->errorResponse([
                 'success' => false,
                 'message' => 'Failed to fetch orders',
                 'error' => $e->getMessage()
@@ -85,7 +88,7 @@ class RouteDataController extends Controller
                 $request->end_date
             );
 
-            return response()->json([
+            return $this->successResponse([
                 'success' => true,
                 'data' => $orders,
                 'meta' => [
@@ -97,7 +100,7 @@ class RouteDataController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->errorResponse([
                 'success' => false,
                 'message' => 'Failed to fetch orders',
                 'error' => $e->getMessage()
@@ -125,12 +128,12 @@ class RouteDataController extends Controller
                 $request->end_date
             );
 
-            return response()->json([
+            return $this->successResponse([
                 'success' => true,
                 'data' => $statistics
             ]);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->errorResponse([
                 'success' => false,
                 'message' => 'Failed to fetch statistics',
                 'error' => $e->getMessage()
@@ -146,13 +149,13 @@ class RouteDataController extends Controller
         try {
             $result = $this->routeDataService->geocodeMissingCoordinates();
 
-            return response()->json([
+            return $this->successResponse([
                 'success' => true,
                 'message' => 'Geocoding process completed',
                 'data' => $result
             ]);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->errorResponse([
                 'success' => false,
                 'message' => 'Geocoding process failed',
                 'error' => $e->getMessage()
@@ -181,13 +184,13 @@ class RouteDataController extends Controller
         try {
             $optimization = $this->routeDataService->saveRouteOptimization($request->all());
 
-            return response()->json([
+            return $this->successResponse([
                 'success' => true,
                 'message' => 'Route optimization saved successfully',
                 'data' => $optimization
             ]);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->errorResponse([
                 'success' => false,
                 'message' => 'Failed to save route optimization',
                 'error' => $e->getMessage()
@@ -211,12 +214,12 @@ class RouteDataController extends Controller
                 $request->date
             );
 
-            return response()->json([
+            return $this->successResponse([
                 'success' => true,
                 'data' => $optimization
             ]);
         } catch (\Exception $e) {
-            return response()->json([
+            return $this->errorResponse([
                 'success' => false,
                 'message' => 'Failed to retrieve saved optimization',
                 'error' => $e->getMessage()
