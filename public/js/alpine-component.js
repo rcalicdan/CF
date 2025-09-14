@@ -11,11 +11,11 @@ function routeOptimizer() {
         draggedOrderIndex: null,
 
         get drivers() {
-            return this.dataInstance.drivers;
+            return this.dataInstance.drivers || [];
         },
 
         get allOrders() {
-            return this.dataInstance.allOrders;
+            return this.dataInstance.allOrders || [];
         },
 
         get dataLoaded() {
@@ -43,7 +43,7 @@ function routeOptimizer() {
         },
 
         get orders() {
-            return this.dataInstance.orders;
+            return this.dataInstance.orders || [];
         },
 
         set orders(value) {
@@ -72,38 +72,31 @@ function routeOptimizer() {
 
             window.routeOptimizerInstance = this;
 
-            const syncCheck = setInterval(() => {
-                this.$nextTick(() => {
-                    // This will trigger Alpine's reactivity
-                });
+            // Set up a polling mechanism to check for data changes
+            const dataPoller = setInterval(() => {
+                // Force Alpine to check for changes
+                this.$nextTick();
 
                 if (this.dataLoaded && !this.loading) {
-                    console.log("✅ Data sync completed");
-                    clearInterval(syncCheck);
-                }
-            }, 200);
+                    console.log("✅ Data loaded, clearing poller");
+                    clearInterval(dataPoller);
 
-            const loadingCheck = setInterval(() => {
-                if (this.dataLoaded !== this.loading) {
-                    console.log("🔄 Syncing loading state:", !this.dataLoaded);
-                    this.loading = !this.dataLoaded;
+                    // Auto-select first driver if none selected
+                    if (!this.selectedDriver && this.drivers.length > 0) {
+                        this.selectedDriver = this.drivers[0];
+                        console.log(`✅ Auto-selected driver: ${this.selectedDriver.full_name}`);
+                        this.$nextTick(() => {
+                            this.updateOrders();
+                        });
+                    }
                 }
+            }, 100);
 
-                if (!this.loading) {
-                    clearInterval(loadingCheck);
-                    console.log("✅ Loading check cleared");
-                }
-            }, 500);
-
+            // Clean up poller after 10 seconds
             setTimeout(() => {
-                if (this.loading) {
-                    console.warn("⚠️ EMERGENCY: Forcing loading to stop after 10 seconds");
-                    this.loading = false;
-                    clearInterval(loadingCheck);
-                }
+                clearInterval(dataPoller);
+                console.log("⏰ Data poller timeout, clearing interval");
             }, 10000);
-
-            this.waitForInitialData();
 
             this.$watch("selectedDate", async (newDate, oldDate) => {
                 console.log(`📅 Date changed: ${oldDate} → ${newDate}`);
@@ -121,10 +114,6 @@ function routeOptimizer() {
                 if (newDriver && newDriver.id !== oldDriver?.id) {
                     await this.updateOrders();
                 }
-            });
-
-            this.$watch("loading", (value, oldValue) => {
-                console.log("🔄 Alpine loading state changed:", oldValue, "→", value);
             });
 
             this.$watch("optimizationResult", (value) => {
@@ -147,32 +136,33 @@ function routeOptimizer() {
             });
         },
 
-        waitForInitialData() {
-            const checkData = () => {
-                console.log('🔍 Checking data:', {
-                    dataLoaded: this.dataLoaded,
-                    driversCount: this.drivers.length,
-                    selectedDriver: this.selectedDriver?.full_name,
-                    allOrdersCount: this.allOrders?.length
-                });
+        // waitForInitialData() {
+        //     const checkData = () => {
+        //         console.log('🔍 Checking data:', {
+        //             dataLoaded: this.dataLoaded,
+        //             driversCount: this.drivers.length,
+        //             selectedDriver: this.selectedDriver?.full_name,
+        //             allOrdersCount: this.allOrders?.length
+        //         });
 
-                if (this.dataLoaded && this.drivers.length > 0 && !this.selectedDriver) {
-                    this.selectedDriver = this.drivers[0];
-                    console.log(`✅ Initial driver set to: ${this.selectedDriver.full_name}`);
+        //         if (this.dataLoaded && this.drivers.length > 0 && !this.selectedDriver) {
+        //             this.selectedDriver = this.drivers[0];
+        //             console.log(`✅ Initial driver set to: ${this.selectedDriver.full_name}`);
 
-                    this.$nextTick(() => {
-                        this.updateOrders();
-                    });
-                } else if (!this.dataLoaded && !this.loadingError) {
-                    setTimeout(checkData, 100);
-                }
-            };
-            checkData();
-        },
+        //             this.$nextTick(() => {
+        //                 this.updateOrders();
+        //             });
+        //         } else if (!this.dataLoaded && !this.loadingError) {
+        //             setTimeout(checkData, 100);
+        //         }
+        //     };
+        //     checkData();
+        // },
 
         getOrdersForDriverAndDate(driverId, date) {
             return this.dataInstance.getOrdersForDriverAndDate(driverId, date);
         },
+
 
         async updateOrders() {
             console.log('🔄 updateOrders called:', {
@@ -183,12 +173,14 @@ function routeOptimizer() {
             if (this.selectedDriver && this.selectedDate) {
                 try {
                     // Use the route data service method
-                    this.orders = this.getOrdersForDriverAndDate(
+                    const orders = this.getOrdersForDriverAndDate(
                         this.selectedDriver.id,
                         this.selectedDate
                     ) || [];
 
-                    console.log(`✅ Loaded ${this.orders.length} orders for driver ${this.selectedDriver.full_name} on ${this.selectedDate}`);
+                    this.dataInstance.orders = orders;
+
+                    console.log(`✅ Loaded ${orders.length} orders for driver ${this.selectedDriver.full_name} on ${this.selectedDate}`);
 
                     // Force Alpine to detect changes
                     this.$nextTick(() => {
@@ -199,11 +191,11 @@ function routeOptimizer() {
 
                 } catch (error) {
                     console.error('❌ Failed to load orders:', error);
-                    this.orders = [];
+                    this.dataInstance.orders = [];
                 }
             } else {
                 console.log('❌ No driver or date selected, clearing orders');
-                this.orders = [];
+                this.dataInstance.orders = [];
             }
         },
 
@@ -540,7 +532,9 @@ function routeOptimizer() {
         },
 
         selectDriver(driver) {
+            console.log('🎯 Selecting driver:', driver.full_name);
             this.selectedDriver = driver;
+            this.updateOrders();
         },
 
         focusOnOrder(orderId) {
