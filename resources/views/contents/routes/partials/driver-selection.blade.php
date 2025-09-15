@@ -5,49 +5,35 @@
         Driver Assignment
     </h2>
 
-    <!-- Debug Info -->
-    <div x-show="!dataLoaded" class="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
+    <!-- Loading State -->
+    <div x-show="loading" class="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
         <div class="text-sm text-yellow-800">
             <i class="fas fa-spinner fa-spin mr-2"></i>
-            Loading drivers... 
+            Loading drivers...
             <span class="text-xs" x-text="`(${drivers.length} drivers loaded)`"></span>
         </div>
     </div>
 
-    <div x-show="dataLoaded && (!drivers || drivers.length === 0)" class="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+    <!-- No Drivers Found -->
+    <div x-show="!loading && dataLoaded && (!drivers || drivers.length === 0)"
+        class="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg">
         <div class="text-sm text-red-800">
             <i class="fas fa-exclamation-triangle mr-2"></i>
             No drivers found with completed or undelivered orders
         </div>
     </div>
 
-    <!-- Debug Button (remove in production) -->
-    <div class="mb-4">
-        <button @click="console.log('Debug State:', { 
-            dataLoaded, 
-            loading, 
-            driversCount: drivers.length, 
-            selectedDriver: selectedDriver?.full_name,
-            orders: orders.length 
-        }); 
-        if (!selectedDriver && drivers.length > 0) { 
-            selectDriver(drivers[0]); 
-        }"
-        class="bg-orange-500 text-white px-3 py-1 rounded text-xs">
-            Debug State & Force Select
-        </button>
-    </div>
-
     <!-- Selected Driver Card -->
-    <div x-show="selectedDriver && selectedDriver.id" class="p-4 rounded-lg border border-indigo-200 bg-indigo-50 mb-4">
+    <div x-show="!loading && selectedDriver && selectedDriver.id"
+        class="p-4 rounded-lg border border-indigo-200 bg-indigo-50 mb-4">
         <div class="flex items-center justify-between">
             <div class="min-w-0 flex-1">
                 <div class="font-semibold text-slate-800 truncate flex items-center">
                     <i class="fas fa-user-check text-indigo-600 mr-2"></i>
                     <span x-text="selectedDriver?.full_name || 'Loading...'"></span>
                 </div>
-                <div class="text-sm text-slate-600 truncate mt-1"
-                    x-text="selectedDriver?.vehicle_details || 'No vehicle details'"></div>
+                {{-- <div class="text-sm text-slate-600 truncate mt-1"
+                    x-text="selectedDriver?.vehicle_details || 'No vehicle details'"></div> --}}
                 <div class="text-xs text-indigo-800 font-medium mt-2">
                     License: <span x-text="selectedDriver?.license_number || 'N/A'"></span>
                 </div>
@@ -56,7 +42,7 @@
     </div>
 
     <!-- No Driver Selected Placeholder -->
-    <div x-show="dataLoaded && (!selectedDriver || !selectedDriver.id)"
+    <div x-show="!loading && dataLoaded && (!selectedDriver || !selectedDriver.id)"
         class="p-6 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 mb-4 text-center">
         <div class="text-slate-500">
             <i class="fas fa-user-plus text-3xl text-slate-400 mb-3"></i>
@@ -66,15 +52,16 @@
     </div>
 
     <!-- Action Button -->
-    <button @click="open = true" 
-        :disabled="!dataLoaded || !drivers || drivers.length === 0"
-        :class="(!dataLoaded || !drivers || drivers.length === 0) 
-            ? 'bg-gray-400 cursor-not-allowed' 
-            : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md'"
+    <button @click="open = true" :disabled="loading || !dataLoaded || !drivers || drivers.length === 0"
+        :class="(loading || !dataLoaded || !drivers || drivers.length === 0) ?
+        'bg-gray-400 cursor-not-allowed' :
+        'bg-indigo-600 hover:bg-indigo-700 hover:shadow-md'"
         class="w-full text-white py-3 px-4 rounded-lg font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-300 flex items-center justify-center shadow-sm">
         <i class="fas fa-user-cog mr-2"></i>
-        <span x-text="(selectedDriver && selectedDriver.id) ? 'Change Driver' : 'Select Driver'"></span>
-        <span x-show="drivers && drivers.length > 0"
+        <span x-show="loading">Loading...</span>
+        <span x-show="!loading"
+            x-text="(selectedDriver && selectedDriver.id) ? 'Change Driver' : 'Select Driver'"></span>
+        <span x-show="!loading && drivers && drivers.length > 0"
             class="ml-auto bg-indigo-500 text-white px-2 py-1 rounded-full text-xs font-bold"
             x-text="(drivers?.length || 0) + ' available'"></span>
     </button>
@@ -116,8 +103,8 @@
                             <div class="min-w-0 flex-1">
                                 <div class="font-medium text-slate-800 truncate"
                                     x-text="driver?.full_name || 'Unknown Driver'"></div>
-                                <div class="text-sm text-slate-500 truncate mt-1"
-                                    x-text="driver?.vehicle_details || 'No vehicle details'"></div>
+                                {{-- <div class="text-sm text-slate-500 truncate mt-1"
+                                    x-text="driver?.vehicle_details || 'No vehicle details'"></div> --}}
                                 <div class="text-xs text-slate-400 font-mono mt-1"
                                     x-text="driver?.license_number || 'No license'"></div>
                             </div>
@@ -130,10 +117,17 @@
                 </template>
 
                 <!-- Empty state -->
-                <div x-show="!drivers || drivers.length === 0" class="p-6 text-center text-slate-500">
+                <div x-show="!loading && (!drivers || drivers.length === 0)" class="p-6 text-center text-slate-500">
                     <i class="fas fa-user-slash text-3xl mb-3"></i>
                     <div class="font-medium">No Drivers Available</div>
                     <div class="text-sm mt-1">No drivers have completed or undelivered orders</div>
+                </div>
+
+                <!-- Loading state in modal -->
+                <div x-show="loading" class="p-6 text-center text-slate-500">
+                    <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
+                    <div class="font-medium">Loading Drivers...</div>
+                    <div class="text-sm mt-1">Please wait while we fetch available drivers</div>
                 </div>
             </div>
 

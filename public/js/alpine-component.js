@@ -3,7 +3,10 @@ function routeOptimizer() {
 
     return {
         dataInstance: new RouteOptimizerData(),
-        routeDataService: null, // Add route data service
+        routeDataService: null,
+
+        // Direct properties instead of getters/setters
+        loading: false,
 
         selectedDriver: null,
         showRouteSummary: false,
@@ -21,14 +24,6 @@ function routeOptimizer() {
 
         get dataLoaded() {
             return this.dataInstance.dataLoaded;
-        },
-
-        get loading() {
-            return this.dataInstance.loading;
-        },
-
-        set loading(value) {
-            this.dataInstance.loading = value;
         },
 
         get loadingError() {
@@ -118,7 +113,7 @@ function routeOptimizer() {
 
         async loadData() {
             console.log("🔄 Starting data load...");
-            this.loading = true;
+            this.loading = true; // Set directly on Alpine component
             this.dataInstance.loadingError = null;
             
             try {
@@ -140,7 +135,6 @@ function routeOptimizer() {
                 
                 // Mark data as loaded
                 this.dataInstance.dataLoaded = true;
-                this.loading = false;
                 
                 console.log(`✅ Data loaded: ${this.drivers.length} drivers, ${this.allOrders.length} orders`);
                 
@@ -157,7 +151,9 @@ function routeOptimizer() {
                 console.error('❌ Failed to load data:', error);
                 this.dataInstance.loadingError = error.message;
                 this.dataInstance.dataLoaded = false;
-                this.loading = false;
+            } finally {
+                this.loading = false; // Set directly on Alpine component
+                console.log('✅ Loading complete, loading state:', this.loading);
             }
         },
 
@@ -674,6 +670,16 @@ function routeOptimizer() {
                 manualEditMode: this.manualEditMode,
             });
         },
+
+        // Add debug method
+        forceRefresh() {
+            console.log('🔄 Force refreshing component state...');
+            
+            // Force Alpine to detect all changes
+            this.$nextTick(() => {
+                console.log('✅ Force refresh complete');
+            });
+        }
     };
 }
 

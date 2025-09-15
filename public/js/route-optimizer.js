@@ -9,7 +9,7 @@ class RouteOptimizerData {
         this.selectedDriver = null;
         this.orders = [];
 
-        this.loading = false;
+        this.loading = false; // Start as false - Alpine component will manage this
         this.dataLoaded = false;
         this.loadingError = null;
 
@@ -21,11 +21,12 @@ class RouteOptimizerData {
         this.routingControl = null;
         this.mapInitialized = false;
 
-        this.loadInitialData();
+        // Remove automatic loading - let Alpine component handle it
+        // this.loadInitialData();
     }
 
     /**
-     * Load initial data from API
+     * Load initial data from API (called by Alpine component)
      */
     async loadInitialData() {
         console.log("📥 Starting loadInitialData...");
@@ -61,14 +62,8 @@ class RouteOptimizerData {
             console.error('❌ Failed to load initial data:', error);
             this.loadingError = 'Failed to load data from server: ' + error.message;
         } finally {
-            console.log('🔄 Setting loading to false');
+            console.log('🔄 Setting loading to false on data instance');
             this.loading = false;
-
-            // Force a reactivity trigger if we're in Alpine context
-            if (window.routeOptimizerInstance) {
-                window.routeOptimizerInstance.loading = false;
-            }
-
             console.log('Final loading state:', this.loading);
         }
     }
