@@ -9,7 +9,7 @@ class RouteOptimizerData {
         this.selectedDriver = null;
         this.orders = [];
 
-        this.loading = false; // Start as false - Alpine component will manage this
+        this.loading = false; 
         this.dataLoaded = false;
         this.loadingError = null;
 
@@ -20,9 +20,6 @@ class RouteOptimizerData {
         this.markers = [];
         this.routingControl = null;
         this.mapInitialized = false;
-
-        // Remove automatic loading - let Alpine component handle it
-        // this.loadInitialData();
     }
 
     /**
@@ -55,9 +52,7 @@ class RouteOptimizerData {
             this.dataLoaded = true;
             console.log('✅ Data loading completed successfully');
 
-            // Add a small delay to ensure Alpine detects the change
             await new Promise(resolve => setTimeout(resolve, 100));
-
         } catch (error) {
             console.error('❌ Failed to load initial data:', error);
             this.loadingError = 'Failed to load data from server: ' + error.message;

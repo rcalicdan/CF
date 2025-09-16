@@ -51,6 +51,27 @@ class RouteDataService {
     }
 
     /**
+     * Get saved route optimization for driver and date
+     */
+    async loadSavedRouteOptimization(driverId, date) {
+        if (!driverId || !date) {
+            return null;
+        }
+
+        try {
+            const url = `${this.baseUrl}/saved-optimization?driver_id=${driverId}&date=${date}`;
+            const response = await this.request(url);
+
+            console.log(`📥 Loaded saved route for driver ${driverId} on ${date}:`, response.data);
+
+            return response.data;
+        } catch (error) {
+            console.warn('No saved route found or failed to load:', error);
+            return null;
+        }
+    }
+
+    /**
      * Get cached data or fetch from API
      */
     async getCachedData(key, fetchFn) {

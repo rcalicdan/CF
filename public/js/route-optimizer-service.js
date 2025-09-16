@@ -1,8 +1,8 @@
 class RouteOptimizerService {
     constructor(routeComponent) {
         this.routeComponent = routeComponent;
-        this.vroomEndpoint = 'http://147.135.252.51:3000'; // VROOM API endpoint
-        this.serverEndpoint = window.location.origin; // Server/DB endpoint
+        this.vroomEndpoint = 'http://147.135.252.51:3000'; 
+        this.serverEndpoint = window.location.origin; 
         this.mockDelay = 0;
     }
 
@@ -91,17 +91,15 @@ class RouteOptimizerService {
         console.log('🚀 Starting saveOptimizationToServer...');
 
         try {
-            // Debug: Check component state
             console.log('🔍 Component state check:', {
                 hasSelectedDriver: !!this.routeComponent.selectedDriver,
                 selectedDriverId: this.routeComponent.selectedDriver?.id,
                 selectedDate: this.routeComponent.selectedDate,
                 hasOptimizationResult: !!this.routeComponent.optimizationResult,
                 ordersCount: this.routeComponent.orders?.length || 0,
-                serverEndpoint: this.serverEndpoint // Updated to show server endpoint
+                serverEndpoint: this.serverEndpoint 
             });
 
-            // Debug: Check optimization result structure
             console.log('🔍 Optimization result structure:', {
                 optimizationResult: this.routeComponent.optimizationResult,
                 totalDistance: this.routeComponent.optimizationResult?.total_distance,
@@ -128,7 +126,6 @@ class RouteOptimizerService {
                 payloadSize: JSON.stringify(optimizationData).length + ' bytes'
             });
 
-            // Debug: Check authentication tokens
             const authToken = localStorage.getItem('auth_token');
             const metaToken = document.querySelector('meta[name="token"]')?.content;
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -147,7 +144,6 @@ class RouteOptimizerService {
             const token = localStorage.getItem('auth_token') ||
                 document.querySelector('meta[name="token"]')?.content;
 
-            // Debug: Check final request configuration - NOW USING SERVER ENDPOINT
             const requestUrl = `${this.serverEndpoint}/api/route-data/save-optimization`;
             const requestHeaders = {
                 'Content-Type': 'application/json',
@@ -168,7 +164,6 @@ class RouteOptimizerService {
                 bodyLength: JSON.stringify(optimizationData).length
             });
 
-            // Debug: Check if we're in the right origin
             console.log('🔍 Origin and CORS info:', {
                 currentOrigin: window.location.origin,
                 targetHost: new URL(requestUrl).origin,
@@ -180,7 +175,6 @@ class RouteOptimizerService {
             console.log('📡 Making fetch request to server...');
             const startTime = performance.now();
 
-            // UPDATED: Using serverEndpoint for database operations
             const response = await fetch(`${this.serverEndpoint}/api/route-data/save-optimization`, {
                 method: 'POST',
                 headers: {
@@ -195,7 +189,6 @@ class RouteOptimizerService {
             const endTime = performance.now();
             console.log(`⏱️ Request completed in ${Math.round(endTime - startTime)}ms`);
 
-            // Debug: Response analysis
             console.log('📨 Response received:', {
                 status: response.status,
                 statusText: response.statusText,
@@ -206,14 +199,12 @@ class RouteOptimizerService {
                 headers: Object.fromEntries(response.headers.entries())
             });
 
-            // Debug: Try to read response body for more info
             let responseBody;
             let responseText;
             try {
                 responseText = await response.clone().text();
                 console.log('📄 Response body (text):', responseText);
 
-                // Try to parse as JSON if possible
                 if (responseText) {
                     try {
                         responseBody = JSON.parse(responseText);
@@ -241,7 +232,6 @@ class RouteOptimizerService {
             console.log('✅ Optimization saved to server');
 
         } catch (error) {
-            // Enhanced error logging
             console.error('❌ Comprehensive error details:', {
                 errorName: error.name,
                 errorMessage: error.message,
@@ -252,10 +242,9 @@ class RouteOptimizerService {
                 timestamp: new Date().toISOString(),
                 userAgent: navigator.userAgent,
                 currentURL: window.location.href,
-                serverEndpoint: this.serverEndpoint // Updated to show server endpoint
+                serverEndpoint: this.serverEndpoint 
             });
 
-            // Additional CORS-specific debugging
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
                 console.error('🚫 Network/CORS Error - Additional Debug Info:', {
                     possibleCauses: [
@@ -275,7 +264,6 @@ class RouteOptimizerService {
             }
 
             console.warn('⚠️ Failed to save optimization to server:', error);
-            // Don't throw - optimization should work even if saving fails
         }
     }
 
@@ -286,7 +274,6 @@ class RouteOptimizerService {
         console.log('VROOM Payload:', JSON.stringify(vroomPayload, null, 2));
 
         try {
-            // UPDATED: Using vroomEndpoint for VROOM API calls
             const response = await fetch(`${this.vroomEndpoint}/`, {
                 method: 'POST',
                 headers: {
@@ -375,11 +362,9 @@ class RouteOptimizerService {
 
         const routeSteps = this.processRouteSteps(steps);
 
-        // Calculate savings compared to unoptimized route
         const unoptimizedDistance = this.calculateUnoptimizedDistance();
         const savings = Math.max(0, unoptimizedDistance - totalDistance);
 
-        // Update the order of items in the component based on VROOM optimization
         this.updateOrderSequence(steps);
 
         return {
@@ -439,7 +424,6 @@ class RouteOptimizerService {
     }
 
     updateOrderSequence(steps) {
-        // Extract job order from VROOM result
         const jobSequence = [];
         steps.forEach(step => {
             if (step.type === 'job') {
@@ -447,7 +431,6 @@ class RouteOptimizerService {
             }
         });
 
-        // Reorder the orders array based on VROOM optimization
         const orderedOrders = [];
         const remainingOrders = [...this.routeComponent.orders];
 
@@ -458,10 +441,8 @@ class RouteOptimizerService {
             }
         });
 
-        // Add any remaining orders (those without coordinates) at the end
         orderedOrders.push(...remainingOrders);
 
-        // Update the component's orders array
         this.routeComponent.orders = orderedOrders;
     }
 
@@ -475,7 +456,6 @@ class RouteOptimizerService {
     }
 
     getTimeWindow(priority) {
-        // Time windows in seconds from midnight
         const timeWindows = {
             'high': [[28800, 43200]], // 8:00-12:00 (urgent deliveries)
             'medium': [[32400, 54000]], // 9:00-15:00 (normal deliveries)

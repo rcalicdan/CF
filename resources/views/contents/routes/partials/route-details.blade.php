@@ -4,6 +4,12 @@
         <i class="fas fa-list-ol text-primary mr-2"></i>
         <span x-text="optimizationResult ? 'Optimized Route Details' : 'Current Route'"></span>
         <div class="ml-auto flex items-center gap-2">
+            <!-- Load Saved Route Button -->
+            <button @click="loadSavedRoute()" :disabled="!selectedDriver?.id || !selectedDate || loading"
+                class="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white px-3 py-1 rounded text-sm font-medium transition-colors">
+                <i class="fas fa-download mr-1"></i>
+                Load Saved
+            </button>
             <span class="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                 <i class="fas fa-calendar mr-1"></i>
                 <span x-text="selectedDate"></span>

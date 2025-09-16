@@ -5,7 +5,6 @@ function routeOptimizer() {
         dataInstance: new RouteOptimizerData(),
         routeDataService: null,
 
-        // Direct properties instead of getters/setters
         loading: false,
 
         selectedDriver: null,
@@ -68,16 +67,15 @@ function routeOptimizer() {
 
             window.routeOptimizerInstance = this;
 
-            // Initialize route data service
             this.routeDataService = new RouteDataService();
 
-            // Start loading data immediately
             await this.loadData();
 
             this.$watch("selectedDate", async (newDate, oldDate) => {
                 console.log(`📅 Date changed: ${oldDate} → ${newDate}`);
                 if (newDate !== oldDate) {
                     await this.updateOrders();
+                    await this.loadSavedRoute();
                 }
             });
 
@@ -89,6 +87,7 @@ function routeOptimizer() {
 
                 if (newDriver && newDriver.id !== oldDriver?.id) {
                     await this.updateOrders();
+                    await this.loadSavedRoute();
                 }
             });
 
@@ -98,7 +97,6 @@ function routeOptimizer() {
                 }
             });
 
-            // Initialize other components
             this.$nextTick(() => {
                 setTimeout(() => {
                     const mapManager = new MapManager(this);
@@ -113,32 +111,28 @@ function routeOptimizer() {
 
         async loadData() {
             console.log("🔄 Starting data load...");
-            this.loading = true; // Set directly on Alpine component
+            this.loading = true;
             this.dataInstance.loadingError = null;
-            
+
             try {
-                // Load drivers
                 const drivers = await this.routeDataService.getDrivers();
                 this.dataInstance.drivers = drivers || [];
-                
-                // Load all orders for date range (last 7 days to next 30 days)
+
                 const startDate = new Date();
                 startDate.setDate(startDate.getDate() - 7);
                 const endDate = new Date();
                 endDate.setDate(endDate.getDate() + 30);
-                
+
                 const allOrders = await this.routeDataService.getAllOrdersForDateRange(
                     startDate.toISOString().split('T')[0],
                     endDate.toISOString().split('T')[0]
                 );
                 this.dataInstance.allOrders = allOrders || [];
-                
-                // Mark data as loaded
+
                 this.dataInstance.dataLoaded = true;
-                
+
                 console.log(`✅ Data loaded: ${this.drivers.length} drivers, ${this.allOrders.length} orders`);
-                
-                // Auto-select first driver if none selected
+
                 if (!this.selectedDriver && this.drivers.length > 0) {
                     this.selectedDriver = this.drivers[0];
                     console.log(`✅ Auto-selected driver: ${this.selectedDriver.full_name}`);
@@ -146,15 +140,107 @@ function routeOptimizer() {
                         this.updateOrders();
                     });
                 }
-                
+
             } catch (error) {
                 console.error('❌ Failed to load data:', error);
                 this.dataInstance.loadingError = error.message;
                 this.dataInstance.dataLoaded = false;
             } finally {
-                this.loading = false; // Set directly on Alpine component
+                this.loading = false;
                 console.log('✅ Loading complete, loading state:', this.loading);
             }
+        },
+
+        async loadSavedRoute() {
+            if (!this.selectedDriver?.id || !this.selectedDate) {
+                this.optimizationResult = null;
+                return;
+            }
+
+            console.log(`🔍 Checking for saved route: Driver ${this.selectedDriver.id}, Date ${this.selectedDate}`);
+
+            try {
+                const savedRoute = await this.routeDataService.loadSavedRouteOptimization(
+                    this.selectedDriver.id,
+                    this.selectedDate
+                );
+
+                if (savedRoute) {
+                    console.log('✅ Found saved route, loading...', savedRoute);
+
+                    this.optimizationResult = savedRoute.optimization_result;
+
+                    if (savedRoute.order_sequence && savedRoute.order_sequence.length > 0) {
+                        this.applySavedOrderSequence(savedRoute.order_sequence);
+                    }
+
+                    if (this.optimizationResult) {
+                        this.showRouteSummary = true;
+                    }
+
+                    if (window.mapManager) {
+                        setTimeout(() => {
+                            window.mapManager.refreshMarkers();
+                            if (this.optimizationResult) {
+                                window.mapManager.visualizeOptimizedRoute();
+                            }
+                        }, 500);
+                    }
+
+                    this.showNotification('Saved route loaded successfully', 'success');
+                } else {
+                    console.log('ℹ️ No saved route found for this driver and date');
+                    this.optimizationResult = null;
+                    this.showRouteSummary = false;
+                }
+
+            } catch (error) {
+                console.error('❌ Failed to load saved route:', error);
+                this.optimizationResult = null;
+                this.showRouteSummary = false;
+            }
+        },
+
+        applySavedOrderSequence(savedSequence) {
+            if (!this.orders || this.orders.length === 0) {
+                return;
+            }
+
+            const orderMap = new Map(this.orders.map(order => [order.id, order]));
+
+            const reorderedOrders = [];
+
+            savedSequence.forEach(savedOrder => {
+                const order = orderMap.get(savedOrder.order_id);
+                if (order) {
+                    reorderedOrders.push(order);
+                    orderMap.delete(savedOrder.order_id);
+                }
+            });
+
+            orderMap.forEach(order => {
+                reorderedOrders.push(order);
+            });
+
+            this.orders = reorderedOrders;
+            console.log('✅ Applied saved order sequence');
+        },
+
+        showNotification(message, type = 'info') {
+            console.log(`${type.toUpperCase()}: ${message}`);
+
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 px-4 py-2 rounded shadow-lg text-white z-50 ${type === 'success' ? 'bg-green-500' :
+                type === 'error' ? 'bg-red-500' :
+                    type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                }`;
+            toast.textContent = message;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
         },
 
         getOrdersForDriverAndDate(driverId, date) {
@@ -169,7 +255,6 @@ function routeOptimizer() {
 
             if (this.selectedDriver && this.selectedDate) {
                 try {
-                    // Use the route data service method
                     const orders = this.getOrdersForDriverAndDate(
                         this.selectedDriver.id,
                         this.selectedDate
@@ -179,7 +264,6 @@ function routeOptimizer() {
 
                     console.log(`✅ Loaded ${orders.length} orders for driver ${this.selectedDriver.full_name} on ${this.selectedDate}`);
 
-                    // Force Alpine to detect changes
                     this.$nextTick(() => {
                         if (window.mapManager) {
                             window.mapManager.refreshMarkers();
@@ -339,26 +423,50 @@ function routeOptimizer() {
             }
         },
 
-        saveManualChanges() {
-            if (confirm("Save current route configuration?")) {
+        async saveManualChanges() {
+            if (!confirm("Save current route configuration?")) {
+                return;
+            }
+
+            this.loading = true;
+
+            try {
                 const saveData = {
-                    date: this.selectedDate,
                     driver_id: this.selectedDriver.id,
-                    orders: this.orders,
-                    optimization_result: this.optimizationResult,
+                    optimization_date: this.selectedDate,
+                    optimization_result: this.optimizationResult || {},
+                    order_sequence: this.orders.map((order, index) => ({
+                        order_id: order.id,
+                        sequence: index + 1
+                    })),
+                    total_distance: this.optimizationResult?.total_distance || null,
+                    total_time: this.optimizationResult?.total_time || null,
+                    is_manual_edit: true,
                     manual_modifications: {
                         edit_mode_used: this.manualEditMode,
-                        custom_stops_added: this.orders.filter(
-                            (o) => o.isCustom
-                        ).length,
-                    },
+                        custom_stops_added: this.orders.filter(o => o.isCustom).length,
+                        saved_at: new Date().toISOString()
+                    }
                 };
-                console.log("Save data:", saveData);
+
+                await this.routeDataService.request(`${this.routeDataService.baseUrl}/save-optimization`, {
+                    method: 'POST',
+                    body: JSON.stringify(saveData)
+                });
+
+                console.log('✅ Route saved successfully');
+                this.showNotification('Route saved successfully!', 'success');
+
                 this.manualEditMode = false;
                 if (window.mapManager) {
                     window.mapManager.disableManualEdit();
                 }
-                alert("Route changes saved successfully!");
+
+            } catch (error) {
+                console.error('❌ Failed to save route:', error);
+                this.showNotification('Failed to save route changes', 'error');
+            } finally {
+                this.loading = false;
             }
         },
 
@@ -533,14 +641,14 @@ function routeOptimizer() {
 
         selectDriver(driver) {
             console.log('🎯 Selecting driver:', driver?.full_name);
-            
+
             if (!driver || !driver.id) {
                 console.error('❌ Invalid driver object:', driver);
                 return;
             }
-            
+
             this.selectedDriver = driver;
-            
+
             // Force Alpine to detect the change
             this.$nextTick(() => {
                 this.updateOrders();
@@ -671,11 +779,9 @@ function routeOptimizer() {
             });
         },
 
-        // Add debug method
         forceRefresh() {
             console.log('🔄 Force refreshing component state...');
-            
-            // Force Alpine to detect all changes
+
             this.$nextTick(() => {
                 console.log('✅ Force refresh complete');
             });

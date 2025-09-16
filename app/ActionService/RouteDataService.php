@@ -14,9 +14,6 @@ use Carbon\Carbon;
 class RouteDataService
 {
     /**
-     * Get all drivers with their user information
-     */
-    /**
      * Get all drivers with their user information who have completed or undelivered orders
      */
     public function getAllDrivers(): Collection
