@@ -339,4 +339,153 @@ class RouteDataService
             'pending_orders' => Order::where('status', 'pending')->count()
         ];
     }
+
+    /**
+     * Get all route optimizations for a specific driver
+     */
+    public function getRouteOptimizationsForDriver(int $driverId, ?string $startDate = null, ?string $endDate = null): Collection
+    {
+        $query = RouteOptimization::with('driver.user')
+            ->where('driver_id', $driverId);
+
+        if ($startDate) {
+            $query->whereDate('optimization_date', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $query->whereDate('optimization_date', '<=', $endDate);
+        }
+
+        return $query->orderBy('optimization_date', 'desc')
+            ->get()
+            ->map(function ($optimization) {
+                $optimizationResult = $optimization->optimization_result ?? [];
+                $orderSequence = $optimization->order_sequence ?? [];
+
+                return [
+                    'id' => $optimization->id,
+                    'driver_id' => $optimization->driver_id,
+                    'driver_name' => $optimization->driver->user->full_name ?? 'Unknown Driver',
+                    'optimization_date' => $optimization->optimization_date->format('Y-m-d'),
+                    'optimization_date_formatted' => $optimization->optimization_date->format('d M Y'),
+                    'total_distance' => $optimization->total_distance,
+                    'total_time' => $optimization->total_time,
+                    'estimated_fuel_cost' => $optimization->estimated_fuel_cost,
+                    'carbon_footprint' => $optimization->carbon_footprint,
+                    'total_orders' => count($orderSequence),
+                    'order_sequence' => $orderSequence,
+                    'optimization_result' => $optimizationResult,
+                    'is_manual_edit' => $optimization->is_manual_edit,
+                    'manual_modifications' => $optimization->manual_modifications,
+                    'savings' => $optimizationResult['savings'] ?? 0,
+                    'total_value' => $optimizationResult['total_value'] ?? 0,
+                    'route_steps' => $optimizationResult['route_steps'] ?? [],
+                    'route_steps_count' => count($optimizationResult['route_steps'] ?? []),
+                    'geometry' => $optimizationResult['geometry'] ?? null,
+                    'optimization_timestamp' => $optimizationResult['optimization_timestamp'] ?? null,
+
+                    'created_at' => $optimization->created_at->toISOString(),
+                    'updated_at' => $optimization->updated_at->toISOString(),
+                ];
+            });
+    }
+
+    /**
+     * Get route optimization statistics for a driver
+     */
+    public function getDriverRouteOptimizationStats(int $driverId, ?string $startDate = null, ?string $endDate = null): array
+    {
+        $query = RouteOptimization::where('driver_id', $driverId);
+
+        if ($startDate) {
+            $query->whereDate('optimization_date', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $query->whereDate('optimization_date', '<=', $endDate);
+        }
+
+        $optimizations = $query->get();
+
+        $totalDistance = $optimizations->sum('total_distance');
+        $totalTime = $optimizations->sum('total_time');
+        $totalFuelCost = $optimizations->sum('estimated_fuel_cost');
+        $totalCarbonFootprint = $optimizations->sum('carbon_footprint');
+
+        $totalSavings = 0;
+        $totalValue = 0;
+        $totalOrders = 0;
+        $totalRouteSteps = 0;
+
+        foreach ($optimizations as $optimization) {
+            $optimizationResult = $optimization->optimization_result ?? [];
+            $orderSequence = $optimization->order_sequence ?? [];
+
+            $totalSavings += $optimizationResult['savings'] ?? 0;
+            $totalValue += $optimizationResult['total_value'] ?? 0;
+            $totalOrders += count($orderSequence);
+            $totalRouteSteps += count($optimizationResult['route_steps'] ?? []);
+        }
+
+        $optimizationCount = $optimizations->count();
+
+        return [
+            'total_optimizations' => $optimizationCount,
+            'total_distance' => round($totalDistance, 2),
+            'total_time' => $totalTime,
+            'total_fuel_cost' => round($totalFuelCost, 2),
+            'total_carbon_footprint' => round($totalCarbonFootprint, 2),
+            'total_savings' => round($totalSavings, 2),
+            'total_value' => round($totalValue, 2),
+            'total_orders_optimized' => $totalOrders,
+            'total_route_steps' => $totalRouteSteps,
+            'average_distance_per_route' => $optimizationCount > 0 ? round($totalDistance / $optimizationCount, 2) : 0,
+            'average_time_per_route' => $optimizationCount > 0 ? round($totalTime / $optimizationCount, 2) : 0,
+            'average_fuel_cost_per_route' => $optimizationCount > 0 ? round($totalFuelCost / $optimizationCount, 2) : 0,
+            'average_savings_per_route' => $optimizationCount > 0 ? round($totalSavings / $optimizationCount, 2) : 0,
+            'average_orders_per_route' => $optimizationCount > 0 ? round($totalOrders / $optimizationCount, 2) : 0,
+
+            'manual_edits_count' => $optimizations->where('is_manual_edit', true)->count(),
+            'optimizations_with_geometry' => $optimizations->filter(function ($opt) {
+                return !empty($opt->optimization_result['geometry'] ?? null);
+            })->count(),
+
+            'date_range' => [
+                'start' => $startDate,
+                'end' => $endDate,
+            ],
+
+            'period_breakdown' => $this->getPeriodBreakdown($optimizations),
+            'distance_breakdown' => $this->getDistanceBreakdown($optimizations)
+        ];
+    }
+
+    /**
+     * Get breakdown by time periods
+     */
+    private function getPeriodBreakdown(Collection $optimizations): array
+    {
+        $today = Carbon::today();
+        $thisWeek = Carbon::now()->startOfWeek();
+        $thisMonth = Carbon::now()->startOfMonth();
+
+        return [
+            'today' => $optimizations->filter(fn($opt) => $opt->optimization_date->isToday())->count(),
+            'this_week' => $optimizations->filter(fn($opt) => $opt->optimization_date->gte($thisWeek))->count(),
+            'this_month' => $optimizations->filter(fn($opt) => $opt->optimization_date->gte($thisMonth))->count(),
+            'last_30_days' => $optimizations->filter(fn($opt) => $opt->optimization_date->gte($today->copy()->subDays(30)))->count(),
+        ];
+    }
+
+    /**
+     * Get breakdown by distance ranges
+     */
+    private function getDistanceBreakdown(Collection $optimizations): array
+    {
+        return [
+            'short_routes' => $optimizations->filter(fn($opt) => ($opt->total_distance ?? 0) < 50)->count(), // < 50km
+            'medium_routes' => $optimizations->filter(fn($opt) => ($opt->total_distance ?? 0) >= 50 && ($opt->total_distance ?? 0) < 150)->count(), // 50-150km
+            'long_routes' => $optimizations->filter(fn($opt) => ($opt->total_distance ?? 0) >= 150)->count(), // >= 150km
+        ];
+    }
 }

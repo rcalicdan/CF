@@ -80,6 +80,9 @@ Route::middleware(['auth:api', 'throttle:120,1'])->name('api.')->group(function 
 
         Route::post('/save-optimization', [RouteDataController::class, 'saveRouteOptimization']);
         Route::get('/saved-optimization', [RouteDataController::class, 'getSavedRouteOptimization']);
+
+        Route::get('driver-optimizations', [RouteDataController::class, 'getMyRouteOptimizations']);
+        Route::get('driver-optimizations/{id}', [RouteDataController::class, 'getMyRouteOptimizationDetails']);
     });
 
     Route::post('send-sms', [SendCustomSmsController::class, 'sendSms'])->middleware('throttle:15,1');

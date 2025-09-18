@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Routing;
 
 use App\Http\Controllers\Controller;
 use App\ActionService\RouteDataService;
+use App\Models\RouteOptimization;
 use App\Traits\ApiResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -222,6 +223,164 @@ class RouteDataController extends Controller
             return $this->errorResponse([
                 'success' => false,
                 'message' => 'Failed to retrieve saved optimization',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all route optimizations for the authenticated driver
+     */
+    public function getMyRouteOptimizations(Request $request): JsonResponse
+    {
+        $request->validate([
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        try {
+            $user = $request->user();
+
+            if (!$user->isDriver()) {
+                return $this->errorResponse([
+                    'success' => false,
+                    'message' => 'Access denied. Only drivers can access their route optimizations.'
+                ], 403);
+            }
+
+            $driver = $user->driver;
+            if (!$driver) {
+                return $this->errorResponse([
+                    'success' => false,
+                    'message' => 'Driver profile not found.'
+                ], 404);
+            }
+
+            $optimizations = $this->routeDataService->getRouteOptimizationsForDriver(
+                $driver->id,
+                $request->start_date,
+                $request->end_date
+            );
+
+            $stats = $this->routeDataService->getDriverRouteOptimizationStats(
+                $driver->id,
+                $request->start_date,
+                $request->end_date
+            );
+
+            return $this->successResponse([
+                'success' => true,
+                'data' => [
+                    'optimizations' => $optimizations,
+                    'statistics' => $stats,
+                    'driver_info' => [
+                        'id' => $driver->id,
+                        'name' => $user->full_name,
+                        'license_number' => $driver->license_number,
+                        'vehicle_details' => $driver->vehicle_details
+                    ]
+                ],
+                'meta' => [
+                    'total_optimizations' => count($optimizations),
+                    'date_range' => [
+                        'start' => $request->start_date ?? 'all time',
+                        'end' => $request->end_date ?? 'all time'
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse([
+                'success' => false,
+                'message' => 'Failed to fetch route optimizations',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get specific route optimization details for the authenticated driver
+     */
+    public function getMyRouteOptimizationDetails(Request $request, int $optimizationId): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user->isDriver()) {
+                return $this->errorResponse([
+                    'success' => false,
+                    'message' => 'Access denied. Only drivers can access their route optimizations.'
+                ], 403);
+            }
+
+            $driver = $user->driver;
+            if (!$driver) {
+                return $this->errorResponse([
+                    'success' => false,
+                    'message' => 'Driver profile not found.'
+                ], 404);
+            }
+
+            $optimization = RouteOptimization::with('driver.user')
+                ->where('id', $optimizationId)
+                ->where('driver_id', $driver->id)
+                ->first();
+
+            if (!$optimization) {
+                return $this->errorResponse([
+                    'success' => false,
+                    'message' => 'Route optimization not found or access denied.'
+                ], 404);
+            }
+
+            $orders = $this->routeDataService->getOrdersForDriverAndDate(
+                $driver->id,
+                $optimization->optimization_date->format('Y-m-d')
+            );
+
+            $optimizationResult = $optimization->optimization_result ?? [];
+            $orderSequence = $optimization->order_sequence ?? [];
+
+            return $this->successResponse([
+                'success' => true,
+                'data' => [
+                    'optimization' => [
+                        'id' => $optimization->id,
+                        'driver_id' => $optimization->driver_id,
+                        'driver_name' => $optimization->driver->user->full_name,
+                        'optimization_date' => $optimization->optimization_date->toISOString(),
+                        'optimization_date_formatted' => $optimization->optimization_date->toISOString(),
+                        'total_distance' => $optimization->total_distance,
+                        'total_time' => $optimization->total_time,
+                        'estimated_fuel_cost' => $optimization->estimated_fuel_cost,
+                        'carbon_footprint' => $optimization->carbon_footprint,
+                        'total_orders' => count($orderSequence),
+                        'order_sequence' => $orderSequence,
+                        'optimization_result' => $optimizationResult,
+                        'is_manual_edit' => $optimization->is_manual_edit,
+                        'manual_modifications' => $optimization->manual_modifications,
+                        'savings' => $optimizationResult['savings'] ?? 0,
+                        'total_value' => $optimizationResult['total_value'] ?? 0,
+                        'route_steps' => $optimizationResult['route_steps'] ?? [],
+                        'geometry' => $optimizationResult['geometry'] ?? null,
+                        'optimization_timestamp' => $optimizationResult['optimization_timestamp'] ?? null,
+                        'vroom_raw' => $optimizationResult['vroom_raw'] ?? null,
+
+                        'created_at' => $optimization->created_at->toISOString(),
+                        'updated_at' => $optimization->updated_at->toISOString(),
+                    ],
+                    'orders' => $orders,
+                    'driver_info' => [
+                        'id' => $driver->id,
+                        'name' => $user->full_name,
+                        'license_number' => $driver->license_number,
+                        'vehicle_details' => $driver->vehicle_details
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return $this->errorResponse([
+                'success' => false,
+                'message' => 'Failed to fetch route optimization details',
                 'error' => $e->getMessage()
             ], 500);
         }
