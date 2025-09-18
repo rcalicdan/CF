@@ -62,9 +62,6 @@ function routeOptimizer() {
         },
 
         async init() {
-            console.log("🚀 RouteOptimizer Alpine component initializing...");
-            console.log("Initial loading state:", this.loading);
-
             window.routeOptimizerInstance = this;
 
             this.routeDataService = new RouteDataService();
@@ -72,7 +69,6 @@ function routeOptimizer() {
             await this.loadData();
 
             this.$watch("selectedDate", async (newDate, oldDate) => {
-                console.log(`📅 Date changed: ${oldDate} → ${newDate}`);
                 if (newDate !== oldDate) {
                     await this.updateOrders();
                     await this.loadSavedRoute();
@@ -80,11 +76,6 @@ function routeOptimizer() {
             });
 
             this.$watch("selectedDriver", async (newDriver, oldDriver) => {
-                console.log(`👨‍💼 Driver changed:`, {
-                    old: oldDriver?.full_name,
-                    new: newDriver?.full_name
-                });
-
                 if (newDriver && newDriver.id !== oldDriver?.id) {
                     await this.updateOrders();
                     await this.loadSavedRoute();
@@ -110,7 +101,6 @@ function routeOptimizer() {
         },
 
         async loadData() {
-            console.log("🔄 Starting data load...");
             this.loading = true;
             this.dataInstance.loadingError = null;
 
@@ -131,23 +121,18 @@ function routeOptimizer() {
 
                 this.dataInstance.dataLoaded = true;
 
-                console.log(`✅ Data loaded: ${this.drivers.length} drivers, ${this.allOrders.length} orders`);
-
                 if (!this.selectedDriver && this.drivers.length > 0) {
                     this.selectedDriver = this.drivers[0];
-                    console.log(`✅ Auto-selected driver: ${this.selectedDriver.full_name}`);
                     this.$nextTick(() => {
                         this.updateOrders();
                     });
                 }
 
             } catch (error) {
-                console.error('❌ Failed to load data:', error);
                 this.dataInstance.loadingError = error.message;
                 this.dataInstance.dataLoaded = false;
             } finally {
                 this.loading = false;
-                console.log('✅ Loading complete, loading state:', this.loading);
             }
         },
 
@@ -157,8 +142,6 @@ function routeOptimizer() {
                 return;
             }
 
-            console.log(`🔍 Checking for saved route: Driver ${this.selectedDriver.id}, Date ${this.selectedDate}`);
-
             try {
                 const savedRoute = await this.routeDataService.loadSavedRouteOptimization(
                     this.selectedDriver.id,
@@ -166,8 +149,6 @@ function routeOptimizer() {
                 );
 
                 if (savedRoute) {
-                    console.log('✅ Found saved route, loading...', savedRoute);
-
                     this.optimizationResult = savedRoute.optimization_result;
 
                     if (savedRoute.order_sequence && savedRoute.order_sequence.length > 0) {
@@ -187,48 +168,60 @@ function routeOptimizer() {
                         }, 500);
                     }
 
-                    this.showNotification('Saved route loaded successfully', 'success');
+                    this.showNotification('Zapisana trasa została pomyślnie załadowana', 'success');
                 } else {
-                    console.log('ℹ️ No saved route found for this driver and date');
                     this.optimizationResult = null;
                     this.showRouteSummary = false;
                 }
 
             } catch (error) {
-                console.error('❌ Failed to load saved route:', error);
                 this.optimizationResult = null;
                 this.showRouteSummary = false;
             }
         },
 
         applySavedOrderSequence(savedSequence) {
-            if (!this.orders || this.orders.length === 0) {
+            if (!savedSequence || savedSequence.length === 0) {
                 return;
             }
 
             const orderMap = new Map(this.orders.map(order => [order.id, order]));
-
             const reorderedOrders = [];
 
-            savedSequence.forEach(savedOrder => {
-                const order = orderMap.get(savedOrder.order_id);
-                if (order) {
-                    reorderedOrders.push(order);
-                    orderMap.delete(savedOrder.order_id);
-                }
-            });
+            if (this.optimizationResult && this.optimizationResult.route_steps) {
+                this.optimizationResult.route_steps.forEach(routeStep => {
+                    let order = orderMap.get(routeStep.order_id);
+
+                    if (!order && routeStep.client_name === "Custom Stop") {
+                        order = {
+                            id: routeStep.order_id,
+                            client_name: "Własny przystanek",
+                            address: routeStep.location,
+                            coordinates: routeStep.coordinates,
+                            total_amount: 0,
+                            status: "custom",
+                            priority: routeStep.priority || "medium",
+                            delivery_date: this.selectedDate,
+                            driver_id: this.selectedDriver.id,
+                            isCustom: true
+                        };
+                    }
+
+                    if (order) {
+                        reorderedOrders.push(order);
+                        orderMap.delete(routeStep.order_id);
+                    }
+                });
+            }
 
             orderMap.forEach(order => {
                 reorderedOrders.push(order);
             });
 
             this.orders = reorderedOrders;
-            console.log('✅ Applied saved order sequence');
         },
 
         showNotification(message, type = 'info') {
-            console.log(`${type.toUpperCase()}: ${message}`);
-
             const toast = document.createElement('div');
             toast.className = `fixed top-4 right-4 px-4 py-2 rounded shadow-lg text-white z-50 ${type === 'success' ? 'bg-green-500' :
                 type === 'error' ? 'bg-red-500' :
@@ -248,11 +241,6 @@ function routeOptimizer() {
         },
 
         async updateOrders() {
-            console.log('🔄 updateOrders called:', {
-                selectedDriver: this.selectedDriver?.full_name,
-                selectedDate: this.selectedDate
-            });
-
             if (this.selectedDriver && this.selectedDate) {
                 try {
                     const orders = this.getOrdersForDriverAndDate(
@@ -261,8 +249,6 @@ function routeOptimizer() {
                     ) || [];
 
                     this.dataInstance.orders = orders;
-
-                    console.log(`✅ Loaded ${orders.length} orders for driver ${this.selectedDriver.full_name} on ${this.selectedDate}`);
 
                     this.$nextTick(() => {
                         if (window.mapManager) {
@@ -274,11 +260,9 @@ function routeOptimizer() {
                     });
 
                 } catch (error) {
-                    console.error('❌ Failed to load orders:', error);
                     this.dataInstance.orders = [];
                 }
             } else {
-                console.log('❌ No driver or date selected, clearing orders');
                 this.dataInstance.orders = [];
             }
         },
@@ -290,7 +274,7 @@ function routeOptimizer() {
 
         get formattedSelectedDate() {
             const date = new Date(this.selectedDate + "T00:00:00");
-            return date.toLocaleDateString("en-US", {
+            return date.toLocaleDateString("pl-PL", {
                 weekday: "long",
                 year: "numeric",
                 month: "long",
@@ -344,7 +328,7 @@ function routeOptimizer() {
         removeStop(index) {
             if (
                 confirm(
-                    "Are you sure you want to remove this stop from the route?"
+                    "Czy na pewno chcesz usunąć ten przystanek z trasy?"
                 )
             ) {
                 this.orders.splice(index, 1);
@@ -352,7 +336,7 @@ function routeOptimizer() {
             }
         },
 
-        addCustomStop(lat, lng, address = "Custom Location") {
+        addCustomStop(lat, lng, address = "Własna lokalizacja") {
             if (
                 isNaN(lat) ||
                 isNaN(lng) ||
@@ -361,13 +345,12 @@ function routeOptimizer() {
                 lng < -180 ||
                 lng > 180
             ) {
-                console.error("Invalid coordinates provided:", { lat, lng });
-                alert("Invalid coordinates. Please try again.");
+                alert("Nieprawidłowe współrzędne. Spróbuj ponownie.");
                 return;
             }
             const customOrder = {
                 id: Date.now(),
-                client_name: "Custom Stop",
+                client_name: "Własny przystanek",
                 address: address,
                 coordinates: [parseFloat(lat), parseFloat(lng)],
                 total_amount: 0,
@@ -424,7 +407,7 @@ function routeOptimizer() {
         },
 
         async saveManualChanges() {
-            if (!confirm("Save current route configuration?")) {
+            if (!confirm("Zapisać bieżącą konfigurację trasy?")) {
                 return;
             }
 
@@ -454,8 +437,7 @@ function routeOptimizer() {
                     body: JSON.stringify(saveData)
                 });
 
-                console.log('✅ Route saved successfully');
-                this.showNotification('Route saved successfully!', 'success');
+                this.showNotification('Trasa zapisana pomyślnie!', 'success');
 
                 this.manualEditMode = false;
                 if (window.mapManager) {
@@ -463,8 +445,7 @@ function routeOptimizer() {
                 }
 
             } catch (error) {
-                console.error('❌ Failed to save route:', error);
-                this.showNotification('Failed to save route changes', 'error');
+                this.showNotification('Nie udało się zapisać zmian w trasie', 'error');
             } finally {
                 this.loading = false;
             }
@@ -473,7 +454,7 @@ function routeOptimizer() {
         resetToOptimized() {
             if (
                 confirm(
-                    "Reset to original optimized route? This will lose all manual changes."
+                    "Zresetować do oryginalnej zoptymalizowanej trasy? Spowoduje to utratę wszystkich ręcznych zmian."
                 )
             ) {
                 this.updateOrders();
@@ -483,7 +464,7 @@ function routeOptimizer() {
 
         exportManualRoute() {
             if (this.orders.length === 0) {
-                alert("No route data to export");
+                alert("Brak danych trasy do eksportu");
                 return;
             }
             const exportData = {
@@ -520,7 +501,7 @@ function routeOptimizer() {
             const url = URL.createObjectURL(dataBlob);
             const link = document.createElement("a");
             link.href = url;
-            link.download = `manual-route-${this.selectedDate
+            link.download = `trasa-ręczna-${this.selectedDate
                 }-${Date.now()}.json`;
             document.body.appendChild(link);
             link.click();
@@ -530,13 +511,11 @@ function routeOptimizer() {
 
         async optimizeRoutes() {
             if (this.orders.length === 0) {
-                alert(`No orders available for ${this.formattedSelectedDate}`);
+                alert(`Brak dostępnych zamówień dla ${this.formattedSelectedDate}`);
                 return;
             }
 
-            // Check canOptimize BEFORE setting loading to true
             if (!window.optimizerService || !window.optimizerService.canOptimize()) {
-                console.warn("Cannot optimize routes - missing service or requirements");
                 return;
             }
 
@@ -544,13 +523,11 @@ function routeOptimizer() {
             this.optimizationError = null;
 
             try {
-                // Call the existing optimizeRoutes method but skip the internal canOptimize check
-                await window.optimizerService.optimizeRoutes(true); // Pass true to skip internal checks
+                await window.optimizerService.optimizeRoutes(true);
                 setTimeout(() => {
                     this.showRouteSummary = true;
                 }, 100);
             } catch (error) {
-                console.error("Route optimization failed:", error);
                 this.optimizationError = error.message;
             } finally {
                 this.loading = false;
@@ -587,11 +564,11 @@ function routeOptimizer() {
         getDateStatusText() {
             const status = this.dateStatus;
             const texts = {
-                today: "Today's Deliveries",
-                past: "Past Deliveries",
-                future: "Scheduled Deliveries",
+                today: "Dzisiejsze dostawy",
+                past: "Poprzednie dostawy",
+                future: "Zaplanowane dostawy",
             };
-            return texts[status] || "Deliveries";
+            return texts[status] || "Dostawy";
         },
 
         get executiveSummary() {
@@ -640,16 +617,12 @@ function routeOptimizer() {
         },
 
         selectDriver(driver) {
-            console.log('🎯 Selecting driver:', driver?.full_name);
-
             if (!driver || !driver.id) {
-                console.error('❌ Invalid driver object:', driver);
                 return;
             }
 
             this.selectedDriver = driver;
 
-            // Force Alpine to detect the change
             this.$nextTick(() => {
                 this.updateOrders();
             });
@@ -681,7 +654,6 @@ function routeOptimizer() {
 
         exportSummary() {
             if (!this.optimizationResult) {
-                console.warn("No optimization result to export");
                 return;
             }
             const summary = this.executiveSummary;
@@ -719,7 +691,7 @@ function routeOptimizer() {
             const url = URL.createObjectURL(dataBlob);
             const link = document.createElement("a");
             link.href = url;
-            link.download = `route-summary-${this.selectedDate}.json`;
+            link.download = `podsumowanie-trasy-${this.selectedDate}.json`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -767,23 +739,12 @@ function routeOptimizer() {
         },
 
         debugSummaryState() {
-            console.log({
-                showRouteSummary: this.showRouteSummary,
-                optimizationResult: !!this.optimizationResult,
-                executiveSummary: this.executiveSummary,
-                priorityBreakdown: this.priorityBreakdown,
-                selectedDate: this.selectedDate,
-                selectedDriver: this.selectedDriver?.full_name,
-                orders: this.orders.length,
-                manualEditMode: this.manualEditMode,
-            });
+            // 
         },
 
         forceRefresh() {
-            console.log('🔄 Force refreshing component state...');
-
             this.$nextTick(() => {
-                console.log('✅ Force refresh complete');
+                // 
             });
         }
     };

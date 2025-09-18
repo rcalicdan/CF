@@ -1,8 +1,8 @@
 class RouteOptimizerService {
     constructor(routeComponent) {
         this.routeComponent = routeComponent;
-        this.vroomEndpoint = 'http://147.135.252.51:3000'; 
-        this.serverEndpoint = window.location.origin; 
+        this.vroomEndpoint = 'https://147.135.252.51:3000';
+        this.serverEndpoint = window.location.origin;
         this.mockDelay = 0;
     }
 
@@ -17,38 +17,27 @@ class RouteOptimizerService {
             !isNaN(order.coordinates[1])
         );
 
-        console.log("🔍 canOptimize check:", {
-            hasDriver,
-            hasOrders,
-            hasValidCoordinates,
-            driverInfo: this.routeComponent.selectedDriver,
-            ordersCount: this.routeComponent.orders.length,
-            ordersWithCoordinates: this.routeComponent.orders.filter(order =>
-                order.coordinates &&
-                Array.isArray(order.coordinates) &&
-                order.coordinates.length === 2 &&
-                !isNaN(order.coordinates[0]) &&
-                !isNaN(order.coordinates[1])
-            ).length
-        });
-
         return hasDriver && hasOrders && hasValidCoordinates;
     }
 
     async optimizeRoutes(skipChecks = false) {
-        console.log("🚀 Starting optimization process...");
-        console.log("Orders count:", this.routeComponent.orders.length);
-        console.log("Selected driver:", this.routeComponent.selectedDriver);
-        console.log("Selected date:", this.routeComponent.selectedDate);
+        console.log('Starting route optimization:', {
+            skipChecks: skipChecks,
+            canOptimize: this.canOptimize(),
+            ordersCount: this.routeComponent.orders.length,
+            selectedDriver: this.routeComponent.selectedDriver?.id,
+            selectedDate: this.routeComponent.selectedDate
+        });
 
         if (!skipChecks) {
             if (this.routeComponent.orders.length === 0) {
-                alert(`No orders available for ${this.routeComponent.formattedSelectedDate}`);
+                console.warn('No orders available for optimization');
+                alert(`Brak dostępnych zamówień dla ${this.routeComponent.formattedSelectedDate}`);
                 return;
             }
 
             if (!this.canOptimize()) {
-                console.warn("Cannot optimize routes - missing service or requirements");
+                console.warn('Cannot optimize - validation failed');
                 return;
             }
 
@@ -57,17 +46,13 @@ class RouteOptimizerService {
         }
 
         try {
-            console.log("📞 Calling VROOM API...");
             const vroomResult = await this.callVroomAPI();
 
-            console.log("✅ VROOM API call successful, processing result...");
             const optimizationResult = this.processVroomResult(vroomResult);
 
             this.routeComponent.optimizationResult = optimizationResult;
 
             await this.saveOptimizationToServer();
-
-            console.log("✅ Optimization completed successfully");
 
             if (window.mapManager) {
                 setTimeout(() => {
@@ -75,39 +60,27 @@ class RouteOptimizerService {
                 }, 100);
             }
 
+            console.log('Route optimization completed successfully');
+
         } catch (error) {
-            console.error("❌ Route optimization failed:", error);
+            console.error('Route optimization failed:', {
+                error: error,
+                message: error.message,
+                name: error.name,
+                stack: error.stack
+            });
+            
             this.routeComponent.optimizationError = error.message;
             throw error;
         } finally {
             if (!skipChecks) {
-                console.log("🔄 Setting loading to false");
                 this.routeComponent.loading = false;
             }
         }
     }
 
     async saveOptimizationToServer() {
-        console.log('🚀 Starting saveOptimizationToServer...');
-
         try {
-            console.log('🔍 Component state check:', {
-                hasSelectedDriver: !!this.routeComponent.selectedDriver,
-                selectedDriverId: this.routeComponent.selectedDriver?.id,
-                selectedDate: this.routeComponent.selectedDate,
-                hasOptimizationResult: !!this.routeComponent.optimizationResult,
-                ordersCount: this.routeComponent.orders?.length || 0,
-                serverEndpoint: this.serverEndpoint 
-            });
-
-            console.log('🔍 Optimization result structure:', {
-                optimizationResult: this.routeComponent.optimizationResult,
-                totalDistance: this.routeComponent.optimizationResult?.total_distance,
-                totalTime: this.routeComponent.optimizationResult?.total_time,
-                estimatedFuelCost: this.routeComponent.optimizationResult?.estimated_fuel_cost,
-                carbonFootprint: this.routeComponent.optimizationResult?.carbon_footprint
-            });
-
             const optimizationData = {
                 driver_id: this.routeComponent.selectedDriver.id,
                 optimization_date: this.routeComponent.selectedDate,
@@ -121,59 +94,25 @@ class RouteOptimizerService {
                 manual_modifications: null
             };
 
-            console.log('📦 Optimization data to send:', {
-                payload: optimizationData,
-                payloadSize: JSON.stringify(optimizationData).length + ' bytes'
+            // Log the data being sent
+            console.log('Save Optimization Request:', {
+                endpoint: `${this.serverEndpoint}/api/route-data/save-optimization`,
+                data: optimizationData
             });
 
             const authToken = localStorage.getItem('auth_token');
             const metaToken = document.querySelector('meta[name="token"]')?.content;
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
-            console.log('🔐 Authentication debug:', {
-                hasAuthTokenInLocalStorage: !!authToken,
-                authTokenLength: authToken?.length || 0,
-                hasMetaToken: !!metaToken,
-                metaTokenLength: metaToken?.length || 0,
-                hasCsrfToken: !!csrfToken,
-                csrfTokenLength: csrfToken?.length || 0,
-                authTokenPreview: authToken ? authToken.substring(0, 20) + '...' : 'none',
-                csrfTokenPreview: csrfToken ? csrfToken.substring(0, 20) + '...' : 'none'
-            });
-
             const token = localStorage.getItem('auth_token') ||
                 document.querySelector('meta[name="token"]')?.content;
 
-            const requestUrl = `${this.serverEndpoint}/api/route-data/save-optimization`;
-            const requestHeaders = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Authorization': token ? `Bearer ${token}` : '',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-            };
-
-            console.log('🌐 Request configuration:', {
-                url: requestUrl,
-                method: 'POST',
-                headers: {
-                    'Content-Type': requestHeaders['Content-Type'],
-                    'Accept': requestHeaders['Accept'],
-                    'Authorization': requestHeaders['Authorization'] ? 'Bearer [TOKEN_PRESENT]' : '[NO_TOKEN]',
-                    'X-CSRF-TOKEN': requestHeaders['X-CSRF-TOKEN'] ? '[CSRF_TOKEN_PRESENT]' : '[NO_CSRF_TOKEN]'
-                },
-                bodyLength: JSON.stringify(optimizationData).length
+            console.log('Save Optimization Auth Info:', {
+                hasAuthToken: !!authToken,
+                hasMetaToken: !!metaToken,
+                hasCsrfToken: !!csrfToken,
+                usingToken: !!token
             });
-
-            console.log('🔍 Origin and CORS info:', {
-                currentOrigin: window.location.origin,
-                targetHost: new URL(requestUrl).origin,
-                isCrossOrigin: window.location.origin !== new URL(requestUrl).origin,
-                userAgent: navigator.userAgent,
-                currentURL: window.location.href
-            });
-
-            console.log('📡 Making fetch request to server...');
-            const startTime = performance.now();
 
             const response = await fetch(`${this.serverEndpoint}/api/route-data/save-optimization`, {
                 method: 'POST',
@@ -186,16 +125,12 @@ class RouteOptimizerService {
                 body: JSON.stringify(optimizationData)
             });
 
-            const endTime = performance.now();
-            console.log(`⏱️ Request completed in ${Math.round(endTime - startTime)}ms`);
-
-            console.log('📨 Response received:', {
+            // Log response details
+            console.log('Save Optimization Response:', {
                 status: response.status,
                 statusText: response.statusText,
                 ok: response.ok,
-                type: response.type,
                 url: response.url,
-                redirected: response.redirected,
                 headers: Object.fromEntries(response.headers.entries())
             });
 
@@ -203,75 +138,56 @@ class RouteOptimizerService {
             let responseText;
             try {
                 responseText = await response.clone().text();
-                console.log('📄 Response body (text):', responseText);
+                console.log('Save Optimization Response Text:', responseText);
 
                 if (responseText) {
                     try {
                         responseBody = JSON.parse(responseText);
-                        console.log('📄 Response body (parsed JSON):', responseBody);
+                        console.log('Save Optimization Response JSON:', responseBody);
                     } catch (parseError) {
-                        console.log('📄 Response body is not valid JSON:', parseError.message);
+                        console.error('Failed to parse response JSON:', parseError);
                     }
                 }
             } catch (bodyReadError) {
-                console.warn('⚠️ Could not read response body:', bodyReadError.message);
+                console.error('Failed to read response body:', bodyReadError);
             }
 
             if (!response.ok) {
-                const errorInfo = {
+                console.error('Save Optimization Error:', {
                     status: response.status,
                     statusText: response.statusText,
-                    responseBody: responseBody || responseText || 'No response body',
-                    headers: Object.fromEntries(response.headers.entries())
-                };
-
-                console.error('❌ Request failed with details:', errorInfo);
-                throw new Error(`Failed to save optimization: ${response.statusText}`);
+                    responseText: responseText,
+                    responseBody: responseBody
+                });
+                throw new Error(`Nie udało się zapisać optymalizacji: ${response.statusText}`);
             }
 
-            console.log('✅ Optimization saved to server');
+            console.log('Save Optimization Success');
 
         } catch (error) {
-            console.error('❌ Comprehensive error details:', {
-                errorName: error.name,
-                errorMessage: error.message,
-                errorStack: error.stack,
-                errorType: typeof error,
-                isNetworkError: error instanceof TypeError && error.message.includes('fetch'),
-                isCORSError: error.message?.includes('CORS') || error.message?.includes('cross-origin'),
-                timestamp: new Date().toISOString(),
-                userAgent: navigator.userAgent,
-                currentURL: window.location.href,
-                serverEndpoint: this.serverEndpoint 
+            console.error('Save Optimization Failed:', {
+                error: error,
+                message: error.message,
+                name: error.name,
+                stack: error.stack
             });
-
+            
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                console.error('🚫 Network/CORS Error - Additional Debug Info:', {
-                    possibleCauses: [
-                        'CORS policy blocking the request',
-                        'Server is not running or unreachable',
-                        'Network connectivity issues',
-                        'Server not configured to handle preflight requests',
-                        'Wrong API endpoint URL'
-                    ],
-                    recommendations: [
-                        'Check if the API server is running',
-                        'Verify CORS configuration on the server',
-                        'Check if the API endpoint URL is correct',
-                        'Ensure the server handles OPTIONS requests for CORS preflight'
-                    ]
-                });
+                console.error('Network error during save optimization');
+                // Ignored
             }
-
-            console.warn('⚠️ Failed to save optimization to server:', error);
         }
     }
 
     async callVroomAPI() {
-        console.log('Calling VROOM API...');
-
         const vroomPayload = this.buildVroomPayload();
-        console.log('VROOM Payload:', JSON.stringify(vroomPayload, null, 2));
+        
+        // Log the payload being sent
+        console.log('VROOM API Request:', {
+            endpoint: this.vroomEndpoint,
+            payload: vroomPayload,
+            payloadSize: JSON.stringify(vroomPayload).length
+        });
 
         try {
             const response = await fetch(`${this.vroomEndpoint}/`, {
@@ -283,38 +199,67 @@ class RouteOptimizerService {
                 body: JSON.stringify(vroomPayload)
             });
 
+            // Log response details
+            console.log('VROOM API Response:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok,
+                url: response.url,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(`VROOM API error: ${response.status} ${response.statusText} - ${errorText}`);
+                console.error('VROOM API Error Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorText: errorText
+                });
+                throw new Error(`Błąd VROOM API: ${response.status} ${response.statusText} - ${errorText}`);
             }
 
             const result = await response.json();
-            console.log('VROOM API Response:', result);
+            console.log('VROOM API Success Result:', {
+                hasRoutes: !!(result.routes && result.routes.length > 0),
+                routesCount: result.routes ? result.routes.length : 0,
+                summary: result.summary,
+                unassigned: result.unassigned
+            });
 
             if (!result.routes || result.routes.length === 0) {
-                throw new Error('VROOM returned no routes');
+                console.error('VROOM API Error: No routes returned', result);
+                throw new Error('VROOM nie zwrócił żadnych tras');
             }
 
             return result;
 
         } catch (error) {
+            console.error('VROOM API Call Failed:', {
+                error: error,
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+                endpoint: this.vroomEndpoint
+            });
+            
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                throw new Error('Cannot connect to VROOM server. Please check if the service is running.');
+                throw new Error('Nie można połączyć się z serwerem VROOM. Sprawdź, czy usługa działa.');
             }
             throw error;
         }
     }
 
     buildVroomPayload() {
-        const depotCoords = [21.0122, 52.2297]; // [longitude, latitude] for VROOM
-
+        console.log('Building VROOM payload...');
+        
+        const depotCoords = [21.0122, 52.2297];
         const vehicle = {
             id: this.routeComponent.selectedDriver.id,
             profile: "driving-car",
             start: depotCoords,
             end: depotCoords,
             capacity: [100],
-            time_window: [28800, 64800] // 8:00 AM to 6:00 PM in seconds
+            time_window: [28800, 64800]
         };
 
         const validOrders = this.routeComponent.orders.filter(order =>
@@ -325,8 +270,16 @@ class RouteOptimizerService {
             !isNaN(order.coordinates[1])
         );
 
+        console.log('VROOM Payload Info:', {
+            totalOrders: this.routeComponent.orders.length,
+            validOrders: validOrders.length,
+            invalidOrders: this.routeComponent.orders.length - validOrders.length,
+            vehicle: vehicle
+        });
+
         if (validOrders.length === 0) {
-            throw new Error('No orders have valid coordinates for optimization');
+            console.error('No valid orders for optimization');
+            throw new Error('Żadne zamówienia nie mają prawidłowych współrzędnych do optymalizacji');
         }
 
         const jobs = validOrders.map((order) => ({
@@ -338,7 +291,7 @@ class RouteOptimizerService {
             time_windows: this.getTimeWindow(order.priority)
         }));
 
-        console.log('VROOM payload jobs:', jobs);
+        console.log('VROOM Jobs created:', jobs.length);
 
         return {
             vehicles: [vehicle],
@@ -350,12 +303,22 @@ class RouteOptimizerService {
     }
 
     processVroomResult(vroomResult) {
+        console.log('Processing VROOM result...');
+        
         if (!vroomResult.routes || vroomResult.routes.length === 0) {
-            throw new Error('No routes returned from VROOM API');
+            console.error('No routes in VROOM result');
+            throw new Error('Brak tras zwróconych z VROOM API');
         }
 
         const route = vroomResult.routes[0];
         const steps = route.steps || [];
+
+        console.log('VROOM Route Info:', {
+            stepsCount: steps.length,
+            distance: route.distance,
+            duration: route.duration,
+            hasGeometry: !!route.geometry
+        });
 
         const totalDistance = Math.round((route.distance || 0) / 1000);
         const totalTime = Math.round((route.duration || 0) / 60);
@@ -367,7 +330,7 @@ class RouteOptimizerService {
 
         this.updateOrderSequence(steps);
 
-        return {
+        const result = {
             total_distance: totalDistance,
             total_time: totalTime,
             savings: savings,
@@ -381,9 +344,20 @@ class RouteOptimizerService {
             vroom_raw: vroomResult,
             geometry: route.geometry || null
         };
+
+        console.log('Optimization Result:', {
+            totalDistance: totalDistance,
+            totalTime: totalTime,
+            savings: savings,
+            routeStepsCount: routeSteps.length
+        });
+
+        return result;
     }
 
     processRouteSteps(steps) {
+        console.log('Processing route steps:', steps.length);
+        
         const routeSteps = [];
         let cumulativeDistance = 0;
         let cumulativeTime = 0;
@@ -403,7 +377,7 @@ class RouteOptimizerService {
                     routeSteps.push({
                         step: routeSteps.length + 1,
                         location: order.address,
-                        description: `Deliver to ${order.client_name}`,
+                        description: `Dostawa do ${order.client_name}`,
                         distance: `${segmentDistance} km`,
                         duration: `${segmentTime} min`,
                         cumulative_distance: `${cumulativeDistance} km`,
@@ -416,20 +390,27 @@ class RouteOptimizerService {
                         coordinates: order.coordinates,
                         vroom_step: step
                     });
+                } else {
+                    console.warn('Order not found for step job:', step.job);
                 }
             }
         });
 
+        console.log('Route steps processed:', routeSteps.length);
         return routeSteps;
     }
 
     updateOrderSequence(steps) {
+        console.log('Updating order sequence...');
+        
         const jobSequence = [];
         steps.forEach(step => {
             if (step.type === 'job') {
                 jobSequence.push(step.job);
             }
         });
+
+        console.log('Job sequence:', jobSequence);
 
         const orderedOrders = [];
         const remainingOrders = [...this.routeComponent.orders];
@@ -442,6 +423,12 @@ class RouteOptimizerService {
         });
 
         orderedOrders.push(...remainingOrders);
+
+        console.log('Orders reordered:', {
+            originalCount: this.routeComponent.orders.length,
+            newCount: orderedOrders.length,
+            optimizedCount: jobSequence.length
+        });
 
         this.routeComponent.orders = orderedOrders;
     }
@@ -457,16 +444,16 @@ class RouteOptimizerService {
 
     getTimeWindow(priority) {
         const timeWindows = {
-            'high': [[28800, 43200]], // 8:00-12:00 (urgent deliveries)
-            'medium': [[32400, 54000]], // 9:00-15:00 (normal deliveries)
-            'low': [[36000, 64800]] // 10:00-18:00 (flexible deliveries)
+            'high': [[28800, 43200]], // 8:00-12:00 
+            'medium': [[32400, 54000]], // 9:00-15:00 
+            'low': [[36000, 64800]] // 10:00-18:00 
         };
-        return timeWindows[priority] || [[28800, 64800]]; // Default: 8:00-18:00
+        return timeWindows[priority] || [[28800, 64800]]; 
     }
 
     calculateEstimatedArrival(arrivalSeconds) {
         const startTime = new Date();
-        startTime.setHours(8, 0, 0, 0); // 8:00 AM start time
+        startTime.setHours(8, 0, 0, 0);
 
         const arrivalTime = new Date(startTime.getTime() + (arrivalSeconds * 1000));
 
@@ -496,9 +483,10 @@ class RouteOptimizerService {
     }
 
     handleOptimizationError(error) {
-        console.error('Route optimization error:', error);
+        console.error('Handling optimization error:', error);
+        
         this.routeComponent.optimizationError = {
-            message: error.message || 'Optimization failed',
+            message: error.message || 'Optymalizacja nie powiodła się',
             timestamp: new Date().toISOString(),
             canRetry: true
         };
@@ -517,20 +505,12 @@ class RouteOptimizerService {
         );
         const notLoading = !this.routeComponent.loading;
 
-        console.log("🔍 canOptimize check:", {
+        console.log('Can optimize check:', {
             hasDriver,
             hasOrders,
             hasValidCoordinates,
             notLoading,
-            driverInfo: this.routeComponent.selectedDriver,
-            ordersCount: this.routeComponent.orders.length,
-            ordersWithCoordinates: this.routeComponent.orders.filter(order =>
-                order.coordinates &&
-                Array.isArray(order.coordinates) &&
-                order.coordinates.length === 2 &&
-                !isNaN(order.coordinates[0]) &&
-                !isNaN(order.coordinates[1])
-            ).length
+            result: hasDriver && hasOrders && hasValidCoordinates && notLoading
         });
 
         return hasDriver && hasOrders && hasValidCoordinates && notLoading;

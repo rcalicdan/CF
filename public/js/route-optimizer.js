@@ -26,19 +26,12 @@ class RouteOptimizerData {
      * Load initial data from API (called by Alpine component)
      */
     async loadInitialData() {
-        console.log("📥 Starting loadInitialData...");
-
         try {
             this.loading = true;
-            this.loadingError = null;
+            this.loadingError = null; 
 
-            console.log('Loading initial data from server...');
-
-            console.log('Loading drivers...');
             this.drivers = await this.dataService.getDrivers();
-            console.log(`✅ Loaded ${this.drivers.length} drivers:`, this.drivers);
 
-            console.log('Loading orders...');
             const endDate = new Date();
             endDate.setDate(endDate.getDate() + 30);
 
@@ -47,19 +40,13 @@ class RouteOptimizerData {
                 endDate.toISOString().split('T')[0]
             );
 
-            console.log(`✅ Loaded ${this.allOrders.length} orders:`, this.allOrders);
-
             this.dataLoaded = true;
-            console.log('✅ Data loading completed successfully');
 
             await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
-            console.error('❌ Failed to load initial data:', error);
-            this.loadingError = 'Failed to load data from server: ' + error.message;
+            this.loadingError = 'Nie udało się załadować danych z serwera: ' + error.message;
         } finally {
-            console.log('🔄 Setting loading to false on data instance');
             this.loading = false;
-            console.log('Final loading state:', this.loading);
         }
     }
 
@@ -72,8 +59,6 @@ class RouteOptimizerData {
         }
 
         try {
-            console.log(`Refreshing orders for driver ${this.selectedDriver.id} on ${this.selectedDate}`);
-
             if (forceRefresh) {
                 this.dataService.clearCacheByPattern(`orders_${this.selectedDriver.id}_${this.selectedDate}`);
             }
@@ -89,12 +74,9 @@ class RouteOptimizerData {
 
             this.allOrders.push(...orders);
 
-            console.log(`✅ Refreshed ${orders.length} orders from API`);
-
             return orders;
 
         } catch (error) {
-            console.error('❌ Failed to refresh orders:', error);
             throw error;
         }
     }
@@ -120,7 +102,6 @@ class RouteOptimizerData {
         try {
             return await this.dataService.getRouteStatistics(driverId, date);
         } catch (error) {
-            console.error('Failed to get statistics:', error);
             throw error;
         }
     }
@@ -132,7 +113,6 @@ class RouteOptimizerData {
         try {
             return await this.dataService.triggerGeocoding();
         } catch (error) {
-            console.error('Failed to trigger geocoding:', error);
             throw error;
         }
     }
@@ -143,7 +123,6 @@ class RouteOptimizerData {
     }
 
     setSelectedDate(date) {
-        console.log('Setting selected date to:', date);
         this.selectedDate = date;
 
         this.optimizationResult = null;

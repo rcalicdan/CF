@@ -45,7 +45,6 @@ class RouteDataService {
 
             return data;
         } catch (error) {
-            console.error('API Request failed:', error);
             throw error;
         }
     }
@@ -62,11 +61,8 @@ class RouteDataService {
             const url = `${this.baseUrl}/saved-optimization?driver_id=${driverId}&date=${date}`;
             const response = await this.request(url);
 
-            console.log(`📥 Loaded saved route for driver ${driverId} on ${date}:`, response.data);
-
             return response.data;
         } catch (error) {
-            console.warn('No saved route found or failed to load:', error);
             return null;
         }
     }
@@ -79,11 +75,9 @@ class RouteDataService {
         const now = Date.now();
 
         if (cached && (now - cached.timestamp) < this.cacheTimeout) {
-            console.log(`Cache hit for key: ${key}`);
             return cached.data;
         }
 
-        console.log(`Cache miss for key: ${key}, fetching from API...`);
         const data = await fetchFn();
         this.cache.set(key, {
             data,
@@ -172,7 +166,6 @@ class RouteDataService {
         for (const key of this.cache.keys()) {
             if (key.includes(pattern)) {
                 this.cache.delete(key);
-                console.log(`Cleared cache for key: ${key}`);
             }
         }
     }
@@ -183,10 +176,8 @@ class RouteDataService {
     clearCache(key = null) {
         if (key) {
             this.cache.delete(key);
-            console.log(`Cleared cache for key: ${key}`);
         } else {
             this.cache.clear();
-            console.log('Cleared all cache');
         }
     }
 
