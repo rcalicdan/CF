@@ -12,7 +12,6 @@ class UpdatePage extends Component
     public Client $client;
     public $first_name = '';
     public $last_name = '';
-    public $email = '';
     public $phone_number = '';
     public $street_name = '';
     public $street_number = '';
@@ -33,7 +32,6 @@ class UpdatePage extends Component
 
         $this->first_name = $client->first_name;
         $this->last_name = $client->last_name;
-        $this->email = $client->email;
         $this->phone_number = $client->phone_number;
         $this->street_name = $client->street_name;
         $this->street_number = $client->street_number;
@@ -47,7 +45,6 @@ class UpdatePage extends Component
         return [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'email' => ['nullable', 'email', Rule::unique('clients')->ignore($this->client->id)],
             'phone_number' => 'required|string|max:20',
             'street_name' => 'required|string|max:255',
             'street_number' => 'required|string|max:20',
@@ -77,7 +74,6 @@ class UpdatePage extends Component
         $data = [
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
-            'email' => $this->email ?: null,
             'phone_number' => $this->phone_number,
             'street_name' => $this->street_name,
             'street_number' => $this->street_number,

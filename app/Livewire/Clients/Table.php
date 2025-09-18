@@ -31,7 +31,6 @@ class Table extends Component
             ->headers([
                 ['key' => 'id', 'label' => __('ID'), 'sortable' => true],
                 ['key' => 'full_name', 'label' => __('Full Name'), 'sortable' => true, 'accessor' => true, 'search_columns' => ['first_name', 'last_name'], 'sort_columns' => ['first_name', 'last_name']],
-                ['key' => 'email', 'label' => __('Email'), 'sortable' => true, 'defaultValue' => __('No email')],
                 ['key' => 'phone_number', 'label' => __('Phone'), 'sortable' => true],
                 ['key' => 'full_address', 'label' => __('Address'), 'sortable' => false, 'accessor' => true],
                 ['key' => 'created_at', 'label' => __('Created'), 'sortable' => true, 'type' => 'datetime'],
@@ -131,7 +130,6 @@ class Table extends Component
 
     public function bulkDelete()
     {
-        $this->authorize('delete', Client::class);
         $query = Client::query();
         if ($this->selectAll) {
             $query = $this->rowsQuery();
