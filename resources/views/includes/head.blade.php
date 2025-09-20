@@ -19,6 +19,7 @@
     <script src="/js/map-manager.js"></script>
     <script src="/js/route-optimizer-service.js"></script>
     <script src="/js/alpine-component.js"></script>
+    @stack('styles');
     @livewireStyles
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

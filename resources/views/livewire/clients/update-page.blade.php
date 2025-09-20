@@ -12,10 +12,6 @@
                     <x-forms.field label="{{ __('Last Name') }}" name="last_name" required>
                         <x-forms.input name="last_name" wire:model="last_name" placeholder="{{ __('Enter last name') }}" required />
                     </x-forms.field>
-                    <x-forms.field label="{{ __('Email Address') }}" name="email" help="{{ __('Optional - Client\'s email address') }}">
-                        <x-forms.input type="email" name="email" wire:model="email"
-                            placeholder="{{ __('Enter email address') }}" />
-                    </x-forms.field>
                     <x-forms.field label="{{ __('Phone Number') }}" name="phone_number" required>
                         <x-forms.input name="phone_number" wire:model="phone_number" placeholder="{{ __('Enter phone number') }}"
                             required />

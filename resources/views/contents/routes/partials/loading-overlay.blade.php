@@ -14,23 +14,23 @@
             <div class="absolute inset-0 rounded-full border-4 border-blue-600/20"></div>
         </div>
 
-        <h3 class="text-lg lg:text-xl font-bold text-gray-800 mb-3">Optimizing Routes</h3>
+        <h3 class="text-lg lg:text-xl font-bold text-gray-800 mb-3">Optymalizowanie Tras</h3>
         <p class="text-sm lg:text-base text-gray-600 mb-4">
-            Calculating the best delivery path for <span x-text="formattedSelectedDate" class="font-medium"></span>
+            Obliczanie najlepszej ścieżki dostawy dla <span x-text="formattedSelectedDate" class="font-medium"></span>
         </p>
 
         <div class="space-y-2">
             <div class="flex items-center justify-center text-xs lg:text-sm text-gray-500">
                 <i class="fas fa-map-marked-alt mr-2 text-blue-600"></i>
-                Analyzing delivery locations
+                Analizowanie lokalizacji dostaw
             </div>
             <div class="flex items-center justify-center text-xs lg:text-sm text-gray-500">
                 <i class="fas fa-route mr-2 text-blue-600"></i>
-                Computing optimal path
+                Obliczanie optymalnej ścieżki
             </div>
             <div class="flex items-center justify-center text-xs lg:text-sm text-gray-500">
                 <i class="fas fa-clock mr-2 text-blue-600"></i>
-                Estimating delivery times
+                Szacowanie czasów dostaw
             </div>
         </div>
 
@@ -44,7 +44,7 @@
 
         <button @click="loading = false; console.log('Manual loading override')"
             class="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-            Force Stop Loading (Debug)
+            Wymuś Zatrzymanie Ładowania (Debug)
         </button>
     </div>
 </div>

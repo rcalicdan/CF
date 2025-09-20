@@ -13,7 +13,7 @@
                 <div class="flex justify-between items-start">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-1">
-                            <div class="font-medium text-gray-800" x-text="'Order #' + order.id">
+                            <div class="font-medium text-gray-800" x-text="'Zamówienie #' + order.id">
                             </div>
                             <div :class="'priority-' + order.priority" class="priority-indicator">
                             </div>
@@ -38,8 +38,9 @@
         <div class="text-gray-500 mb-2">
             <i class="fas fa-calendar-times text-4xl mb-3"></i>
         </div>
-        <h3 class="text-lg font-medium text-gray-700 mb-2">No Orders Scheduled</h3>
-        <p class="text-sm text-gray-500">No delivery orders found for <span x-text="formattedSelectedDate"></span></p>
-        <p class="text-xs text-gray-400 mt-2">Try selecting a different date</p>
+        <h3 class="text-lg font-medium text-gray-700 mb-2">Brak Zaplanowanych Zamówień</h3>
+        <p class="text-sm text-gray-500">Nie znaleziono zamówień dostawy dla <span
+                x-text="formattedSelectedDate"></span></p>
+        <p class="text-xs text-gray-400 mt-2">Spróbuj wybrać inną datę</p>
     </div>
 </div>

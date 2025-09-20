@@ -76,7 +76,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <dt class="text-sm font-medium text-gray-500">{{ __('Address') }}</dt>
-                    <dd class="mt-1 text-base text-gray-900">{{ $order->client->address ?? __('Not provided') }}</dd>
+                    <dd class="mt-1 text-base text-gray-900">{{ $order->client->full_address ?? __('Not provided') }}</dd>
                 </div>
             </div>
         </div>
