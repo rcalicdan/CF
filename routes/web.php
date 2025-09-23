@@ -86,5 +86,6 @@ Route::middleware('auth')->get('/download-pdf/{filename}', function ($filename) 
 })->name('download.pdf');
 
 Route::view('routes', 'contents.routes.index')->middleware('auth')->name('routes');
+Route::view('reviews', 'contents.reviews.index')->name('reviews');
 
 Route::get('docs', [SwaggerController::class, 'docs'])->name('l5-swagger.default.docs');

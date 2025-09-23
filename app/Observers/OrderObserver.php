@@ -5,7 +5,9 @@ namespace App\Observers;
 use App\Models\Order;
 use App\Models\OrderHistory;
 use App\Enums\OrderStatus;
+use App\Jobs\SendSmsJob;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class OrderObserver
 {
@@ -95,6 +97,44 @@ class OrderObserver
             'action_type' => $actionType,
             'changes' => ['status' => ['old' => $original['status'] ?? null, 'new' => $changes['status']]],
             'notes' => $notes,
+        ]);
+
+        if ($changes['status'] === OrderStatus::DELIVERED->value) {
+            $this->sendDeliveryThankYouSms($order);
+        }
+    }
+
+    /**
+     * Send thank you SMS with review link when order is delivered
+     */
+    private function sendDeliveryThankYouSms(Order $order): void
+    {
+        $phoneNumber = $order->client?->phone_number;
+        
+        if (!$phoneNumber) {
+            Log::warning('Cannot send delivery SMS: Client has no phone number', [
+                'order_id' => $order->id,
+                'client_id' => $order->client_id
+            ]);
+            return;
+        }
+
+        $reviewUrl = config('app.url') . '/reviews';
+        
+        $message = sprintf(
+            "Dziękujemy %s! Zamówienie #%d zostało pomyślnie dostarczone. Będziemy wdzięczni za Twoją opinię: %s",
+            $order->client->first_name ?? 'szanowny kliencie',
+            $order->id,
+            $reviewUrl
+        );
+
+        SendSmsJob::dispatch($phoneNumber, $message);
+        
+        Log::info('Delivery thank you SMS queued', [
+            'order_id' => $order->id,
+            'client_id' => $order->client_id,
+            'phone_number' => $phoneNumber,
+            'message' => $message
         ]);
     }
 
