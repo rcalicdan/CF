@@ -26,8 +26,28 @@ pest()->extend(Tests\TestCase::class)
 |
 */
 
-expect()->extend('toBeOne', function () {
-    return $this->toBe(1);
+expect()->extend('toHaveValidRouteStructure', function () {
+    return $this->toHaveKeys([
+        'driver_id',
+        'optimization_date',
+        'total_distance',
+        'total_time',
+        'optimization_result'
+    ]);
+});
+
+expect()->extend('toHaveValidOrderStructure', function () {
+    return $this->toHaveKeys([
+        'id',
+        'driver_id',
+        'client_name',
+        'address',
+        'coordinates',
+        'total_amount',
+        'status',
+        'priority',
+        'has_coordinates'
+    ]);
 });
 
 /*
