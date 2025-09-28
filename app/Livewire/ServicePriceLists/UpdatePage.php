@@ -69,11 +69,11 @@ class UpdatePage extends Component
         try {
             $this->servicePriceListService->updatePriceListService($this->servicePriceList->id, $data);
 
-            session()->flash('success', __('Service price updated successfully!'));
+            session()->flash('success', 'Cena usługi została pomyślnie zaktualizowana!');
 
             return redirect()->route('service-price-lists.index');
         } catch (\Exception $e) {
-            session()->flash('error', __('An error occurred while updating the service price. Please try again.'));
+            session()->flash('error', 'Wystąpił błąd podczas aktualizacji ceny usługi. Proszę spróbować ponownie.');
         }
     }
 

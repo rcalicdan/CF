@@ -244,10 +244,10 @@ class UpdatePage extends Component
 
         try {
             $result = $this->orderService->updateOrder($this->order, $data);
-            session()->flash('success', 'Order updated successfully!');
+            session()->flash('success', 'Zamówienie zostało pomyślnie zaktualizowane!');
             return $this->redirect(route('orders.show', [$result["order"]->id]), true);
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while updating the order. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas aktualizacji zamówienia. Proszę spróbować ponownie.');
         }
     }
 

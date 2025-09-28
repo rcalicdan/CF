@@ -90,12 +90,12 @@ class Register extends Component
             session(['api_token' => $token]);
             Auth::login($user);
 
-            $this->dispatchFlashMessage('success', 'auth.registration_success');
+            $this->dispatchFlashMessage('success', 'Rejestracja zakończona pomyślnie.');
             $this->dispatch('user-registered', $user->toArray());
 
             return redirect()->intended('/dashboard');
         } catch (\Exception $e) {
-            $this->dispatchFlashMessage('error', 'auth.registration_error');
+            $this->dispatchFlashMessage('error', 'Wystąpił błąd podczas rejestracji.');
         }
     }
 

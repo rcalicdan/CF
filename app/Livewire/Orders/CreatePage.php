@@ -215,10 +215,10 @@ class CreatePage extends Component
 
         try {
             $result = $this->orderService->createOrder($data);
-            session()->flash('success', 'Order created successfully!');
+            session()->flash('success', 'Zamówienie zostało pomyślnie utworzone!');
             return $this->redirect(route('orders.show', [$result["order"]->id]), true);
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while creating the order. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas tworzenia zamówienia. Proszę spróbować ponownie.');
         }
     }
 

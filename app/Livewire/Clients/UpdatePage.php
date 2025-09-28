@@ -85,11 +85,11 @@ class UpdatePage extends Component
         try {
             $this->clientService->updateClient($this->client->id, $data);
 
-            session()->flash('success', 'Client updated successfully!');
+            session()->flash('success', 'Klient został pomyślnie zaktualizowany!');
 
             return redirect()->route('clients.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while updating the client. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas aktualizacji klienta. Proszę spróbować ponownie.');
         }
     }
 

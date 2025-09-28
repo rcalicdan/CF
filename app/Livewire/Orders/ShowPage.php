@@ -130,7 +130,7 @@ class ShowPage extends Component
         $this->authorize('delete', $orderCarpet);
         $orderCarpet->delete();
 
-        session()->flash('message', __('Order carpet deleted successfully.'));
+        session()->flash('message', 'Dywan z zamówienia został pomyślnie usunięty.');
     }
 
     public function render()

@@ -63,18 +63,18 @@ class UpdatePage extends Component
         try {
             $this->processingCostService->updateProcessingCostInformation($this->processingCost, $data);
 
-            session()->flash('success', __('Processing cost updated successfully!'));
+            session()->flash('success', 'Koszt przetwarzania został pomyślnie zaktualizowany!');
 
             return redirect()->route('processing-costs.index');
         } catch (\Exception $e) {
-            session()->flash('error', __('An error occurred while updating the processing cost. Please try again.'));
+            session()->flash('error', 'Wystąpił błąd podczas aktualizacji kosztu przetwarzania. Proszę spróbować ponownie.');
         }
     }
 
     public function render()
     {
         return view('livewire.processing-costs.update-page', [
-            'typeOptions' => CostType::options() 
+            'typeOptions' => CostType::options()
         ]);
     }
 }

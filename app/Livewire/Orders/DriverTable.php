@@ -292,7 +292,7 @@ class DriverTable extends Component
         $this->clearSelection();
 
         $this->dispatch('show-message', [
-            'message' => 'Orders deleted successfully.',
+            'message' => 'Zamówienia zostały pomyślnie usunięte.',
             'type' => 'success'
         ]);
     }
@@ -304,7 +304,7 @@ class DriverTable extends Component
         $order->delete();
 
         $this->dispatch('show-message', [
-            'message' => 'Order deleted successfully.',
+            'message' => 'Zamówienie zostało pomyślnie usunięte.',
             'type' => 'success'
         ]);
     }

@@ -82,7 +82,7 @@ class Table extends Component
         $this->clearSelection();
 
         $this->dispatch('show-message', [
-            'message' => __('Services deleted successfully.'),
+            'message' => __('Usługi zostały pomyślnie usunięte.'),
             'type' => 'success'
         ]);
     }
@@ -95,7 +95,7 @@ class Table extends Component
         $this->carpetService->deleteCarpetService($id);
 
         $this->dispatch('show-message', [
-            'message' => __('Service deleted successfully.'),
+            'message' => __('Usługa została pomyślnie usunięta.'),
             'type' => 'success'
         ]);
     }

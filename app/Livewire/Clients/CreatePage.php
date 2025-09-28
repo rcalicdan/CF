@@ -69,11 +69,11 @@ class CreatePage extends Component
         try {
             $client = $this->clientService->createClient($data);
 
-            session()->flash('success', 'Client created successfully!');
+            session()->flash('success', 'Klient został pomyślnie utworzony!');
 
             return redirect()->route('clients.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while creating the client. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas tworzenia klienta. Proszę spróbować ponownie.');
         }
     }
 

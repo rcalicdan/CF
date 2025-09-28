@@ -111,7 +111,7 @@
         });
 
         document.addEventListener('livewire:navigated', function() {
-            console.log('Livewire navigated - refreshing order statistics');
+           //
         });
 
         Livewire.on('refreshStats', function() {

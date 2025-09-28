@@ -68,16 +68,16 @@ class Login extends Component
                     Auth::login($user, true);
                 }
 
-                $this->dispatchFlashMessage('success', 'Login successful! Redirecting...');
+                $this->dispatchFlashMessage('success', 'Zalogowano pomyślnie! Przekierowywanie...');
 
                 $this->dispatch('user-logged-in', $user->toArray());
 
                 return $this->redirectIntended('/', false);
             } else {
-                $this->dispatchFlashMessage('error', 'Invalid credentials');
+                $this->dispatchFlashMessage('error', 'Nieprawidłowe dane logowania');
             }
         } catch (\Exception $e) {
-            $this->dispatchFlashMessage('error', 'An error occurred during login. Please try again.');
+            $this->dispatchFlashMessage('error', 'Wystąpił błąd podczas logowania. Proszę spróbować ponownie.');
         }
     }
 

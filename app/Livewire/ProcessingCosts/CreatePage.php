@@ -58,18 +58,18 @@ class CreatePage extends Component
         try {
             $this->processingCostService->storeNewProcessingCost($data);
 
-            session()->flash('success', __('Processing cost created successfully!'));
+            session()->flash('success', 'Koszt przetwarzania został pomyślnie utworzony!');
 
             return redirect()->route('processing-costs.index');
         } catch (\Exception $e) {
-            session()->flash('error', __('An error occurred while creating the processing cost. Please try again.'));
+            session()->flash('error', 'Wystąpił błąd podczas tworzenia kosztu przetwarzania. Proszę spróbować ponownie.');
         }
     }
 
     public function render()
     {
         return view('livewire.processing-costs.create-page', [
-            'typeOptions' => CostType::options() 
+            'typeOptions' => CostType::options()
         ]);
     }
 }

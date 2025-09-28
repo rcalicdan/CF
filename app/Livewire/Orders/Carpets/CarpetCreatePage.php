@@ -143,11 +143,11 @@ class CarpetCreatePage extends Component
 
             $orderCarpetService->storeOrderCarpet($data);
 
-            session()->flash('success', 'Carpet added successfully to the order.');
+            session()->flash('success', 'Dywan został pomyślnie dodany do zamówienia.');
 
             return $this->redirect(route('orders.show', $this->order), true);
         } catch (\Exception $e) {
-            session()->flash('error', 'Failed to add carpet: ' . $e->getMessage());
+            session()->flash('error', 'Nie udało się dodać dywanu: ' . $e->getMessage());
         }
     }
 

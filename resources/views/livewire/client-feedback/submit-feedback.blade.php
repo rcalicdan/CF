@@ -6,7 +6,7 @@
         name: @entangle('name'),
         opinion: @entangle('opinion'),
         getRatingText() {
-            const texts = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+            const texts = ['', 'Słaba', 'Przeciętna', 'Dobra', 'Bardzo dobra', 'Doskonała'];
             return texts[this.rating] || '';
         }
     }" x-init="$el.classList.add('fade-in')">
@@ -24,8 +24,10 @@
                     </svg>
                 </div>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-primary-text mb-2">We'd love your feedback!</h1>
-            <p class="text-gray-600 text-base">Help us improve by sharing your thoughts and experience.</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-primary-text mb-2">Bardzo chcielibyśmy poznać Twoją opinię!
+            </h1>
+            <p class="text-gray-600 text-base">Pomóż nam się rozwijać, dzieląc się swoimi przemyśleniami i
+                doświadczeniami.</p>
             <div class="w-16 h-1 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full mx-auto mt-3">
             </div>
         </div>
@@ -36,7 +38,7 @@
                 <input type="text" id="name" name="name" x-model="name" wire:model="name" placeholder=" "
                     class="input-field w-full px-4 py-3 text-gray-700 bg-white rounded-lg @error('name') border-red-500 @enderror"
                     required>
-                <label for="name" class="floating-label">Your Name</label>
+                <label for="name" class="floating-label">Twoje imię</label>
                 @error('name')
                     <span class="text-red-500 text-sm mt-1 block">{{ $message }}</span>
                 @enderror
@@ -47,7 +49,7 @@
                 <textarea id="opinion" name="opinion" rows="4" x-model="opinion" wire:model="opinion" placeholder=" "
                     class="input-field w-full px-4 py-3 text-gray-700 bg-white rounded-lg resize-none @error('opinion') border-red-500 @enderror"
                     required></textarea>
-                <label for="opinion" class="floating-label">Tell us what you think...</label>
+                <label for="opinion" class="floating-label">Powiedz nam, co myślisz...</label>
                 @error('opinion')
                     <span class="text-red-500 text-sm mt-1 block">{{ $message }}</span>
                 @enderror
@@ -55,8 +57,8 @@
 
             <!-- Rating Section -->
             <div class="slide-in-up" style="animation-delay: 0.2s">
-                <label class="block text-base font-semibold text-gray-700 mb-3 text-center">How would you rate
-                    your experience?</label>
+                <label class="block text-base font-semibold text-gray-700 mb-3 text-center">Jak oceniasz swoje
+                    doświadczenie?</label>
                 <div class="text-center">
                     <div class="flex items-center justify-center space-x-2 sm:space-x-3 mb-3"
                         @mouseleave="hoverRating = 0">
@@ -103,7 +105,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                         </svg>
-                        <span>Submit Feedback</span>
+                        <span>Wyślij opinię</span>
                     </span>
                     <span wire:loading wire:target="submit" class="flex items-center justify-center space-x-2">
                         <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
@@ -114,7 +116,7 @@
                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                             </path>
                         </svg>
-                        <span>Submitting...</span>
+                        <span>Wysyłanie...</span>
                     </span>
                 </button>
             </div>
@@ -131,16 +133,16 @@
                 </svg>
             </div>
         </div>
-        <h2 class="text-2xl font-bold text-primary-text mb-3">Thank You!</h2>
-        <p class="text-gray-600 mb-3">Your feedback has been received successfully.</p>
+        <h2 class="text-2xl font-bold text-primary-text mb-3">Dziękujemy!</h2>
+        <p class="text-gray-600 mb-3">Twoja opinia została pomyślnie wysłana.</p>
         <div x-show="name" class="text-primary-accent font-medium mb-4">
-            Thank you, <span x-text="name"></span>, for taking the time to share your thoughts!
+            Dziękujemy, <span x-text="name"></span>, za poświęcenie czasu na podzielenie się swoimi przemyśleniami!
         </div>
 
         <!-- Reset Button -->
         <button wire:click="resetForm"
             class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition-all">
-            Submit Another Feedback
+            Wyślij kolejną opinię
         </button>
     </div>
 </div>

@@ -50,7 +50,7 @@ class CreatePage extends Component
             ->exists();
 
         if ($exists) {
-            $this->addError('service_id', __('This service already has a price set for the selected price list.'));
+            $this->addError('service_id', 'Ta usługa ma już ustaloną cenę dla wybranego cennika.');
             return;
         }
 
@@ -63,11 +63,11 @@ class CreatePage extends Component
         try {
             $this->servicePriceListService->createPriceListService($data);
 
-            session()->flash('success', 'Service price added successfully!');
+            session()->flash('success', 'Cena usługi została pomyślnie dodana!');
 
             return redirect()->route('service-price-lists.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while adding the service price. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas dodawania ceny usługi. Proszę spróbować ponownie.');
         }
     }
 

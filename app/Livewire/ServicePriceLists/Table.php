@@ -87,7 +87,7 @@ class Table extends Component
         $this->clearSelection();
 
         $this->dispatch('show-message', [
-            'message' => __('Service prices deleted successfully.'),
+            'message' => 'Ceny usług zostały pomyślnie usunięte.',
             'type' => 'success'
         ]);
     }
@@ -99,7 +99,7 @@ class Table extends Component
         $servicePriceList->delete();
 
         $this->dispatch('show-message', [
-            'message' => __('Service price deleted successfully.'),
+            'message' => 'Cena usługi została pomyślnie usunięta.',
             'type' => 'success'
         ]);
     }

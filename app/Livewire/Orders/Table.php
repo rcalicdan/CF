@@ -141,7 +141,7 @@ class Table extends Component
         $this->clearSelection();
 
         $this->dispatch('show-message', [
-            'message' => __('Orders deleted successfully.'),
+            'message' => 'Zamówienia zostały pomyślnie usunięte.',
             'type' => 'success'
         ]);
     }
@@ -153,7 +153,7 @@ class Table extends Component
         $order->delete();
 
         $this->dispatch('show-message', [
-            'message' => __('Order deleted successfully.'),
+            'message' => 'Zamówienie zostało pomyślnie usunięte.',
             'type' => 'success'
         ]);
     }

@@ -68,11 +68,11 @@ class UpdatePage extends Component
         try {
             $this->carpetService->updateCarpetService($this->service->id, $data);
 
-            session()->flash('success', 'Service updated successfully!');
+            session()->flash('success', 'Usługa została pomyślnie zaktualizowana!');
 
             return redirect()->route('services.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while updating the service. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas aktualizacji usługi. Proszę spróbować ponownie.');
         }
     }
 

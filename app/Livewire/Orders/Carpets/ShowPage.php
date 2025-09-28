@@ -77,13 +77,13 @@ class ShowPage extends Component
             $this->reset('newPhotos');
             $this->orderCarpet->refresh();
 
-            session()->flash('message', __('messages.photos_uploaded_success'));
+            session()->flash('message', 'Zdjęcia zostały pomyślnie przesłane.');
             session()->flash('message-type', 'success');
 
             $this->dispatch('photos-uploaded');
             $this->dispatch('close-photo-modal');
         } catch (\Exception $e) {
-            session()->flash('message', __('messages.photos_upload_failed', ['error' => $e->getMessage()]));
+            session()->flash('message', 'Nie udało się przesłać zdjęć: ' . $e->getMessage());
             session()->flash('message-type', 'error');
         }
     }
@@ -98,10 +98,10 @@ class ShowPage extends Component
 
             OrderCarpetObserver::logQrGenerated($this->orderCarpet);
 
-            session()->flash('message', __('messages.qr_code_generated_success'));
+            session()->flash('message', 'Kod QR został pomyślnie wygenerowany.');
             session()->flash('message-type', 'success');
         } catch (\Exception $e) {
-            session()->flash('message', __('messages.qr_code_generation_failed', ['error' => $e->getMessage()]));
+            session()->flash('message', 'Nie udało się wygenerować kodu QR: ' . $e->getMessage());
             session()->flash('message-type', 'error');
         } finally {
             $this->isGeneratingQr = false;
@@ -112,7 +112,7 @@ class ShowPage extends Component
     {
         $this->authorize('view', $this->orderCarpet);
         if (!$this->orderCarpet->hasValidQrCode()) {
-            session()->flash('message', __('messages.qr_code_not_available'));
+            session()->flash('message', 'Kod QR nie jest dostępny.');
             session()->flash('message-type', 'error');
             return null;
         }
@@ -122,7 +122,7 @@ class ShowPage extends Component
                 "carpet-{$this->orderCarpet->id}-qr-code.png"
             );
         } catch (\Exception $e) {
-            session()->flash('message', __('messages.qr_code_download_failed', ['error' => $e->getMessage()]));
+            session()->flash('message', 'Nie udało się pobrać kodu QR: ' . $e->getMessage());
             session()->flash('message-type', 'error');
             return null;
         }

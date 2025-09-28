@@ -54,13 +54,13 @@ class CreatePage extends Component
         ];
 
         try {
-            $service = $this->carpetService->createCarpetService($data);
+           $this->carpetService->createCarpetService($data);
 
-            session()->flash('success', 'Service created successfully!');
+            session()->flash('success', 'Usługa została pomyślnie utworzona!');
 
             return redirect()->route('services.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while creating the service. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas tworzenia usługi. Proszę spróbować ponownie.');
         }
     }
 

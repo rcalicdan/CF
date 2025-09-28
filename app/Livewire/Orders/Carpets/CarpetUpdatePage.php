@@ -153,11 +153,11 @@ class CarpetUpdatePage extends Component
 
             $orderCarpetService->updateOrderCarpet($this->carpet, $data);
 
-            session()->flash('success', 'Carpet updated successfully.');
+            session()->flash('success', 'Dywan został pomyślnie zaktualizowany.');
 
             return $this->redirect(route('orders.show', $this->carpet->order->id), true);
         } catch (\Exception $e) {
-            session()->flash('error', 'Failed to update carpet: ' . $e->getMessage());
+            session()->flash('error', 'Nie udało się zaktualizować dywanu: ' . $e->getMessage());
         }
     }
 

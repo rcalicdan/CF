@@ -126,7 +126,7 @@ class Table extends Component
 
         if ($this->selectedMonth) {
             $query->whereYear('cost_date', Carbon::parse($this->selectedMonth)->year)
-                  ->whereMonth('cost_date', Carbon::parse($this->selectedMonth)->month);
+                ->whereMonth('cost_date', Carbon::parse($this->selectedMonth)->month);
         }
 
         // Apply search and sort
@@ -232,7 +232,7 @@ class Table extends Component
         $query->delete();
         $this->clearSelection();
         $this->dispatch('show-message', [
-            'message' => __('Processing costs deleted successfully.'),
+            'message' => 'Koszty przetwarzania zostały pomyślnie usunięte.',
             'type' => 'success'
         ]);
     }
@@ -243,7 +243,7 @@ class Table extends Component
         $processingCost->delete();
 
         $this->dispatch('show-message', [
-            'message' => __('Processing cost deleted successfully.'),
+            'message' => 'Koszt przetwarzania został pomyślnie usunięty.',
             'type' => 'success'
         ]);
     }

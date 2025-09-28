@@ -156,7 +156,7 @@ class UpdatePage extends Component
         });
 
         if ($existingIndex !== false) {
-            session()->flash('error', 'Service already added to this price list.');
+            session()->flash('error', 'Usługa została już dodana do tego cennika.');
             return;
         }
 
@@ -171,7 +171,7 @@ class UpdatePage extends Component
         $this->resetDirectServiceForm();
         $this->loadAvailableServices();
         $this->loadDirectAvailableServices();
-        session()->flash('success', 'Service added successfully!');
+        session()->flash('success', 'Usługa została pomyślnie dodana!');
     }
 
     public function addServicePrice()
@@ -190,7 +190,7 @@ class UpdatePage extends Component
         });
 
         if ($existingIndex !== false) {
-            session()->flash('error', 'Service already added to this price list.');
+            session()->flash('error', 'Usługa została już dodana do tego cennika.');
             return;
         }
 
@@ -271,11 +271,11 @@ class UpdatePage extends Component
         try {
             $this->priceListService->updatePriceListWithServices($this->priceList->id, $data, $this->servicePrices);
 
-            session()->flash('success', 'Price list updated successfully!');
+            session()->flash('success', 'Cennik został pomyślnie zaktualizowany!');
 
             return redirect()->route('price-lists.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while updating the price list. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas aktualizacji cennika. Proszę spróbować ponownie.');
         }
     }
 
@@ -305,6 +305,6 @@ class UpdatePage extends Component
         }
 
         $this->bulkAdjustmentValue = '';
-        session()->flash('success', 'Bulk price adjustment applied successfully!');
+        session()->flash('success', 'Masowa korekta cen została pomyślnie zastosowana!');
     }
 }

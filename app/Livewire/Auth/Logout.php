@@ -26,12 +26,12 @@ class Logout extends Component
 
         try {
             $this->performLocalLogout();
-            $this->dispatchFlashMessage('success', 'auth.logout_success');
+            $this->dispatchFlashMessage('success', 'Wylogowano pomyślnie.');
 
             return redirect()->route('login');
         } catch (\Exception $e) {
             $this->performLocalLogout();
-            $this->dispatchFlashMessage('warning', 'auth.logout_warning');
+            $this->dispatchFlashMessage('warning', 'Wystąpił błąd podczas wylogowywania.');
 
             return redirect()->route('login');
         }

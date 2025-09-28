@@ -92,11 +92,11 @@ class UpdatePage extends Component
         try {
             $this->userService->updateUserInformation($this->user, $data);
 
-            session()->flash('success', 'User updated successfully!');
+            session()->flash('success', 'Użytkownik został pomyślnie zaktualizowany!');
 
             return redirect()->route('users.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while updating the user. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas aktualizacji użytkownika. Proszę spróbować ponownie.');
         }
     }
 

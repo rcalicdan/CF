@@ -107,7 +107,7 @@ class Table extends Component
         $query->delete();
         $this->clearSelection();
         $this->dispatch('show-message', [
-            'message' => __('Users deleted successfully.'),
+            'message' => 'Użytkownicy zostali pomyślnie usunięci.',
             'type' => 'success'
         ]);
     }
@@ -119,7 +119,7 @@ class Table extends Component
         $user->delete();
 
         $this->dispatch('show-message', [
-            'message' => __('User deleted successfully.'),
+            'message' => 'Użytkownik został pomyślnie usunięty.',
             'type' => 'success'
         ]);
     }

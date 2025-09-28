@@ -348,22 +348,52 @@ class Charts extends Component
 
     private function getDriverPerformanceData(): array
     {
-        return Order::join('drivers', 'orders.assigned_driver_id', '=', 'drivers.id')
-            ->join('users', 'drivers.user_id', '=', 'users.id')
-            ->selectRaw("
-                COALESCE(
-                    NULLIF(TRIM(users.first_name || ' ' || users.last_name), ''), 
-                    'Unknown Driver'
-                ) as driver_name, 
-                COUNT(orders.id) as order_count
-            ")
-            ->where('orders.created_at', '>=', Carbon::now()->startOfMonth())
-            ->groupBy('users.first_name', 'users.last_name')
-            ->orderBy('order_count', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(fn($item) => ['label' => $item->driver_name, 'value' => (int) $item->order_count])
-            ->toArray();
+        try {
+            $results = DB::table('orders')
+                ->join('drivers', 'orders.assigned_driver_id', '=', 'drivers.id')
+                ->join('users', 'drivers.user_id', '=', 'users.id')
+                ->select([
+                    DB::raw('users.id as user_id'),
+                    DB::raw('users.first_name'),
+                    DB::raw('users.last_name'),
+                    DB::raw('COUNT(orders.id) as order_count')
+                ])
+                ->where('orders.created_at', '>=', Carbon::now()->startOfMonth())
+                ->whereNotNull('orders.assigned_driver_id')
+                ->whereNotNull('users.first_name')
+                ->where('users.first_name', '!=', '')
+                ->groupBy('users.id', 'users.first_name', 'users.last_name')
+                ->orderBy('order_count', 'desc')
+                ->limit(5)
+                ->get();
+
+
+            return $results->map(function ($item) {
+                $firstName = trim($item->first_name ?? '');
+                $lastName = trim($item->last_name ?? '');
+
+                if (empty($firstName) && empty($lastName)) {
+                    $driverName = 'Nieznany kierowca';
+                } elseif (empty($firstName)) {
+                    $driverName = $lastName;
+                } elseif (empty($lastName)) {
+                    $driverName = $firstName;
+                } else {
+                    $driverName = $firstName . ' ' . $lastName;
+                }
+
+
+                return [
+                    'label' => $driverName,
+                    'value' => (int) $item->order_count
+                ];
+            })->filter(function ($item) {
+                return !empty($item['label']) && $item['label'] !== 'N/A';
+            })->values()->toArray();
+        } catch (\Exception $e) {
+            \Log::error('Error in getDriverPerformanceData: ' . $e->getMessage());
+            return [];
+        }
     }
 
     private function calculateTrends()

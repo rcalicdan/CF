@@ -79,7 +79,7 @@ class Table extends Component
     public function generateMonthlyPdfReport()
     {
         if (!$this->selectedMonth || !$this->selectedYear) {
-            session()->flash('error', __('Please select both month and year.'));
+            session()->flash('error', 'Proszę wybrać miesiąc i rok.');
             return;
         }
 
@@ -87,18 +87,18 @@ class Table extends Component
             $reportService = new MonthlyClientReportService();
             $filename = $reportService->generateMonthlyPdfReport($this->selectedMonth, $this->selectedYear);
 
-            session()->flash('success', __('PDF report generated successfully.'));
+            session()->flash('success', 'Raport PDF został pomyślnie wygenerowany.');
 
             return response()->download(storage_path('app/public/' . $filename));
         } catch (\Exception $e) {
-            session()->flash('error', __('Failed to generate PDF report: ') . $e->getMessage());
+            session()->flash('error', 'Nie udało się wygenerować raportu PDF: ' . $e->getMessage());
         }
     }
 
     public function generateMonthlyCsvReport()
     {
         if (!$this->selectedMonth || !$this->selectedYear) {
-            session()->flash('error', __('Please select both month and year.'));
+            session()->flash('error', 'Proszę wybrać miesiąc i rok.');
             return;
         }
 
@@ -106,12 +106,12 @@ class Table extends Component
             $reportService = new MonthlyClientReportService();
             $filename = $reportService->generateMonthlyCsvReport($this->selectedMonth, $this->selectedYear);
 
-            session()->flash('success', __('CSV report generated successfully.'));
+            session()->flash('success', 'Raport CSV został pomyślnie wygenerowany.');
 
             return response()->download(storage_path('app/public/' . $filename))
                 ->deleteFileAfterSend();
         } catch (\Exception $e) {
-            session()->flash('error', __('Failed to generate CSV report: ') . $e->getMessage());
+            session()->flash('error', 'Nie udało się wygenerować raportu CSV: ' . $e->getMessage());
         }
     }
 
@@ -140,7 +140,7 @@ class Table extends Component
         $this->clearSelection();
 
         $this->dispatch('show-message', [
-            'message' => __('Selected clients deleted successfully.'),
+            'message' => 'Wybrani klienci zostali pomyślnie usunięci.',
             'type' => 'success'
         ]);
     }
@@ -152,7 +152,7 @@ class Table extends Component
         $client->delete();
 
         $this->dispatch('show-message', [
-            'message' => __('Client deleted successfully.'),
+            'message' => 'Klient został pomyślnie usunięty.',
             'type' => 'success'
         ]);
     }

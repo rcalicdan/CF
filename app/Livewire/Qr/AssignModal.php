@@ -130,7 +130,7 @@ class AssignModal extends Component
                 $this->dispatch('close-assign-modal');
 
                 $this->dispatch('show-message', [
-                    'message' => __('QR code assigned successfully.'),
+                    'message' => 'Kod QR został pomyślnie przypisany.',
                     'type' => 'success'
                 ]);
 
@@ -139,25 +139,25 @@ class AssignModal extends Component
 
                 return;
             } else {
-                $this->addError('assignment', __('Failed to assign QR Code. It might already be assigned or the carpet already has one.'));
+                $this->addError('assignment', 'Nie udało się przypisać kodu QR. Może być już przypisany lub dywan już go posiada.');
 
                 $this->dispatch('show-message', [
-                    'message' => __('Failed to assign QR Code.'),
+                    'message' => 'Nie udało się przypisać kodu QR.',
                     'type' => 'error'
                 ]);
             }
         } elseif ($this->selectedCarpet && isset($this->selectedCarpet['qr_code'])) {
-            $this->addError('assignment', __('Selected carpet already has a QR Code assigned.'));
+            $this->addError('assignment', 'Wybrany dywan ma już przypisany kod QR.');
 
             $this->dispatch('show-message', [
-                'message' => __('Selected carpet already has a QR Code assigned.'),
+                'message' => 'Wybrany dywan ma już przypisany kod QR.',
                 'type' => 'error'
             ]);
         } else {
-            $this->addError('assignment', __('No carpet selected for assignment.'));
+            $this->addError('assignment', 'Nie wybrano dywanu do przypisania.');
 
             $this->dispatch('show-message', [
-                'message' => __('No carpet selected for assignment.'),
+                'message' => 'Nie wybrano dywanu do przypisania.',
                 'type' => 'error'
             ]);
         }

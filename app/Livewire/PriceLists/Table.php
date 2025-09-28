@@ -91,7 +91,7 @@ class Table extends Component
     private function showSingleDeleteError(PriceList $priceList): void
     {
         $this->dispatch('show-message', [
-            'message' => __('Cannot delete price list ":name" because it has assigned orders.', ['name' => $priceList->name]),
+            'message' => 'Nie można usunąć cennika ":name", ponieważ ma przypisane zamówienia.',
             'type' => 'error'
         ]);
     }
@@ -103,7 +103,7 @@ class Table extends Component
     {
         $names = $priceListsWithOrders->pluck('name')->join(', ');
         $this->dispatch('show-message', [
-            'message' => __('Cannot delete price lists with assigned orders: :names', ['names' => $names]),
+            'message' => 'Nie można usunąć cenników z przypisanymi zamówieniami: :names',
             'type' => 'error'
         ]);
     }
@@ -114,7 +114,7 @@ class Table extends Component
     private function showSingleDeleteSuccess(PriceList $priceList): void
     {
         $this->dispatch('show-message', [
-            'message' => __('Price list ":name" deleted successfully.', ['name' => $priceList->name]),
+            'message' => 'Cennik ":name" został pomyślnie usunięty.',
             'type' => 'success'
         ]);
     }
@@ -125,7 +125,7 @@ class Table extends Component
     private function showBulkDeleteSuccess(int $deletedCount): void
     {
         $this->dispatch('show-message', [
-            'message' => __(':count price list(s) deleted successfully.', ['count' => $deletedCount]),
+            'message' => 'Pomyślnie usunięto :count cennik(i).',
             'type' => 'success'
         ]);
     }
@@ -140,7 +140,7 @@ class Table extends Component
         }
 
         $priceListsWithOrders = $this->getPriceListsWithOrders($query);
-        
+
         if ($priceListsWithOrders->isNotEmpty()) {
             $this->showBulkDeleteError($priceListsWithOrders);
             return;

@@ -76,11 +76,11 @@ class CreatePage extends Component
         try {
             $user = $this->userService->storeNewUser($data);
 
-            session()->flash('success', 'User created successfully!');
+            session()->flash('success', 'Użytkownik został pomyślnie utworzony!');
 
             return redirect()->route('users.index');
         } catch (\Exception $e) {
-            session()->flash('error', 'An error occurred while creating the user. Please try again.');
+            session()->flash('error', 'Wystąpił błąd podczas tworzenia użytkownika. Proszę spróbować ponownie.');
         }
     }
 
@@ -88,7 +88,7 @@ class CreatePage extends Component
     {
         $this->authorize('create', User::class);
         return view('livewire.users.create-page', [
-            'roleOptions' => UserRoles::options() 
+            'roleOptions' => UserRoles::options()
         ]);
     }
 }
