@@ -151,8 +151,8 @@ function routeOptimizer() {
                 if (savedRoute) {
                     this.optimizationResult = savedRoute.optimization_result;
 
-                    if (savedRoute.order_sequence && savedRoute.order_sequence.length > 0) {
-                        this.applySavedOrderSequence(savedRoute.order_sequence);
+                    if (this.optimizationResult && this.optimizationResult.route_steps) {
+                        await this.reconstructOrdersFromRouteSteps(this.optimizationResult.route_steps);
                     }
 
                     if (this.optimizationResult) {
@@ -175,50 +175,71 @@ function routeOptimizer() {
                 }
 
             } catch (error) {
+                console.error('Error loading saved route:', error);
                 this.optimizationResult = null;
                 this.showRouteSummary = false;
             }
         },
 
-        applySavedOrderSequence(savedSequence) {
-            if (!savedSequence || savedSequence.length === 0) {
-                return;
-            }
+        async reconstructOrdersFromRouteSteps(routeSteps) {
+            console.log('🔄 Reconstructing orders from saved route steps...');
 
-            const orderMap = new Map(this.orders.map(order => [order.id, order]));
-            const reorderedOrders = [];
+            const regularOrders = this.getOrdersForDriverAndDate(
+                this.selectedDriver.id,
+                this.selectedDate
+            );
 
-            if (this.optimizationResult && this.optimizationResult.route_steps) {
-                this.optimizationResult.route_steps.forEach(routeStep => {
-                    let order = orderMap.get(routeStep.order_id);
+            console.log('📋 Regular orders found:', regularOrders.length);
 
-                    if (!order && routeStep.client_name === "Custom Stop") {
-                        order = {
-                            id: routeStep.order_id,
-                            client_name: "Własny przystanek",
-                            address: routeStep.location,
-                            coordinates: routeStep.coordinates,
-                            total_amount: 0,
-                            status: "custom",
-                            priority: routeStep.priority || "medium",
-                            delivery_date: this.selectedDate,
-                            driver_id: this.selectedDriver.id,
-                            isCustom: true
-                        };
-                    }
+            const orderMap = new Map(regularOrders.map(order => [order.id, order]));
 
-                    if (order) {
-                        reorderedOrders.push(order);
-                        orderMap.delete(routeStep.order_id);
-                    }
-                });
-            }
+            const reconstructedOrders = [];
 
-            orderMap.forEach(order => {
-                reorderedOrders.push(order);
+            routeSteps.forEach((routeStep, index) => {
+                console.log(`Processing route step ${index + 1}:`, routeStep);
+
+                let order = orderMap.get(routeStep.order_id);
+
+                if (order) {
+                    console.log('✅ Regular order found:', order.id);
+                    reconstructedOrders.push(order);
+                } else {
+                    console.log('🔷 Custom stop detected:', routeStep.order_id);
+
+                    const customOrder = {
+                        id: routeStep.order_id,
+                        client_name: routeStep.client_name || "Własny przystanek",
+                        address: routeStep.location,
+                        coordinates: routeStep.coordinates,
+                        total_amount: routeStep.amount || 0,
+                        status: "custom",
+                        priority: routeStep.priority || "medium",
+                        delivery_date: this.selectedDate,
+                        driver_id: this.selectedDriver.id,
+                        isCustom: true
+                    };
+
+                    console.log('✅ Custom stop reconstructed:', customOrder);
+                    reconstructedOrders.push(customOrder);
+                }
             });
 
-            this.orders = reorderedOrders;
+            console.log('✅ Total orders reconstructed:', reconstructedOrders.length);
+            console.log('   - Regular orders:', reconstructedOrders.filter(o => !o.isCustom).length);
+            console.log('   - Custom stops:', reconstructedOrders.filter(o => o.isCustom).length);
+
+            this.orders = reconstructedOrders;
+
+            this.$nextTick(() => {
+                if (window.mapManager) {
+                    window.mapManager.refreshMarkers();
+                }
+            });
+        },
+
+        applySavedOrderSequence(savedSequence) {
+            console.log('⚠️ applySavedOrderSequence is deprecated - orders already reconstructed');
+            return;
         },
 
         showNotification(message, type = 'info') {

@@ -4,7 +4,7 @@ class RouteOptimizerService {
         this.vroomEndpoint = 'http://147.135.252.51:3000';
         this.serverEndpoint = window.location.origin;
         this.mockDelay = 0;
-        this.debugMode = true; 
+        this.debugMode = true;
     }
 
     canOptimize() {
@@ -273,14 +273,14 @@ class RouteOptimizerService {
     buildVroomPayload() {
         console.log('🔧 Building VROOM payload with UNLIMITED constraints for pure route optimization...');
 
-        const depotCoords = [21.0122, 52.2297]; 
+        const depotCoords = [21.0122, 52.2297];
 
         const vehicle = {
             id: this.routeComponent.selectedDriver.id,
             profile: "driving-car",
             start: depotCoords,
             end: depotCoords,
-            capacity: [99999] 
+            capacity: [99999]
         };
 
         const validOrders = this.routeComponent.orders.filter(order =>
@@ -308,8 +308,8 @@ class RouteOptimizerService {
             const job = {
                 id: order.id,
                 location: [order.coordinates[1], order.coordinates[0]],
-                service: 600, 
-                amount: [1], 
+                service: 600,
+                amount: [1],
                 priority: this.getPriorityValue(order.priority)
             };
 
@@ -329,9 +329,9 @@ class RouteOptimizerService {
             vehicles: [vehicle],
             jobs: jobs,
             options: {
-                g: true, 
-                c: true, 
-                t: 3     
+                g: true,
+                c: true,
+                t: 3
             }
         };
 
@@ -479,12 +479,13 @@ class RouteOptimizerService {
                         cumulative_distance: `${cumulativeDistance} km`,
                         cumulative_time: `${cumulativeTime} min`,
                         order_id: order.id,
-                        client_name: order.client_name,
+                        client_name: order.client_name, 
                         amount: order.total_amount,
                         priority: order.priority,
                         estimated_arrival: this.calculateEstimatedArrival(step.arrival || cumulativeTime * 60),
                         coordinates: order.coordinates,
-                        vroom_step: step
+                        vroom_step: step,
+                        isCustom: order.isCustom || false 
                     });
                 }
             }
@@ -579,7 +580,7 @@ class RouteOptimizerService {
     }
 
     calculateDistance(coords1, coords2) {
-        const R = 6371; 
+        const R = 6371;
         const dLat = this.toRad(coords2[0] - coords1[0]);
         const dLon = this.toRad(coords2[1] - coords1[1]);
         const lat1 = this.toRad(coords1[0]);
