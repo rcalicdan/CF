@@ -2,6 +2,7 @@
 @import "./app/dashboard.css";
 @import "./app/auth.css";
 @import "./app/confirmation-modal.css";
+@import "./app/map.css";
 
 
 @source "../views";

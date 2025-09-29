@@ -162,9 +162,11 @@ class CreatePage extends Component
 
         if (!empty($this->clientSearch)) {
             $query->where(function ($q) {
-                $q->where('first_name', 'like', '%' . $this->clientSearch . '%')
-                    ->orWhere('last_name', 'like', '%' . $this->clientSearch . '%')
-                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ['%' . $this->clientSearch . '%']);
+                $searchTerm = preg_replace('/\s+/', ' ', trim($this->clientSearch)); // normalize spaces
+
+                $q->where('first_name', 'ILIKE', '%' . $searchTerm . '%')
+                    ->orWhere('last_name', 'ILIKE', '%' . $searchTerm . '%')
+                    ->orWhereRaw('REGEXP_REPLACE(first_name || \' \' || last_name, \'\s+\', \' \', \'g\') ILIKE ?', ['%' . $searchTerm . '%']);
             });
         }
 

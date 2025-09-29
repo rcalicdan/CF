@@ -30,19 +30,19 @@ class OrderService
             $query->where('assigned_driver_id', $user->driver->id);
         }
 
-        $query->when(request('order_id'), fn ($q) => $q->where('id', request('order_id')))
-            ->when(request('client_first_name'), fn ($q) => $q->whereHas('client', fn ($s) => $s->where('first_name', 'like', '%'.request('client_first_name').'%')))
-            ->when(request('client_last_name'), fn ($q) => $q->whereHas('client', fn ($s) => $s->where('last_name', 'like', '%'.request('client_last_name').'%')))
-            ->when(request('price_list_name'), fn ($q) => $q->whereHas('priceList', fn ($s) => $s->where('name', 'like', '%'.request('price_list_name').'%')))
-            ->when(request('order_carpet_status'), fn ($q) => $q->whereHas('orderCarpets', fn ($s) => $s->where('status', request('order_carpet_status'))))
-            ->when(request('schedule_date'), fn ($q) => $q->where('schedule_date', request('schedule_date')))
-            ->when(request('status'), fn ($q) => $q->where('status', request('status')))
-            ->when(request('created_at'), fn ($q) => $q->whereDate('created_at', request('created_at')))
-            ->when(request('driver_name'), fn ($q) => $q->whereHas('driver.user', function ($s) {
-                $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], request('driver_name')).'%';
+        $query->when(request('order_id'), fn($q) => $q->where('id', request('order_id')))
+            ->when(request('client_first_name'), fn($q) => $q->whereHas('client', fn($s) => $s->where('first_name', 'like', '%' . request('client_first_name') . '%')))
+            ->when(request('client_last_name'), fn($q) => $q->whereHas('client', fn($s) => $s->where('last_name', 'like', '%' . request('client_last_name') . '%')))
+            ->when(request('price_list_name'), fn($q) => $q->whereHas('priceList', fn($s) => $s->where('name', 'like', '%' . request('price_list_name') . '%')))
+            ->when(request('order_carpet_status'), fn($q) => $q->whereHas('orderCarpets', fn($s) => $s->where('status', request('order_carpet_status'))))
+            ->when(request('schedule_date'), fn($q) => $q->whereDate('schedule_date', request('schedule_date')))
+            ->when(request('status'), fn($q) => $q->where('status', request('status')))
+            ->when(request('created_at'), fn($q) => $q->whereDate('created_at', request('created_at')))
+            ->when(request('driver_name'), fn($q) => $q->whereHas('driver.user', function ($s) {
+                $term = '%' . str_replace(['%', '_'], ['\\%', '\\_'], request('driver_name')) . '%';
                 $s->whereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", [$term]);
             }))
-            ->when(request('driver_id'), fn ($q) => $q->where('assigned_driver_id', request('driver_id')));
+            ->when(request('driver_id'), fn($q) => $q->where('assigned_driver_id', request('driver_id')));
 
         return $query->paginate(30);
     }

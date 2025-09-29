@@ -6,5 +6,7 @@
         @include('livewire.clients.partials.tabs.orders')
     @elseif($activeTab === 'carpets')
         @include('livewire.clients.partials.tabs.carpets')
+    @elseif($activeTab === 'location')
+        @include('livewire.clients.partials.tabs.location')
     @endif
 </div>

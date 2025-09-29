@@ -45,7 +45,7 @@ class RouteDataService
         return Order::with(['client', 'driver.user'])
             ->where('assigned_driver_id', $driverId)
             ->whereDate('schedule_date', $date)
-            ->whereIn('status', ['completed', 'undelivered'])
+            // ->whereIn('status', ['completed', 'undelivered'])
             ->get()
             ->map(function ($order) {
                 return $this->transformOrderForRouteData($order);
@@ -60,7 +60,8 @@ class RouteDataService
     {
         $query = Order::with(['client', 'driver.user'])
             ->whereNotNull('assigned_driver_id')
-            ->whereIn('status', ['completed', 'undelivered']);
+            // ->whereIn('status', ['completed', 'undelivered'])
+        ;
 
         if ($startDate) {
             $query->whereDate('schedule_date', '>=', $startDate);

@@ -22,6 +22,7 @@ class ViewPage extends Component
     public $dateFrom = '';
     public $dateTo = '';
     public $showDateFilter = false;
+    public $geocodingInProgress = false;
 
     protected $queryString = [
         'activeTab' => ['except' => 'overview'],
@@ -35,6 +36,21 @@ class ViewPage extends Component
     {
         $this->client = $client;
         $this->authorize('view', $client);
+    }
+
+    public function manualGeocode()
+    {
+        $this->geocodingInProgress = true;
+        
+        if ($this->client->forceGeocode()) {
+            $this->client->refresh();
+            session()->flash('success', __('Address successfully geocoded!'));
+        } else {
+            session()->flash('error', __('Unable to geocode the address. Please check if the address is correct.'));
+        }
+        
+        $this->geocodingInProgress = false;
+        $this->dispatch('addressGeocoded');
     }
 
     public function generatePdfReport()
