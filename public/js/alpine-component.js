@@ -407,6 +407,11 @@ function routeOptimizer() {
         },
 
         async saveManualChanges() {
+            if (!this.optimizationResult) {
+                this.showNotification('Najpierw zoptymalizuj trasę przed zapisaniem zmian', 'error');
+                return;
+            }
+
             if (!confirm("Zapisać bieżącą konfigurację trasy?")) {
                 return;
             }
@@ -417,13 +422,13 @@ function routeOptimizer() {
                 const saveData = {
                     driver_id: this.selectedDriver.id,
                     optimization_date: this.selectedDate,
-                    optimization_result: this.optimizationResult || {},
+                    optimization_result: this.optimizationResult,
                     order_sequence: this.orders.map((order, index) => ({
                         order_id: order.id,
                         sequence: index + 1
                     })),
-                    total_distance: this.optimizationResult?.total_distance || null,
-                    total_time: this.optimizationResult?.total_time || null,
+                    total_distance: this.optimizationResult.total_distance || null,
+                    total_time: this.optimizationResult.total_time || null,
                     is_manual_edit: true,
                     manual_modifications: {
                         edit_mode_used: this.manualEditMode,
@@ -446,6 +451,7 @@ function routeOptimizer() {
 
             } catch (error) {
                 this.showNotification('Nie udało się zapisać zmian w trasie', 'error');
+                throw error;
             } finally {
                 this.loading = false;
             }
