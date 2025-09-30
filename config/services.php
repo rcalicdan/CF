@@ -34,5 +34,9 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
-
+      'google_reviews' => [
+        'enabled' => env('GOOGLE_REVIEWS_ENABLED', true),
+        'review_url' => env('GOOGLE_REVIEWS_URL', 'https://g.page/r/YOUR_GOOGLE_PLACE_ID/review'),
+        'redirect_on_five_stars' => env('GOOGLE_REVIEWS_REDIRECT_5_STARS', true),
+    ],
 ];
