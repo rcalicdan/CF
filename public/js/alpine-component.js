@@ -61,6 +61,38 @@ function routeOptimizer() {
             this.dataInstance.optimizationError = value;
         },
 
+        get coordinateValidationSummary() {
+            const summary = {
+                total: this.orders.length,
+                valid: 0,
+                invalid: 0,
+                missing: 0
+            };
+
+            this.orders.forEach(order => {
+                const hasCoords = order.coordinates && Array.isArray(order.coordinates);
+                const isValid = hasCoords &&
+                    order.coordinates.length === 2 &&
+                    !isNaN(order.coordinates[0]) &&
+                    !isNaN(order.coordinates[1]);
+
+                if (isValid) {
+                    summary.valid++;
+                } else if (!hasCoords) {
+                    summary.missing++;
+                } else {
+                    summary.invalid++;
+                }
+            });
+
+            return summary;
+        },
+
+        get canOptimizeRoute() {
+            const summary = this.coordinateValidationSummary;
+            return summary.valid > 0 && summary.invalid === 0 && summary.missing === 0;
+        },
+
         async init() {
             window.routeOptimizerInstance = this;
 
