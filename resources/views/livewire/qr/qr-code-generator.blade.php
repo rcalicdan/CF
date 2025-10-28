@@ -1,36 +1,36 @@
 <div x-data="qrCodeManager()" x-init="init()">
     <x-flash-session />
-    <!-- Page Header -->
+    <!-- Nagłówek Strony -->
     <div class="mb-8">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-3xl font-bold text-gray-900">{{ __('QR Code Generator') }}</h1>
-                <p class="mt-2 text-gray-600">{{ __('Generate and manage standalone QR codes') }}</p>
+                <h1 class="text-3xl font-bold text-gray-900">Generator Kodów QR</h1>
+                <p class="mt-2 text-gray-600">Generuj i zarządzaj autonomicznymi kodami QR</p>
             </div>
             <div class="flex space-x-4">
                 <div class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
                     <div class="text-2xl font-bold text-gray-600">{{ $totalAll }}</div>
-                    <div class="text-sm text-gray-800">{{ __('Total') }}</div>
+                    <div class="text-sm text-gray-800">Razem</div>
                 </div>
                 <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
                     <div class="text-2xl font-bold text-blue-600">{{ $totalUnassigned }}</div>
-                    <div class="text-sm text-blue-800">{{ __('Unassigned') }}</div>
+                    <div class="text-sm text-blue-800">Nieprzypisane</div>
                 </div>
                 <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
                     <div class="text-2xl font-bold text-green-600">{{ $totalAssigned }}</div>
-                    <div class="text-sm text-green-800">{{ __('Assigned') }}</div>
+                    <div class="text-sm text-green-800">Przypisane</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Action Buttons -->
+    <!-- Przyciski Akcji -->
     @include('contents.qr.action-buttons')
 
-    <!-- Filters and Search -->
+    <!-- Filtry i Wyszukiwanie -->
     @include('contents.qr.filters')
 
-    <!-- QR Codes Grid -->
+    <!-- Siatka Kodów QR -->
     @if ($hasQrCodes)
         <div class="mb-6">
             <div class="mb-4 flex items-center justify-between bg-gray-50 rounded-lg p-4">
@@ -38,14 +38,11 @@
                     <label class="flex items-center">
                         <input type="checkbox" wire:model.live="selectAll" wire:change="toggleSelectAll"
                             class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                        <span class="ml-2 text-sm text-gray-700">{{ __('Select All') }}</span>
+                        <span class="ml-2 text-sm text-gray-700">Zaznacz Wszystkie</span>
                     </label>
                     @if (count($selectedQrCodes) > 0)
-                        <span class="text-sm text-gray-600">{{ count($selectedQrCodes) }} {{ __('selected') }}</span>
+                        <span class="text-sm text-gray-600">{{ count($selectedQrCodes) }} zaznaczonych</span>
                     @endif
-                </div>
-                <div class="text-sm text-gray-600">
-                    {{ __('Showing :from to :to of :total QR codes', ['from' => $from, 'to' => $to, 'total' => $total]) }}
                 </div>
             </div>
 
@@ -64,7 +61,7 @@
                                 </label>
                                 <span
                                     class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ $qrCode['is_assigned'] ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800' }}">
-                                    {{ $qrCode['is_assigned'] ? __('Assigned') : __('Available') }}
+                                    {{ $qrCode['is_assigned'] ? 'Przypisane' : 'Dostępne' }}
                                 </span>
                             </div>
                         </div>
@@ -78,7 +75,7 @@
                             @if (isset($qrCode['assigned_info']) && $qrCode['assigned_info'])
                                 <div class="px-4 pb-2">
                                     <p class="text-green-600 text-sm">
-                                        {{ __('Assigned to Carpet #:id', ['id' => $qrCode['assigned_info']['carpet_id']]) }}
+                                        Przypisane do Dywanu #{{ $qrCode['assigned_info']['carpet_id'] }}
                                     </p>
                                     <p class="text-xs text-gray-500">{{ $qrCode['assigned_info']['client_name'] }}</p>
                                 </div>
@@ -87,14 +84,14 @@
                         <div class="px-4 py-3 bg-gray-50 flex justify-between">
                             <button
                                 @click="printSingle('{{ $qrCode['reference_code'] }}', '{{ $qrCode['qr_code_url'] }}')"
-                                class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">{{ __('Print') }}</button>
+                                class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">Drukuj</button>
                             @if (!$qrCode['is_assigned'])
                                 <button
                                     wire:click="$dispatch('openAssignModal', { qrCodeReference: '{{ $qrCode['reference_code'] }}' })"
-                                    class="text-sm text-green-600 hover:text-green-800 font-medium">{{ __('Assign') }}</button>
+                                    class="text-sm text-green-600 hover:text-green-800 font-medium">Przypisz</button>
                                 <button wire:click="deleteQrCode('{{ $qrCode['reference_code'] }}')"
-                                    wire:confirm="{{ __('Are you sure you want to delete this QR code?') }}"
-                                    class="text-sm text-red-600 hover:text-red-800 font-medium">{{ __('Delete') }}</button>
+                                    wire:confirm="Czy na pewno chcesz usunąć ten kod QR?"
+                                    class="text-sm text-red-600 hover:text-red-800 font-medium">Usuń</button>
                             @endif
                         </div>
                     </div>
@@ -111,15 +108,15 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                     d="M9 12h6M9 16h6M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2z"></path>
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">{{ __('No QR codes') }}</h3>
-            <p class="mt-1 text-sm text-gray-500">{{ __('Get started by generating your first QR code.') }}</p>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Brak kodów QR</h3>
+            <p class="mt-1 text-sm text-gray-500">Zacznij od wygenerowania swojego pierwszego kodu QR.</p>
         </div>
     @endif
 
-    <!-- Print Modal -->
+    <!-- Modal Drukowania -->
     @include('contents.qr.print-modal')
 
-    <!-- Assign Modal -->
+    <!-- Modal Przypisania -->
     @livewire('qr.assign-modal')
 </div>
 
@@ -142,7 +139,7 @@
 
 
                 return () => {
-                    console.log('Alpine component is being cleaned up.');
+                    console.log('Komponent Alpine jest czyszczony.');
                 };
             },
 
@@ -193,7 +190,7 @@
                     <!DOCTYPE html>
                     <html>
                     <head>
-                        <title>Drukuj kody QR</title>
+                        <title>Drukuj Kody QR</title>
                         <style>
                             @media print {
                                 @page { size: A4; margin: 20mm; }

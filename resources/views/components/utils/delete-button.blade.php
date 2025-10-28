@@ -1,4 +1,4 @@
-@props(['wireClick' => 'delete', 'confirmMessage' => 'Are you sure you want to delete this item?'])
+@props(['wireClick' => 'delete', 'confirmMessage' => 'Czy na pewno chcesz usunąć ten element?'])
 
 <button wire:click='{{ $wireClick }}' wire:confirm='{{ $confirmMessage }}'
     class="inline-flex items-center px-2 py-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:text-red-800 focus:outline-none focus:ring-1 focus:ring-red-500 focus:ring-offset-1 transition-all duration-200 ease-in-out group">

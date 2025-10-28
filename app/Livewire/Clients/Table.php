@@ -29,11 +29,36 @@ class Table extends Component
         return DataTableFactory::make()
             ->model(Client::class)
             ->headers([
-                ['key' => 'id', 'label' => __('ID'), 'sortable' => true],
-                ['key' => 'full_name', 'label' => __('Full Name'), 'sortable' => true, 'accessor' => true, 'search_columns' => ['first_name', 'last_name'], 'sort_columns' => ['first_name', 'last_name']],
-                ['key' => 'phone_number', 'label' => __('Phone'), 'sortable' => true],
-                ['key' => 'full_address', 'label' => __('Address'), 'sortable' => false, 'accessor' => true],
-                ['key' => 'created_at', 'label' => __('Created'), 'sortable' => true, 'type' => 'datetime'],
+                [
+                    'key' => 'id',
+                    'label' => __('ID'),
+                    'sortable' => true
+                ],
+                [
+                    'key' => 'full_name',
+                    'label' => __('Full Name'),
+                    'sortable' => true,
+                    'accessor' => true,
+                    'search_columns' => ['first_name', 'last_name'],
+                    'sort_columns' => ['first_name', 'last_name']
+                ],
+                [
+                    'key' => 'phone_number',
+                    'label' => __('Phone'),
+                    'sortable' => true
+                ],
+                [
+                    'key' => 'full_address',
+                    'label' => __('Address'),
+                    'sortable' => false,
+                    'accessor' => true
+                ],
+                [
+                    'key' => 'created_at',
+                    'label' => __('Created'),
+                    'sortable' => true,
+                    'type' => 'datetime'
+                ],
             ])
             ->deleteAction('deleteClient')
             ->searchPlaceholder(__('Search clients...'))
@@ -54,7 +79,7 @@ class Table extends Component
         $query = Client::query();
         $dataTable = $this->getDataTableConfig();
 
-        return $this->applySearchAndSort($query, ['first_name', 'last_name', 'email', 'phone_number', 'street_name', 'city'], $dataTable);
+        return $this->applySearchAndSort($query, ['first_name', 'last_name', 'phone_number', 'street_name', 'city'], $dataTable);
     }
 
     public function getRowsProperty()

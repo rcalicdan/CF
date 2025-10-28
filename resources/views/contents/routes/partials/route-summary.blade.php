@@ -133,21 +133,5 @@
                 </div>
             </div>
         </div>
-
-        <!-- DEBUG INFO - Remove after testing -->
-        <div x-show="orders.length > 0" class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
-            <div class="text-xs font-mono">
-                <div>Total Orders: <span x-text="orders.length"></span></div>
-                <div>Custom Stops: <span x-text="orders.filter(o => o.isCustom).length"></span></div>
-                <div>Regular Orders: <span x-text="orders.filter(o => !o.isCustom).length"></span></div>
-                <template x-for="(order, idx) in orders" :key="order.id">
-                    <div class="mt-1">
-                        <span x-text="idx + 1"></span>.
-                        <span x-text="order.client_name"></span> -
-                        <span x-text="order.isCustom ? '🔷 CUSTOM' : '📦 REGULAR'"></span>
-                    </div>
-                </template>
-            </div>
-        </div>
     </div>
 </div>

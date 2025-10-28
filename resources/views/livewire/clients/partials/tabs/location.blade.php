@@ -1,10 +1,4 @@
-<div class="p-6" x-data="clientLocationMap({
-    hasCoordinates: {{ $client->hasCoordinates() ? 'true' : 'false' }},
-    coordinates: {{ $client->hasCoordinates() ? json_encode($client->coordinates) : 'null' }},
-    address: {{ json_encode($client->full_address) }},
-    clientName: {{ json_encode($client->full_name) }},
-    phone: {{ json_encode($client->phone_number) }}
-})">
+<div class="p-6" x-data="clientLocationMap">
     <div class="flex items-center justify-between mb-6">
         <div>
             <h3 class="text-lg font-semibold text-gray-900 flex items-center">
@@ -177,9 +171,9 @@
                 </svg>
                 <p class="ml-3 text-sm text-red-700">{{ session('error') }}</p>
             </div>
+        </div>
     @endif
 </div>
 
-
-@include('livewire.clients.partials.tabs.map-js')
 @include('livewire.clients.partials.tabs.map-css')
+@include('livewire.clients.partials.tabs.map-alpine-init')
