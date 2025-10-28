@@ -5,6 +5,30 @@
 
 <head>
     @include('includes.head')
+    <style>
+        a,
+        button,
+        [type="button"],
+        [type="submit"],
+        [type="reset"],
+        select,
+        [role="button"],
+        .cursor-pointer,
+        label[for],
+        input[type="checkbox"],
+        input[type="radio"] {
+            cursor: pointer !important;
+        }
+
+        button:disabled,
+        [type="button"]:disabled,
+        [type="submit"]:disabled,
+        [type="reset"]:disabled,
+        select:disabled,
+        [disabled] {
+            cursor: not-allowed !important;
+        }
+    </style>
 </head>
 
 <body class="font-sans">

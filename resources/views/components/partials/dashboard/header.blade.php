@@ -10,23 +10,15 @@
     <div class="flex-1">{{ $header ?? '' }}</div>
 
     <div class="flex items-center space-x-4">
-        <div class="relative w-full max-w-md hidden md:block">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3"><svg class="h-5 w-5 text-gray-400"
-                    viewBox="0 0 24 24" fill="none">
-                    <path
-                        d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                </svg></span>
-            <!--<input
-                class="themed-input w-full pl-10 pr-4 py-2 border rounded-xl text-sm text-gray-700 placeholder-gray-400 bg-gray-100 focus:outline-none focus:ring-2 focus:border-transparent"
-                type="text" placeholder="Search laundries, orders...">-->
-        </div>
         <div class="relative">
             <button @click="dropdownOpen = !dropdownOpen; isMobileMenuOpen = false"
-                class="relative block h-8 w-8 rounded-full overflow-hidden shadow focus:outline-none">
-                <img class="h-full w-full object-cover"
-                    src="https://images.unsplash.com/photo-1528892952291-009c663ce843?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=296&q=80"
-                    alt="Your avatar">
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <div class="flex items-center justify-center h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-bold text-base shadow">
+                    {{ strtoupper(substr(Auth::user()->full_name, 0, 1) . (strpos(Auth::user()->full_name, ' ') !== false ? substr(Auth::user()->full_name, strpos(Auth::user()->full_name, ' ') + 1, 1) : '')) }}
+                </div>
+                <div class="flex flex-col items-start">
+                    <span class="text-sm font-semibold text-gray-800">{{ Auth::user()->full_name }}</span>
+                </div>
             </button>
             <div x-show="dropdownOpen" @click.away="dropdownOpen = false"
                 class="absolute right-0 mt-2 w-48 bg-white rounded-md overflow-hidden shadow-xl z-10"
