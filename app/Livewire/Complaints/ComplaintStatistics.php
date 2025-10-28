@@ -120,37 +120,39 @@ class ComplaintStatistics extends Component
 
     private function getComplaintStats()
     {
-        $totalComplaints = Order::where('is_complaint', true)->count();
-        
-        // Map order statuses to complaint equivalents
+        $days = (int) $this->selectedPeriod;
+        $startDate = Carbon::now()->subDays($days)->startOfDay();
+
+        $totalComplaints = Order::where('is_complaint', true)
+            ->where('created_at', '>=', $startDate)
+            ->count();
+
         $pendingComplaints = Order::where('is_complaint', true)
+            ->where('created_at', '>=', $startDate)
             ->where('status', OrderStatus::PENDING->value)
             ->count();
-            
+
         $processingComplaints = Order::where('is_complaint', true)
+            ->where('created_at', '>=', $startDate)
             ->whereIn('status', [OrderStatus::ACCEPTED->value, OrderStatus::PROCESSING->value])
             ->count();
-            
+
         $resolvedComplaints = Order::where('is_complaint', true)
+            ->where('created_at', '>=', $startDate)
             ->whereIn('status', [OrderStatus::COMPLETED->value, OrderStatus::DELIVERED->value])
             ->count();
 
         $activeComplaints = $pendingComplaints + $processingComplaints;
         $resolutionRate = $totalComplaints > 0 ? round(($resolvedComplaints / $totalComplaints) * 100, 1) : 0;
 
-        // Get previous week stats for comparison
-        $previousWeekStart = Carbon::now()->subWeeks(2)->startOfWeek();
-        $previousWeekEnd = Carbon::now()->subWeeks(1)->endOfWeek();
-        $previousWeekTotal = Order::where('is_complaint', true)
-            ->whereBetween('created_at', [$previousWeekStart, $previousWeekEnd])
+        $previousPeriodStart = Carbon::now()->subDays($days * 2)->startOfDay();
+        $previousPeriodEnd = Carbon::now()->subDays($days)->endOfDay();
+        $previousPeriodTotal = Order::where('is_complaint', true)
+            ->whereBetween('created_at', [$previousPeriodStart, $previousPeriodEnd])
             ->count();
 
-        $currentWeekStart = Carbon::now()->startOfWeek();
-        $currentWeekTotal = Order::where('is_complaint', true)
-            ->where('created_at', '>=', $currentWeekStart)
-            ->count();
-
-        $weeklyChange = $previousWeekTotal > 0 ? $currentWeekTotal - $previousWeekTotal : 0;
+        $currentPeriodTotal = $totalComplaints;
+        $weeklyChange = $currentPeriodTotal - $previousPeriodTotal;
 
         return [
             'total' => $totalComplaints,
@@ -172,17 +174,17 @@ class ComplaintStatistics extends Component
         $totalComplaints = Order::where('is_complaint', true)
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
             ->count();
-            
+
         $pendingComplaints = Order::where('is_complaint', true)
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
             ->where('status', OrderStatus::PENDING->value)
             ->count();
-            
+
         $processingComplaints = Order::where('is_complaint', true)
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
             ->whereIn('status', [OrderStatus::ACCEPTED->value, OrderStatus::PROCESSING->value])
             ->count();
-            
+
         $resolvedComplaints = Order::where('is_complaint', true)
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
             ->whereIn('status', [OrderStatus::COMPLETED->value, OrderStatus::DELIVERED->value])
@@ -199,7 +201,7 @@ class ComplaintStatistics extends Component
             ->whereBetween('created_at', [$previousMonthStart, $previousMonthEnd])
             ->count();
 
-        $monthlyChange = $previousMonthTotal > 0 ? $totalComplaints - $previousMonthTotal : 0;
+        $monthlyChange = $totalComplaints - $previousMonthTotal;
 
         return [
             'total' => $totalComplaints,
@@ -231,7 +233,7 @@ class ComplaintStatistics extends Component
                 $newCount = Order::where('is_complaint', true)
                     ->whereDate('created_at', $currentDate)
                     ->count();
-                    
+
                 $resolvedCount = Order::where('is_complaint', true)
                     ->whereIn('status', [OrderStatus::COMPLETED->value, OrderStatus::DELIVERED->value])
                     ->whereDate('updated_at', $currentDate)
@@ -293,7 +295,7 @@ class ComplaintStatistics extends Component
             $newCount = Order::where('is_complaint', true)
                 ->whereDate('created_at', $date)
                 ->count();
-                
+
             $resolvedCount = Order::where('is_complaint', true)
                 ->whereIn('status', [OrderStatus::COMPLETED->value, OrderStatus::DELIVERED->value])
                 ->whereDate('updated_at', $date)
@@ -312,7 +314,11 @@ class ComplaintStatistics extends Component
 
     private function getCategoryStats()
     {
+        $days = (int) $this->selectedPeriod;
+        $startDate = Carbon::now()->subDays($days)->startOfDay();
+
         $complaintOrders = Order::where('is_complaint', true)
+            ->where('created_at', '>=', $startDate)
             ->with(['client', 'orderCarpets'])
             ->get();
 
@@ -330,22 +336,17 @@ class ComplaintStatistics extends Component
         ];
 
         foreach ($orders as $order) {
-            // Categorize based on order status and other factors
-            // You can enhance this logic based on your business needs
             switch ($order->status) {
                 case OrderStatus::UNDELIVERED->value:
                     $categories['delay']++;
                     break;
                 case OrderStatus::CANCELED->value:
-                    // If order was canceled, it might be due to quality issues
                     $categories['quality']++;
                     break;
                 case OrderStatus::PENDING->value:
-                    // Pending orders might have communication issues
                     $categories['communication']++;
                     break;
                 default:
-                    // Distribute other statuses
                     $categories['other']++;
                     break;
             }
@@ -356,7 +357,11 @@ class ComplaintStatistics extends Component
 
     private function getRecentComplaints()
     {
+        $days = (int) $this->selectedPeriod;
+        $startDate = Carbon::now()->subDays($days)->startOfDay();
+
         return Order::where('is_complaint', true)
+            ->where('created_at', '>=', $startDate)
             ->with(['client', 'driver.user', 'orderCarpets'])
             ->orderBy('created_at', 'desc')
             ->limit(4)
@@ -400,7 +405,7 @@ class ComplaintStatistics extends Component
     {
         // Determine priority based on order status, value, and age
         $daysSinceCreated = $order->created_at->diffInDays(now());
-        
+
         if ($order->status === OrderStatus::UNDELIVERED->value || $daysSinceCreated > 7) {
             return ['level' => 'high', 'label' => 'Wysoki'];
         } elseif ($order->total_amount > 500 || $daysSinceCreated > 3) {
@@ -463,6 +468,11 @@ class ComplaintStatistics extends Component
         ];
 
         return $months[$date->month];
+    }
+
+    public function viewOrdersByStatus($status)
+    {
+        return redirect()->route('orders.index', ['complaint_status' => $status]);
     }
 
     public function render()

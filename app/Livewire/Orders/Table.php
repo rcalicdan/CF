@@ -4,6 +4,7 @@ namespace App\Livewire\Orders;
 
 use App\ActionService\OrderService;
 use App\DataTable\DataTableFactory;
+use App\Enums\OrderStatus;
 use App\Enums\UserRoles;
 use App\Models\Order;
 use App\Traits\Livewire\WithDataTable;
@@ -16,6 +17,8 @@ class Table extends Component
     use WithDataTable, WithPagination;
 
     protected OrderService $orderService;
+    
+    public $complaintStatus = null;
 
     public function boot(OrderService $orderService)
     {
@@ -23,6 +26,17 @@ class Table extends Component
         $this->deleteAction = 'deleteOrder';
         $this->routeIdColumn = 'id';
         $this->setDataTableFactory($this->getDataTableConfig());
+    }
+
+    public function mount()
+    {
+        $this->complaintStatus = request()->query('complaint_status');
+    }
+
+    public function clearComplaintFilter()
+    {
+        $this->complaintStatus = null;
+        return redirect()->route('orders.index');
     }
 
     private function getDataTableConfig(): DataTableFactory
@@ -111,10 +125,43 @@ class Table extends Component
             $query->where('assigned_driver_id', $user->driver->id);
         }
 
+        if ($this->complaintStatus) {
+            $query->where('is_complaint', true);
+            
+            if ($this->complaintStatus === 'in_progress') {
+                $query->whereIn('status', [
+                    OrderStatus::ACCEPTED->value, 
+                    OrderStatus::PROCESSING->value
+                ]);
+            } elseif ($this->complaintStatus === 'completed') {
+                $query->whereIn('status', [
+                    OrderStatus::COMPLETED->value, 
+                    OrderStatus::DELIVERED->value
+                ]);
+            } else {
+                $query->where('status', $this->complaintStatus);
+            }
+        }
+
         $dataTable = $this->getDataTableConfig();
         $this->applySearchAndSort($query, ['id', 'status'], $dataTable);
 
         return $query;
+    }
+
+    public function getComplaintStatusLabel()
+    {
+        if (!$this->complaintStatus) {
+            return null;
+        }
+
+        return match ($this->complaintStatus) {
+            'in_progress' => 'W realizacji',
+            'completed' => 'Ukończone',
+            OrderStatus::PENDING->value => 'Oczekujące',
+            OrderStatus::CANCELED->value => 'Anulowane',
+            default => $this->complaintStatus,
+        };
     }
 
     public function render()
