@@ -145,12 +145,6 @@ class DriverTable extends Component
                     'type' => 'datetime',
                     'defaultValue' => 'Not yet scheduled'
                 ],
-                [
-                    'key' => 'created_at',
-                    'label' => 'Created At',
-                    'sortable' => true,
-                    'type' => 'datetime'
-                ],
             ])
             ->deleteAction('deleteOrder')
             ->searchPlaceholder('Search orders...')

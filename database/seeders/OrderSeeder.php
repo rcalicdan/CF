@@ -12,7 +12,6 @@ class OrderSeeder extends Seeder
      */
     public function run()
     {
-        // Create related models once
         $client = \App\Models\Client::factory()->create();
         $priceList = \App\Models\PriceList::factory()->create();
         $user = \App\Models\User::factory()->create();

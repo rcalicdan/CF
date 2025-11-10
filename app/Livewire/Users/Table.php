@@ -47,12 +47,13 @@ class Table extends Component
                     'key' => 'role_label',
                     'label' => __('Role'),
                     'sortable' => true,
-                    'accesor' => true,
+                    'accessor' => true,
+                    'search_columns' => ['role'],
+                    'sort_columns' => ['role'],
                     'type' => 'badge'
                 ],
                 [
-                    'key' =>
-                    'created_at',
+                    'key' => 'created_at',
                     'label' => __('Created'),
                     'sortable' => true,
                     'type' => 'datetime'

@@ -25,8 +25,22 @@ class Table extends Component
             ->model(ServicePriceList::class)
             ->headers([
                 ['key' => 'id', 'label' => __('ID'), 'sortable' => true],
-                ['key' => 'price_list_name', 'label' => __('Price List'), 'sortable' => true, 'accessor' => true, 'search_columns' => ['priceList.name'], 'sort_columns' => ['priceList.name']],
-                ['key' => 'service_name', 'label' => __('Service'), 'sortable' => true, 'accessor' => true, 'search_columns' => ['service.name'], 'sort_columns' => ['service.name']],
+                [
+                    'key' => 'price_list_name',
+                    'label' => __('Price List'),
+                    'sortable' => true,
+                    'accessor' => true,
+                    'search_columns' => ['priceList.name', 'priceList.location_postal_code'], 
+                    'sort_columns' => ['priceList.name']
+                ],
+                [
+                    'key' => 'service_name',
+                    'label' => __('Service'),
+                    'sortable' => true,
+                    'accessor' => true,
+                    'search_columns' => ['service.name'],
+                    'sort_columns' => ['service.name']
+                ],
                 ['key' => 'price', 'label' => __('Price'), 'sortable' => true, 'type' => 'currency'],
                 ['key' => 'price_comparison', 'label' => __('vs Base Price'), 'accessor' => true, 'type' => 'badge'],
                 ['key' => 'created_at', 'label' => __('Created'), 'sortable' => true, 'type' => 'datetime'],
@@ -50,12 +64,7 @@ class Table extends Component
         $query = ServicePriceList::with(['priceList', 'service']);
         $dataTable = $this->getDataTableConfig();
 
-        return $this->applySearchAndSort($query, [
-            'price',
-            'priceList.name',
-            'service.name',
-            'priceList.location_postal_code'
-        ], $dataTable);
+        return $this->applySearchAndSort($query, ['price'], $dataTable);
     }
 
     public function getRowsProperty()

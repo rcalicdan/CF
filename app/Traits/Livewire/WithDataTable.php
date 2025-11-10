@@ -411,16 +411,32 @@ trait WithDataTable
     protected function applySearchAndSort($query, $searchableColumns = [], $dataTable = null)
     {
         if (!empty($this->search)) {
-            $query->where(function ($q) use ($searchableColumns, $dataTable) {
+            $searchTerms = array_filter(explode(' ', trim($this->search)));
+
+            $query->where(function ($q) use ($searchableColumns, $dataTable, $searchTerms) {
                 foreach ($searchableColumns as $column) {
-                    $q->orWhere($column, 'ilike', '%' . $this->search . '%');
+                    foreach ($searchTerms as $term) {
+                        $q->orWhere($column, 'ilike', '%' . $term . '%');
+                    }
                 }
+
                 if ($dataTable) {
                     $headers = $dataTable->getHeaders();
+
                     foreach ($headers as $header) {
-                        if (isset($header['accessor'], $header['search_columns']) && $header['accessor'] === true) {
-                            foreach ($header['search_columns'] as $searchColumn) {
-                                $this->addNestedSearch($q, $searchColumn);
+                        if (!isset($header['accessor'], $header['search_columns']) || $header['accessor'] !== true) {
+                            continue;
+                        }
+
+                        $searchColumns = $header['search_columns'];
+
+                        if (count($searchTerms) > 1 && count($searchColumns) > 1) {
+                            $this->addMultiColumnSearch($q, $searchColumns, $searchTerms);
+                        }
+
+                        foreach ($searchColumns as $searchColumn) {
+                            foreach ($searchTerms as $term) {
+                                $this->addNestedSearch($q, $searchColumn, $term);
                             }
                         }
                     }
@@ -436,23 +452,69 @@ trait WithDataTable
     }
 
     /**
-     * Add nested relationship search
+     * Search across multiple columns simultaneously (for full name matching)
      */
-    protected function addNestedSearch($query, string $searchColumn): void
+    protected function addMultiColumnSearch($query, array $columns, array $searchTerms): void
     {
+        if (count($columns) < 2 || count($searchTerms) < 2) {
+            return;
+        }
+
+        $parts = array_map(fn($col) => explode('.', $col), $columns);
+
+        $firstParts = $parts[0];
+        $relationship = count($firstParts) > 1 ? array_slice($firstParts, 0, -1) : null;
+
+        if (!$relationship) {
+            $concatenated = "COALESCE(" . implode(", '') || ' ' || COALESCE(", $columns) . ", '')";
+            $query->orWhereRaw("$concatenated ilike ?", ['%' . implode(' ', $searchTerms) . '%']);
+        } else {
+            $relationshipPath = implode('.', $relationship);
+            $this->addMultiColumnRelationshipSearch($query, $relationshipPath, $columns, $searchTerms);
+        }
+    }
+
+    /**
+     * Search across multiple relationship columns
+     */
+    protected function addMultiColumnRelationshipSearch($query, string $relationshipPath, array $columns, array $searchTerms): void
+    {
+        $relationships = explode('.', $relationshipPath);
+        $finalColumns = array_map(function ($col) {
+            $parts = explode('.', $col);
+            return end($parts);
+        }, $columns);
+
+        $query->orWhereHas($relationships[0], function ($q) use ($relationships, $finalColumns, $searchTerms) {
+            if (count($relationships) > 1) {
+                $remainingPath = implode('.', array_slice($relationships, 1));
+                $this->addMultiColumnRelationshipSearch($q, $remainingPath, $finalColumns, $searchTerms);
+            } else {
+                $concatenated = "COALESCE(" . implode(", '') || ' ' || COALESCE(", $finalColumns) . ", '')";
+                $q->whereRaw("$concatenated ilike ?", ['%' . implode(' ', $searchTerms) . '%']);
+            }
+        });
+    }
+
+    /**
+     * Add nested relationship search (updated to accept search term)
+     */
+    protected function addNestedSearch($query, string $searchColumn, ?string $searchTerm = null): void
+    {
+        $searchTerm = $searchTerm ?? $this->search;
         $parts = explode('.', $searchColumn);
 
         if (count($parts) === 1) {
-            $query->orWhere($searchColumn, 'ilike', '%' . $this->search . '%');
+            $query->orWhere($searchColumn, 'ilike', '%' . $searchTerm . '%');
         } else {
             $relationship = array_shift($parts);
             $column = implode('.', $parts);
 
-            $query->orWhereHas($relationship, function ($q) use ($column, $parts) {
+            $query->orWhereHas($relationship, function ($q) use ($column, $parts, $searchTerm) {
                 if (count($parts) === 1) {
-                    $q->where($parts[0], 'ilike', '%' . $this->search . '%');
+                    $q->where($parts[0], 'ilike', '%' . $searchTerm . '%');
                 } else {
-                    $this->addNestedSearch($q, $column);
+                    $this->addNestedSearch($q, $column, $searchTerm);
                 }
             });
         }

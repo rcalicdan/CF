@@ -26,5 +26,10 @@ class DatabaseSeeder extends Seeder
         PriceList::factory(5)->create();
         Service::factory(5)->create();
         ServicePriceList::factory(5)->create();
+
+         $this->call([
+            ComplaintDataSeeder::class,      // 50 complaints
+            StatisticsSeeder::class,     // 6 monthly + 8 weekly = 14 records
+        ]);
     }
 }

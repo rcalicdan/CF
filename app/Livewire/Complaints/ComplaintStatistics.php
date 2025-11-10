@@ -11,6 +11,11 @@ use Carbon\Carbon;
 
 class ComplaintStatistics extends Component
 {
+    public $modalOrders = [];
+    public $modalTitle = '';
+    public $selectedPriority = '';
+    public $modalPage = 1;
+    public $perPage = 10;
     public $selectedPeriod = '7';
     public $selectedMonth = null;
     public $periodType = 'days';
@@ -468,6 +473,179 @@ class ComplaintStatistics extends Component
         ];
 
         return $months[$date->month];
+    }
+
+    public function showPriorityOrders($priority)
+    {
+        $this->selectedPriority = $priority;
+        $this->modalPage = 1;
+
+        switch ($priority) {
+            case 'high':
+                $this->modalTitle = 'Zamówienia wysokiej ważności (Oczekujące)';
+                break;
+            case 'medium':
+                $this->modalTitle = 'Zamówienia średniej ważności (W realizacji)';
+                break;
+            case 'undelivered':
+                $this->modalTitle = 'Niedostarczone zamówienia';
+                break;
+        }
+
+        $this->loadModalOrders();
+        $this->dispatch('open-modal');
+    }
+
+    public function loadModalOrders()
+    {
+        switch ($this->selectedPriority) {
+            case 'high':
+                $this->modalOrders = $this->getPendingOrders();
+                break;
+            case 'medium':
+                $this->modalOrders = $this->getProcessingOrders();
+                break;
+            case 'undelivered':
+                $this->modalOrders = $this->getUndeliveredOrders();
+                break;
+        }
+    }
+
+    public function nextPage()
+    {
+        $totalOrders = $this->getTotalOrdersCount();
+        $totalPages = ceil($totalOrders / $this->perPage);
+
+        if ($this->modalPage < $totalPages) {
+            $this->modalPage++;
+            $this->loadModalOrders();
+        }
+    }
+
+    public function previousPage()
+    {
+        if ($this->modalPage > 1) {
+            $this->modalPage--;
+            $this->loadModalOrders();
+        }
+    }
+
+    public function goToPage($page)
+    {
+        $totalOrders = $this->getTotalOrdersCount();
+        $totalPages = ceil($totalOrders / $this->perPage);
+
+        if ($page >= 1 && $page <= $totalPages) {
+            $this->modalPage = $page;
+            $this->loadModalOrders();
+        }
+    }
+
+    private function getTotalOrdersCount()
+    {
+        $query = Order::where('is_complaint', true);
+
+        switch ($this->selectedPriority) {
+            case 'high':
+                $query->where('status', OrderStatus::PENDING->value);
+                break;
+            case 'medium':
+                $query->whereIn('status', [OrderStatus::ACCEPTED->value, OrderStatus::PROCESSING->value]);
+                break;
+            case 'undelivered':
+                $query->where('status', OrderStatus::UNDELIVERED->value);
+                break;
+        }
+
+        if ($this->periodType === 'month' && $this->selectedMonth) {
+            $date = Carbon::createFromFormat('Y-m', $this->selectedMonth);
+            $startOfMonth = $date->copy()->startOfMonth();
+            $endOfMonth = $date->copy()->endOfMonth();
+            $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+        } else {
+            $days = (int) $this->selectedPeriod;
+            $startDate = Carbon::now()->subDays($days)->startOfDay();
+            $query->where('created_at', '>=', $startDate);
+        }
+
+        return $query->count();
+    }
+
+    public function getTotalPages()
+    {
+        return ceil($this->getTotalOrdersCount() / $this->perPage);
+    }
+
+    private function getPendingOrders()
+    {
+        $query = Order::where('is_complaint', true)
+            ->where('status', OrderStatus::PENDING->value)
+            ->with(['client', 'driver.user', 'orderCarpets']);
+
+        if ($this->periodType === 'month' && $this->selectedMonth) {
+            $date = Carbon::createFromFormat('Y-m', $this->selectedMonth);
+            $startOfMonth = $date->copy()->startOfMonth();
+            $endOfMonth = $date->copy()->endOfMonth();
+            $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+        } else {
+            $days = (int) $this->selectedPeriod;
+            $startDate = Carbon::now()->subDays($days)->startOfDay();
+            $query->where('created_at', '>=', $startDate);
+        }
+
+        return $query->orderBy('created_at', 'desc')
+            ->skip(($this->modalPage - 1) * $this->perPage)
+            ->take($this->perPage)
+            ->get()
+            ->map(fn($order) => $this->mapOrderToComplaint($order));
+    }
+
+    private function getProcessingOrders()
+    {
+        $query = Order::where('is_complaint', true)
+            ->whereIn('status', [OrderStatus::ACCEPTED->value, OrderStatus::PROCESSING->value])
+            ->with(['client', 'driver.user', 'orderCarpets']);
+
+        if ($this->periodType === 'month' && $this->selectedMonth) {
+            $date = Carbon::createFromFormat('Y-m', $this->selectedMonth);
+            $startOfMonth = $date->copy()->startOfMonth();
+            $endOfMonth = $date->copy()->endOfMonth();
+            $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+        } else {
+            $days = (int) $this->selectedPeriod;
+            $startDate = Carbon::now()->subDays($days)->startOfDay();
+            $query->where('created_at', '>=', $startDate);
+        }
+
+        return $query->orderBy('created_at', 'desc')
+            ->skip(($this->modalPage - 1) * $this->perPage)
+            ->take($this->perPage)
+            ->get()
+            ->map(fn($order) => $this->mapOrderToComplaint($order));
+    }
+
+    private function getUndeliveredOrders()
+    {
+        $query = Order::where('is_complaint', true)
+            ->where('status', OrderStatus::UNDELIVERED->value)
+            ->with(['client', 'driver.user', 'orderCarpets']);
+
+        if ($this->periodType === 'month' && $this->selectedMonth) {
+            $date = Carbon::createFromFormat('Y-m', $this->selectedMonth);
+            $startOfMonth = $date->copy()->startOfMonth();
+            $endOfMonth = $date->copy()->endOfMonth();
+            $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+        } else {
+            $days = (int) $this->selectedPeriod;
+            $startDate = Carbon::now()->subDays($days)->startOfDay();
+            $query->where('created_at', '>=', $startDate);
+        }
+
+        return $query->orderBy('created_at', 'desc')
+            ->skip(($this->modalPage - 1) * $this->perPage)
+            ->take($this->perPage)
+            ->get()
+            ->map(fn($order) => $this->mapOrderToComplaint($order));
     }
 
     public function viewOrdersByStatus($status)

@@ -11,14 +11,35 @@ use App\Traits\Livewire\WithDataTable;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Carbon\Carbon;
 
 class Table extends Component
 {
     use WithDataTable, WithPagination;
 
     protected OrderService $orderService;
-    
+
     public $complaintStatus = null;
+    public $statusFilter = '';
+    public $dateFilter = '';
+    public $customStartDate = '';
+    public $customEndDate = '';
+    public $showAdvancedFilters = false;
+
+    protected function queryString()
+    {
+        return [
+            'search' => ['except' => ''],
+            'sortColumn' => ['except' => ''],
+            'sortDirection' => ['except' => 'asc'],
+            'perPage' => ['except' => 10],
+            'statusFilter' => ['except' => ''],
+            'dateFilter' => ['except' => ''],
+            'complaintStatus' => ['except' => ''],
+            'customStartDate' => ['except' => ''],
+            'customEndDate' => ['except' => ''],
+        ];
+    }
 
     public function boot(OrderService $orderService)
     {
@@ -31,12 +52,60 @@ class Table extends Component
     public function mount()
     {
         $this->complaintStatus = request()->query('complaint_status');
+
+        if ($this->statusFilter || $this->dateFilter || $this->complaintStatus || $this->customStartDate || $this->customEndDate) {
+            $this->showAdvancedFilters = true;
+        }
+    }
+
+    public function toggleAdvancedFilters()
+    {
+        $this->showAdvancedFilters = !$this->showAdvancedFilters;
+    }
+
+    public function updatedDateFilter()
+    {
+        if ($this->dateFilter !== 'custom') {
+            $this->customStartDate = '';
+            $this->customEndDate = '';
+        }
+        $this->resetPage();
+    }
+
+    public function updatedStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedComplaintStatus()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCustomStartDate()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCustomEndDate()
+    {
+        $this->resetPage();
+    }
+
+    public function clearFilters()
+    {
+        $this->statusFilter = '';
+        $this->dateFilter = '';
+        $this->complaintStatus = null;
+        $this->customStartDate = '';
+        $this->customEndDate = '';
+        $this->resetPage();
     }
 
     public function clearComplaintFilter()
     {
         $this->complaintStatus = null;
-        return redirect()->route('orders.index');
+        $this->resetPage();
     }
 
     private function getDataTableConfig(): DataTableFactory
@@ -65,7 +134,9 @@ class Table extends Component
                     'key' => 'status_label',
                     'label' => __('Status'),
                     'sortable' => true,
-                    'accesor' => true,
+                    'accessor' => true,
+                    'search_columns' => ['status'],
+                    'sort_columns' => ['status'],
                     'type' => 'badge'
                 ],
                 [
@@ -125,21 +196,29 @@ class Table extends Component
             $query->where('assigned_driver_id', $user->driver->id);
         }
 
+        if (!empty($this->statusFilter)) {
+            $query->where('status', $this->statusFilter);
+        }
+
+        $this->applyDateFilter($query);
+
         if ($this->complaintStatus) {
             $query->where('is_complaint', true);
-            
-            if ($this->complaintStatus === 'in_progress') {
-                $query->whereIn('status', [
-                    OrderStatus::ACCEPTED->value, 
-                    OrderStatus::PROCESSING->value
-                ]);
-            } elseif ($this->complaintStatus === 'completed') {
-                $query->whereIn('status', [
-                    OrderStatus::COMPLETED->value, 
-                    OrderStatus::DELIVERED->value
-                ]);
-            } else {
-                $query->where('status', $this->complaintStatus);
+
+            if ($this->complaintStatus !== 'with_complaints') {
+                if ($this->complaintStatus === 'in_progress') {
+                    $query->whereIn('status', [
+                        OrderStatus::ACCEPTED->value,
+                        OrderStatus::PROCESSING->value
+                    ]);
+                } elseif ($this->complaintStatus === 'completed') {
+                    $query->whereIn('status', [
+                        OrderStatus::COMPLETED->value,
+                        OrderStatus::DELIVERED->value
+                    ]);
+                } else {
+                    $query->where('status', $this->complaintStatus);
+                }
             }
         }
 
@@ -149,6 +228,57 @@ class Table extends Component
         return $query;
     }
 
+    private function applyDateFilter($query)
+    {
+        if (empty($this->dateFilter)) {
+            return;
+        }
+
+        $now = Carbon::now();
+
+        switch ($this->dateFilter) {
+            case 'today':
+                $query->whereDate('created_at', $now->toDateString());
+                break;
+
+            case 'yesterday':
+                $query->whereDate('created_at', $now->subDay()->toDateString());
+                break;
+
+            case 'last_7_days':
+                $query->whereDate('created_at', '>=', $now->subDays(7)->toDateString());
+                break;
+
+            case 'last_30_days':
+                $query->whereDate('created_at', '>=', $now->subDays(30)->toDateString());
+                break;
+
+            case 'this_month':
+                $query->whereMonth('created_at', $now->month)
+                    ->whereYear('created_at', $now->year);
+                break;
+
+            case 'last_month':
+                $lastMonth = $now->subMonth();
+                $query->whereMonth('created_at', $lastMonth->month)
+                    ->whereYear('created_at', $lastMonth->year);
+                break;
+
+            case 'this_year':
+                $query->whereYear('created_at', $now->year);
+                break;
+
+            case 'custom':
+                if ($this->customStartDate) {
+                    $query->whereDate('created_at', '>=', $this->customStartDate);
+                }
+                if ($this->customEndDate) {
+                    $query->whereDate('created_at', '<=', $this->customEndDate);
+                }
+                break;
+        }
+    }
+
     public function getComplaintStatusLabel()
     {
         if (!$this->complaintStatus) {
@@ -156,12 +286,22 @@ class Table extends Component
         }
 
         return match ($this->complaintStatus) {
-            'in_progress' => 'W realizacji',
-            'completed' => 'Ukończone',
-            OrderStatus::PENDING->value => 'Oczekujące',
-            OrderStatus::CANCELED->value => 'Anulowane',
+            'with_complaints' => 'Zamówienia z reklamacjami',
+            'in_progress' => 'W trakcie realizacji',
+            'completed' => 'Zakończony',
+            OrderStatus::PENDING->value => 'W oczekiwaniu',
+            OrderStatus::CANCELED->value => 'Anulowany',
             default => $this->complaintStatus,
         };
+    }
+
+    public function getActiveFiltersCountProperty()
+    {
+        $count = 0;
+        if ($this->statusFilter) $count++;
+        if ($this->dateFilter) $count++;
+        if ($this->complaintStatus) $count++;
+        return $count;
     }
 
     public function render()
@@ -173,7 +313,21 @@ class Table extends Component
         return view('livewire.orders.table', [
             'dataTable' => $dataTable,
             'selectedRowsCount' => $selectedRowsCount,
+            'orderStatuses' => OrderStatus::cases(),
+            'complaintStatuses' => $this->getComplaintStatusOptions(),
         ]);
+    }
+
+    private function getComplaintStatusOptions()
+    {
+        return [
+            '' => 'Wszystkie zamówienia',
+            'with_complaints' => 'Zamówienia z reklamacjami',
+            'in_progress' => 'W trakcie',
+            'completed' => 'Zakończone',
+            OrderStatus::PENDING->value => 'Oczekujące',
+            OrderStatus::CANCELED->value => 'Anulowane',
+        ];
     }
 
     public function bulkDelete()
