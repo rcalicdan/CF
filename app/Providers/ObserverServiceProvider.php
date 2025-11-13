@@ -10,6 +10,7 @@ use App\Observers\ClientObserver;
 use App\Observers\DriverObserver;
 use App\Observers\OrderCarpetObserver;
 use App\Observers\OrderObserver;
+use App\Observers\UserObserver;
 use Illuminate\Support\ServiceProvider;
 
 class ObserverServiceProvider extends ServiceProvider
@@ -28,6 +29,7 @@ class ObserverServiceProvider extends ServiceProvider
     public function boot(): void
     {
         User::observe(DriverObserver::class);
+        User::observe(UserObserver::class);
         Order::observe(OrderObserver::class);
         OrderCarpet::observe(OrderCarpetObserver::class);
         Client::observe(ClientObserver::class);

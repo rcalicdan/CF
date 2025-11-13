@@ -19,23 +19,20 @@ class RouteDataService
     public function getAllDrivers(): Collection
     {
         return Driver::with('user')
-            ->whereHas('orders', function ($query) {
-                $query->whereIn('status', ['completed', 'undelivered']);
-            })
+            ->whereHas('user', fn($q) => $q->withoutTrashed())
             ->get()
-            ->map(function ($driver) {
-                return [
-                    'id' => $driver->id,
-                    'user_id' => $driver->user_id,
-                    'full_name' => $driver->user->full_name ?? $driver->user->name,
-                    'license_number' => $driver->license_number,
-                    'vehicle_details' => $driver->vehicle_details,
-                    'phone_number' => $driver->phone_number ?? $driver->user->phone_number,
-                    'created_at' => $driver->created_at->toISOString(),
-                    'updated_at' => $driver->updated_at->toISOString(),
-                ];
-            });
+            ->map(fn($driver) => [
+                'id' => $driver->id,
+                'user_id' => $driver->user_id,
+                'full_name' => $driver->user->full_name,
+                'license_number' => $driver->license_number ?? 'Brak',
+                'vehicle_details' => $driver->vehicle_details,
+                'phone_number' => $driver->phone_number ?? $driver->user->phone_number,
+                'created_at' => $driver->created_at->toISOString(),
+                'updated_at' => $driver->updated_at->toISOString(),
+            ]);
     }
+
 
     /**
      * Get orders for a specific driver and date
