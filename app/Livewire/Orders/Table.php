@@ -51,7 +51,9 @@ class Table extends Component
 
     public function mount()
     {
-        $this->complaintStatus = request()->query('complaint_status');
+        //$this->complaintStatus = request()->query('complaint_status');
+        
+        $this->complaintStatus = request()->query('complaintStatus');
 
         if ($this->statusFilter || $this->dateFilter || $this->complaintStatus || $this->customStartDate || $this->customEndDate) {
             $this->showAdvancedFilters = true;
@@ -222,8 +224,31 @@ class Table extends Component
             }
         }
 
+        if (!empty($this->search)) {
+            $searchTerm = '%' . $this->search . '%';
+            $query->where(function($query) use ($searchTerm) {
+                $query->where('id', 'like', $searchTerm)
+                    ->orWhereHas('client', function($q) use ($searchTerm) {
+                        $q->where('first_name', 'ilike', $searchTerm)
+                            ->orWhere('last_name', 'ilike', $searchTerm)
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
+                    })
+                    ->orWhereHas('driver.user', function($q) use ($searchTerm) {
+                        $q->where('first_name', 'ilike', $searchTerm)
+                            ->orWhere('last_name', 'ilike', $searchTerm)
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
+                    });
+            });
+        }
+
         $dataTable = $this->getDataTableConfig();
-        $this->applySearchAndSort($query, ['id', 'status'], $dataTable);
+        if ($this->sortColumn === 'status_label') {
+            $query->orderBy('status', $this->sortDirection);
+        } else {
+            $query->when($this->sortColumn, function($q) {
+                $q->orderBy($this->sortColumn, $this->sortDirection);
+            });
+        }
 
         return $query;
     }

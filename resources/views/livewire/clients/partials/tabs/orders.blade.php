@@ -37,7 +37,7 @@
                                        : ($order->status === 'pending'
                                            ? 'bg-yellow-100 text-yellow-800'
                                            : 'bg-blue-100 text-blue-800') }}">
-                                {{ ucfirst($order->status ?? __('Pending')) }}
+                                {{ __(ucfirst($order->status ?? __('Pending'))) }}
                             </span>
                             <button wire:click="selectOrder({{ $order->id }})"
                                 class="text-blue-600 hover:text-blue-800">

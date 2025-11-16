@@ -316,7 +316,7 @@ trait WithDataTable
         }
 
         try {
-            return Carbon::parse($value)->format('M j, Y');
+            return Carbon::parse($value)->locale('pl')->translatedFormat('j M Y');
         } catch (\Exception $e) {
             return $value;
         }

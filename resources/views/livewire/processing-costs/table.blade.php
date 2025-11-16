@@ -1,7 +1,7 @@
 <div>
     <x-flash-session />
     <x-partials.dashboard.content-header :title="__('Processing Costs Management')" />
-    
+
     <!-- Filter Section -->
     <div class="bg-white rounded-lg shadow-md border border-gray-200 mb-6 overflow-visible">
         <div class="bg-gradient-to-r from-green-600 to-teal-600 px-4 py-3">
@@ -89,7 +89,7 @@
                         class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:border-indigo-500 focus:ring-0 transition-colors hover:border-gray-400">
                 </div>
             </div>
-            
+
             <!-- Compact Quick Filters & Active Filters Row -->
             <div class="mt-3 pt-3 border-t border-gray-200">
                 <div class="flex items-center justify-between flex-wrap gap-3">
@@ -111,12 +111,12 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Active Filters -->
                     @if ($selectedName || $selectedType || $selectedDate || $dateFrom || $dateTo || $selectedMonth)
                         <div class="flex items-center gap-1 flex-wrap">
                             <span class="text-xs font-medium text-gray-600">{{ __('Active:') }}</span>
-                            
+
                             @if ($selectedName)
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
                                     {{ __('Name:') }} {{ Str::limit($selectedName, 10) }}
@@ -125,7 +125,7 @@
                                     </button>
                                 </span>
                             @endif
-                            
+
                             @if ($selectedType)
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                                     {{ $availableTypes[$selectedType] }}
@@ -134,37 +134,37 @@
                                     </button>
                                 </span>
                             @endif
-                            
+
                             @if ($selectedDate)
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                    {{ \Carbon\Carbon::parse($selectedDate)->format('M d') }}
+                                    {{ \Carbon\Carbon::parse($selectedDate)->locale('pl')->isoFormat('D MMM') }}
                                     <button wire:click="$set('selectedDate', '')" class="ml-1 hover:bg-green-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>
                                     </button>
                                 </span>
                             @endif
-                            
+
                             @if ($dateFrom)
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                    {{ __('From:') }} {{ \Carbon\Carbon::parse($dateFrom)->format('M d') }}
+                                    {{ __('From:') }} {{ \Carbon\Carbon::parse($dateFrom)->locale('pl')->isoFormat('D MMM') }}
                                     <button wire:click="$set('dateFrom', '')" class="ml-1 hover:bg-red-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>
                                     </button>
                                 </span>
                             @endif
-                            
+
                             @if ($dateTo)
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                                    {{ __('To:') }} {{ \Carbon\Carbon::parse($dateTo)->format('M d') }}
+                                    {{ __('To:') }} {{ \Carbon\Carbon::parse($dateTo)->locale('pl')->isoFormat('D MMM') }}
                                     <button wire:click="$set('dateTo', '')" class="ml-1 hover:bg-orange-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>
                                     </button>
                                 </span>
                             @endif
-                            
+
                             @if ($selectedMonth)
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                                    {{ \Carbon\Carbon::parse($selectedMonth)->format('M Y') }}
+                                    {{ \Carbon\Carbon::parse($selectedMonth)->locale('pl')->isoFormat('MMMM YYYY') }}
                                     <button wire:click="$set('selectedMonth', '')" class="ml-1 hover:bg-indigo-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>
                                     </button>
@@ -178,26 +178,26 @@
     </div>
 
     <!-- Data Table -->
-    <x-data-table 
-        :data="$this->rows" 
+    <x-data-table
+        :data="$this->rows"
         :headers="$dataTable['headers']"
-        :showActions="$dataTable['showActions']" 
+        :showActions="$dataTable['showActions']"
         :showSearch="$dataTable['showSearch']"
-        :showCreate="$dataTable['showCreate']" 
+        :showCreate="$dataTable['showCreate']"
         :createRoute="$dataTable['createRoute']"
-        :createButtonName="$dataTable['createButtonName']" 
+        :createButtonName="$dataTable['createButtonName']"
         :editRoute="$dataTable['editRoute']"
-        :viewRoute="$dataTable['viewRoute']" 
+        :viewRoute="$dataTable['viewRoute']"
         :deleteAction="$dataTable['deleteAction']"
-        :searchPlaceholder="$dataTable['searchPlaceholder']" 
+        :searchPlaceholder="$dataTable['searchPlaceholder']"
         :emptyMessage="$dataTable['emptyMessage']"
         :searchQuery="$search"
         :sortColumn="$sortColumn"
-        :sortDirection="$sortDirection" 
+        :sortDirection="$sortDirection"
         :showBulkActions="$dataTable['showBulkActions']"
-        :bulkDeleteAction="$dataTable['bulkDeleteAction']" 
+        :bulkDeleteAction="$dataTable['bulkDeleteAction']"
         :selectedRowsCount="$selectedRowsCount"
-        :selectAll="$selectAll" 
-        :selectPage="$selectPage" 
+        :selectAll="$selectAll"
+        :selectPage="$selectPage"
         :selectedRows="$selectedRows" />
 </div>

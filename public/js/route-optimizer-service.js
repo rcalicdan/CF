@@ -1,7 +1,8 @@
 class RouteOptimizerService {
     constructor(routeComponent) {
         this.routeComponent = routeComponent;
-        this.vroomEndpoint = 'http://147.135.252.51:3000';
+        // Use Laravel proxy instead of direct connection to avoid CORS
+        this.vroomEndpoint = window.location.origin + '/api/vroom/optimize';
         this.serverEndpoint = window.location.origin;
         this.mockDelay = 0;
         this.debugMode = true;
@@ -172,11 +173,18 @@ class RouteOptimizerService {
 
         try {
             const startTime = Date.now();
-            const response = await fetch(`${this.vroomEndpoint}/`, {
+
+            // Get auth token for Laravel API proxy
+            const token = localStorage.getItem('auth_token') ||
+                document.querySelector('meta[name="token"]')?.content;
+
+            const response = await fetch(this.vroomEndpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
                 },
                 body: JSON.stringify(vroomPayload)
             });

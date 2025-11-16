@@ -6,7 +6,6 @@ use App\Models\Driver;
 use App\Models\Order;
 use App\Models\Client;
 use App\Models\RouteOptimization;
-use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -19,7 +18,7 @@ class RouteDataService
     public function getAllDrivers(): Collection
     {
         return Driver::with('user')
-            ->whereHas('user', fn($q) => $q->withoutTrashed())
+            ->active()
             ->get()
             ->map(fn($driver) => [
                 'id' => $driver->id,

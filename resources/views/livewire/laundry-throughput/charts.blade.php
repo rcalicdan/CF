@@ -5,7 +5,7 @@
     <div class="mb-6 sm:mb-8">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex-1">
-                <h3 class="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">Analityka Pralni</h3>
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">Analiza Zamówień</h3>
                 <p class="text-sm sm:text-base text-gray-500 mt-1">Kompleksowa analiza wydajności, przychodów i operacji
                 </p>
             </div>
@@ -78,7 +78,7 @@
     <div class="border-t border-gray-200 pt-6 sm:pt-8">
         <div class="pb-2 border-b border-gray-200 mb-6">
             <h3 class="text-lg leading-6 font-semibold text-gray-900">
-                Analiza przepustowości dywanów
+                Analiza Wydajności dywanów
             </h3>
         </div>
 
@@ -332,11 +332,11 @@
 
                 getChartTitle() {
                     const titles = {
-                        'weekly': 'Przepustowość tygodniowa',
-                        'monthly': 'Przepustowość miesięczna',
-                        'yearly': 'Przepustowość roczna'
+                        'weekly': 'Wydajność tygodniowa',
+                        'monthly': 'Wydajność miesięczna',
+                        'yearly': 'Wydajność roczna'
                     };
-                    return titles[this.activeTab] || 'Przepustowość';
+                    return titles[this.activeTab] || 'Wydajność';
                 },
 
                 getTrendText() {

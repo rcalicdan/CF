@@ -5,6 +5,7 @@ namespace App\Livewire\Users;
 use App\ActionService\UserService;
 use App\Enums\UserRoles;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -13,6 +14,7 @@ use Livewire\WithFileUploads;
 class UpdatePage extends Component
 {
     use WithFileUploads;
+
     public User $user;
     public $first_name = '';
     public $last_name = '';
@@ -20,6 +22,7 @@ class UpdatePage extends Component
     public $password = '';
     public $password_confirmation = '';
     public $role = '';
+    public $active;
     public $profile_path;
     public $existing_profile_path;
 
@@ -41,6 +44,7 @@ class UpdatePage extends Component
         $this->last_name = $user->last_name;
         $this->email = $user->email;
         $this->role = $user->role;
+        $this->active = $user->active;
         $this->existing_profile_path = $user->profile_path;
     }
 
@@ -52,6 +56,7 @@ class UpdatePage extends Component
             'email' => ['required', 'email', Rule::unique('users')->ignore($this->user->id)],
             'password' => 'nullable|min:8|confirmed',
             'role' => 'required|in:' . implode(',', array_column(UserRoles::cases(), 'value')),
+            'active' => 'required|boolean',
             'profile_path' => 'nullable|image|max:2048',
         ];
     }
@@ -63,6 +68,7 @@ class UpdatePage extends Component
             'last_name' => 'last name',
             'password_confirmation' => 'password confirmation',
             'profile_path' => 'profile picture',
+            'active' => 'active status',
         ];
     }
 
@@ -80,6 +86,10 @@ class UpdatePage extends Component
             'email' => $this->email,
             'role' => $this->role,
         ];
+
+        if ($this->user->id !== Auth::id()) {
+            $data['active'] = $this->active;
+        }
 
         if (!empty($this->password)) {
             $data['password'] = Hash::make($this->password);

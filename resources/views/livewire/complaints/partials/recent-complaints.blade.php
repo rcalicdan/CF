@@ -5,9 +5,9 @@
                 <h3 class="text-lg sm:text-xl font-bold text-gray-900">Najnowsze zamówienia ze skargami</h3>
                 <p class="text-sm text-gray-500 mt-1">Ostatnie zamówienia oznaczone jako problematyczne</p>
             </div>
-            <a wire:navigate href="{{ route('orders.index') }}"
+            <a wire:navigate href="{{ route('orders.index', ['complaintStatus' => 'with_complaints']) }}"
                 class="text-sm font-medium text-red-600 hover:text-red-700 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors self-start block">
-                Zobacz wszystkie zamówienia
+                 Zobacz wszystkie zamówienia
             </a>
         </div>
     </div>

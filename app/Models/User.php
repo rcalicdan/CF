@@ -2,12 +2,9 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-
 use App\ActionService\EnumTranslationService;
 use App\Enums\UserRoles;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
@@ -21,10 +18,10 @@ use Laravel\Passport\HasApiTokens;
  * @property string $password
  * @property string|null $profile_path
  * @property string $role
+ * @property bool $active
  * @property string|null $remember_token
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Passport\Client> $clients
  * @property-read int|null $clients_count
  * @property-read \App\Models\Driver|null $driver
@@ -41,12 +38,8 @@ use Laravel\Passport\HasApiTokens;
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User withTrashed()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User withoutTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereDeletedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmail($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmailVerifiedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereFirstName($value)
@@ -56,14 +49,17 @@ use Laravel\Passport\HasApiTokens;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereProfilePath($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRememberToken($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereRole($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereActive($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User inactive()
  *
  * @mixin \Eloquent
  */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -77,6 +73,7 @@ class User extends Authenticatable
         'password',
         'profile_path',
         'role',
+        'active',
     ];
 
     /**
@@ -99,13 +96,13 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'deleted_at' => 'datetime',
+            'active' => 'boolean',
         ];
     }
 
     public function bearerToken(): string
     {
-        return $this->token()->token ?? session('api_token');
+        return $this->token()->token ?? session('api_token') ?? '';
     }
 
     public function getRoleLabelAttribute(): string
@@ -146,5 +143,47 @@ class User extends Authenticatable
     public function isEmployee(): bool
     {
         return $this->role === UserRoles::EMPLOYEE->value;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->active;
+    }
+
+    public function isInactive(): bool
+    {
+        return !$this->active;
+    }
+
+    /**
+     * Scope a query to only include active users.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('active', true);
+    }
+
+    /**
+     * Scope a query to only include inactive users.
+     */
+    public function scopeInactive($query)
+    {
+        return $query->where('active', false);
+    }
+
+    /**
+     * Deactivate the user.
+     */
+    public function deactivate(): bool
+    {
+        return $this->update(['active' => false]);
+    }
+
+    /**
+     * Activate the user.
+     */
+    public function activate(): bool
+    {
+        return $this->update(['active' => true]);
     }
 }

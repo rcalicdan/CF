@@ -12,14 +12,19 @@
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style"
         onload="this.rel='stylesheet'">
     <link rel="stylesheet" href="/css/styles.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-    <script src="/js/route-data-service.js"></script>
-    <script src="/js/route-optimizer.js"></script>
-    <script src="/js/map-manager.js"></script>
-    <script src="/js/route-optimizer-service.js"></script>
-    <script src="/js/alpine-component.js"></script>
-    @stack('styles');
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js" defer></script>
+    
+    @once
+    <script src="/js/route-data-service.js" defer></script>
+    <script src="/js/route-optimizer.js" defer></script>
+    <script src="/js/map-manager.js" defer></script>
+    <script src="/js/route-optimizer-service.js" defer></script>
+    <script src="/js/alpine-component.js" defer></script>
+    @endonce
+    
+    @stack('styles')
     @livewireStyles
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>

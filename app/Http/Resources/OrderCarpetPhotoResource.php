@@ -19,7 +19,7 @@ class OrderCarpetPhotoResource extends JsonResource
             'id' => $this->id,
             'order_carpet_id' => $this->order_carpet_id,
             'photo_url' => $this->photo_path,
-            'taken_by' => $this->whenLoaded('user', $this->user->full_name),
+            'taken_by' => $this->whenLoaded('user', $this->user?->full_name),
             'created_at' => $this->created_at->toIso8601String(),
         ];
     }

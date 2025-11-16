@@ -26,7 +26,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 })->withoutMiddleware(['auth:api']);
 
-Route::middleware(['auth:api', 'throttle:120,1'])->name('api.')->group(function () {
+Route::middleware(['auth:api', 'throttle:120,1', 'ensure.user.is.active'])->name('api.')->group(function () {
     Route::prefix('auth')->group(function () {
         Route::get('/user/profile', [AuthUserController::class, 'index']);
         Route::post('/user/profile/update', [AuthUserController::class, 'update']);
@@ -84,6 +84,9 @@ Route::middleware(['auth:api', 'throttle:120,1'])->name('api.')->group(function 
         Route::get('driver-optimizations', [RouteDataController::class, 'getMyRouteOptimizations']);
         Route::get('driver-optimizations/{id}', [RouteDataController::class, 'getMyRouteOptimizationDetails']);
     });
+
+    // Vroom API proxy to avoid CORS issues
+    Route::post('vroom/optimize', [\App\Http\Controllers\VroomProxyController::class, 'optimize']);
 
     Route::post('send-sms', [SendCustomSmsController::class, 'sendSms'])->middleware('throttle:15,1');
     Route::post('check-qr-exists', [OrderCarpetQrController::class, 'checkQrExists']);

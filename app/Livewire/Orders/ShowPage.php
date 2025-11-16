@@ -58,13 +58,6 @@ class ShowPage extends Component
                     'type' => 'decimal',
                     'defaultValue' => '0.00'
                 ],
-                /*[
-                    'key' => 'status',
-                    'label' => __('Status'),
-                    'sortable' => true,
-                    'type' => 'badge',
-                    'defaultValue' => __('Pending')
-                ],*/
                 [
                     'key' => 'services_count',
                     'label' => __('Services'),

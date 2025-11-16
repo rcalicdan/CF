@@ -60,7 +60,11 @@ class Login extends Component
 
             $user = $this->authService->authenticateUser($credentials);
 
-            if ($user) {
+            if (!$user->isActive()) {
+                $this->dispatchFlashMessage('error', __('Your account has been deactivated.'));
+
+                return;
+            } elseif ($user) {
                 $token = $this->authService->generateToken($user);
                 session(['api_token' => $token]);
 

@@ -13,6 +13,8 @@ class Table extends Component
 {
     use WithDataTable, WithPagination;
 
+    public $statusFilter = 'active';
+
     public function boot()
     {
         $this->deleteAction = 'deleteUser';
@@ -75,9 +77,34 @@ class Table extends Component
     public function rowsQuery()
     {
         $query = User::query();
+
+        // Apply status filter
+        if ($this->statusFilter === 'active') {
+            $query->active();
+        } elseif ($this->statusFilter === 'inactive') {
+            $query->inactive();
+        }
+        // 'all' means no filter applied
+
         $dataTable = $this->getDataTableConfig();
 
         return $this->applySearchAndSort($query, ['first_name', 'last_name', 'email', 'role'], $dataTable);
+    }
+
+    public function updatedStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function canDeleteRow($row): bool
+    {
+        // Nie pozwalaj na usuwanie nieaktywnych użytkowników
+        if ($row->isInactive()) {
+            return false;
+        }
+
+        // Sprawdź standardowe uprawnienia przez DataTableFactory
+        return $this->dataTableFactory ? $this->dataTableFactory->canDelete($row) : true;
     }
 
     public function getRowsProperty()
@@ -105,10 +132,12 @@ class Table extends Component
         } else {
             $query->whereIn('id', $this->selectedRows);
         }
-        $query->delete();
+
+        $query->update(['active' => false]);
+
         $this->clearSelection();
         $this->dispatch('show-message', [
-            'message' => 'Użytkownicy zostali pomyślnie usunięci.',
+            'message' => __('Users have been successfully deactivated.'),
             'type' => 'success'
         ]);
     }
@@ -117,10 +146,24 @@ class Table extends Component
     {
         $user = User::findOrFail($id);
         $this->authorize('delete', $user);
-        $user->delete();
+
+        $user->deactivate();
 
         $this->dispatch('show-message', [
-            'message' => 'Użytkownik został pomyślnie usunięty.',
+            'message' => __('User has been successfully deactivated.'),
+            'type' => 'success'
+        ]);
+    }
+
+    public function activateUser($id)
+    {
+        $user = User::findOrFail($id);
+        $this->authorize('update', $user);
+
+        $user->activate();
+
+        $this->dispatch('show-message', [
+            'message' => __('User has been successfully activated.'),
             'type' => 'success'
         ]);
     }

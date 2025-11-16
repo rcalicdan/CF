@@ -16,12 +16,4 @@ class DriverObserver
             $user->driver()->create();
         }
     }
-
-    /**
-     * Handle the User "deleted" event.
-     */
-    public function deleted(User $user): void
-    {
-        $user->driver()->delete();
-    }
 }

@@ -27,43 +27,43 @@ class OrderObserver
     {
         $changes = $order->getChanges();
         $original = $order->getOriginal();
-        
+
         if (isset($changes['status'])) {
             $this->logStatusChange($order, $changes, $original);
         }
-        
+
         if (isset($changes['assigned_driver_id'])) {
             $this->logDriverAssignment($order, $changes, $original);
         }
-        
+
         if (isset($changes['schedule_date'])) {
             $this->logScheduleChange($order, $changes, $original);
         }
-        
+
         if (isset($changes['total_amount'])) {
             $this->logAmountChange($order, $changes, $original);
         }
-        
+
         if (isset($changes['client_id'])) {
             $this->logClientChange($order, $changes, $original);
         }
-        
+
         if (isset($changes['is_complaint'])) {
             $this->logComplaintStatusChange($order, $changes, $original);
         }
-        
+
         $filteredChanges = array_filter($changes, function($key) {
             return !in_array($key, [
-                'status', 
-                'assigned_driver_id', 
-                'schedule_date', 
-                'total_amount', 
-                'client_id', 
+                'status',
+                'assigned_driver_id',
+                'schedule_date',
+                'total_amount',
+                'client_id',
                 'is_complaint',
                 'updated_at'
             ]);
         }, ARRAY_FILTER_USE_KEY);
-        
+
         if (!empty($filteredChanges)) {
             $this->logGeneralUpdate($order, $filteredChanges);
         }
@@ -110,7 +110,7 @@ class OrderObserver
     private function sendDeliveryThankYouSms(Order $order): void
     {
         $phoneNumber = $order->client?->phone_number;
-        
+
         if (!$phoneNumber) {
             Log::warning('Cannot send delivery SMS: Client has no phone number', [
                 'order_id' => $order->id,
@@ -120,16 +120,15 @@ class OrderObserver
         }
 
         $reviewUrl = config('app.url') . '/reviews';
-        
-        $message = sprintf(
-            "Dziękujemy %s! Zamówienie #%d zostało pomyślnie dostarczone. Będziemy wdzięczni za Twoją opinię: %s",
-            $order->client->first_name ?? 'szanowny kliencie',
-            $order->id,
-            $reviewUrl
-        );
+
+        $message = __('Thank you :name! Order #:order_id has been successfully delivered. We would appreciate your review: :url', [
+            'name' => $order->client->first_name ?? __('dear customer'),
+            'order_id' => $order->id,
+            'url' => $reviewUrl
+        ]);
 
         SendSmsJob::dispatch($phoneNumber, $message);
-        
+
         Log::info('Delivery thank you SMS queued', [
             'order_id' => $order->id,
             'client_id' => $order->client_id,
@@ -142,14 +141,14 @@ class OrderObserver
     {
         $oldDriverId = $original['assigned_driver_id'] ?? null;
         $newDriverId = $changes['assigned_driver_id'];
-        
+
         $oldDriver = $oldDriverId ? \App\Models\Driver::with('user')->find($oldDriverId) : null;
         $newDriver = $newDriverId ? \App\Models\Driver::with('user')->find($newDriverId) : null;
-        
+
         $oldDriverName = $oldDriver && $oldDriver->user ? $oldDriver->user->full_name : 'Brak przypisania';
         $newDriverName = $newDriver && $newDriver->user ? $newDriver->user->full_name : 'Brak przypisania';
-        
-        $notes = $oldDriverId 
+
+        $notes = $oldDriverId
             ? "Kierowca zmieniony z '{$oldDriverName}' na '{$newDriverName}'"
             : "Kierowca '{$newDriverName}' został przypisany do zamówienia";
 
@@ -173,10 +172,10 @@ class OrderObserver
     {
         $oldDate = $original['schedule_date'] ?? null;
         $newDate = $changes['schedule_date'];
-        
+
         $oldDateFormatted = $oldDate ? \Carbon\Carbon::parse($oldDate)->format('d.m.Y H:i') : 'Nie ustawiono';
         $newDateFormatted = $newDate ? \Carbon\Carbon::parse($newDate)->format('d.m.Y H:i') : 'Nie ustawiono';
-        
+
         $notes = "Data realizacji zmieniona z '{$oldDateFormatted}' na '{$newDateFormatted}'";
 
         OrderHistory::create([
@@ -199,10 +198,10 @@ class OrderObserver
     {
         $oldAmount = $original['total_amount'] ?? 0;
         $newAmount = $changes['total_amount'];
-        
+
         $oldAmountFormatted = number_format((float)$oldAmount, 2, ',', ' ') . ' PLN';
         $newAmountFormatted = number_format((float)$newAmount, 2, ',', ' ') . ' PLN';
-        
+
         $notes = "Kwota całkowita zmieniona z {$oldAmountFormatted} na {$newAmountFormatted}";
 
         OrderHistory::create([
@@ -225,13 +224,13 @@ class OrderObserver
     {
         $oldClientId = $original['client_id'] ?? null;
         $newClientId = $changes['client_id'];
-        
+
         $oldClient = $oldClientId ? \App\Models\Client::find($oldClientId) : null;
         $newClient = $newClientId ? \App\Models\Client::find($newClientId) : null;
-        
+
         $oldClientName = $oldClient ? $oldClient->full_name : 'Brak klienta';
         $newClientName = $newClient ? $newClient->full_name : 'Brak klienta';
-        
+
         $notes = "Klient zmieniony z '{$oldClientName}' na '{$newClientName}'";
 
         OrderHistory::create([
@@ -254,8 +253,8 @@ class OrderObserver
     {
         $oldStatus = $original['is_complaint'] ?? false;
         $newStatus = $changes['is_complaint'];
-        
-        $notes = $newStatus 
+
+        $notes = $newStatus
             ? 'Zamówienie zostało oznaczone jako reklamacja'
             : 'Status reklamacji został usunięty z zamówienia';
 

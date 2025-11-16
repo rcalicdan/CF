@@ -175,7 +175,8 @@ class CreatePage extends Component
 
     public function getFilteredDrivers()
     {
-        $query = Driver::with('user:id,first_name,last_name');
+        $query = Driver::with('user:id,first_name,last_name')
+            ->active();
 
         if (!empty($this->driverSearch)) {
             $query->whereHas('user', function ($q) {

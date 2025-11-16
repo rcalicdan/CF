@@ -24,7 +24,7 @@
             </div>
         </div>
         <div class="p-4 overflow-visible">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 overflow-visible">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3 overflow-visible">
                 <div class="space-y-1 relative overflow-visible lg:col-span-2" x-data="{
                     open: false,
                     init() {
@@ -81,11 +81,11 @@
                                     </div>
                                     @foreach ($recentDrivers as $driver)
                                         <button type="button"
-                                            wire:click="selectDriver({{ $driver->id }}, '{{ $driver->user->full_name }}')"
+                                            wire:click="selectDriver({{ $driver->id }}, '{{ $driver->user?->full_name ?? '' }}')"
                                             @click="open = false"
                                             class="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 focus:bg-blue-50 focus:outline-none flex items-center">
                                             <i class="fas fa-user-circle mr-2 text-gray-400"></i>
-                                            {{ $driver->user->full_name }}
+                                            {{ $driver->user?->full_name ?? '-' }}
                                         </button>
                                     @endforeach
                                 @else
@@ -114,20 +114,32 @@
                     @endif
                 </div>
                 <!-- Status Filter -->
-                <div class="space-y-1 lg:col-span-1"> <!-- Added col-span -->
+                <div class="space-y-1 lg:col-span-1">
                     <label for="selectedStatus" class="block text-xs font-medium text-gray-600">
-                        <i class="fas fa-flag mr-1 text-red-500"></i>{{ __('Status') }}
+                        <i class="fas fa-flag mr-1 text-red-500"></i>{{ __('Order Status') }}
                     </label>
                     <select wire:model.live="selectedStatus" id="selectedStatus"
                         class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:border-red-500 focus:ring-0 transition-colors hover:border-gray-400">
                         <option value="">{{ __('All Statuses') }}</option>
                         @foreach ($availableStatuses as $statusValue => $statusLabel)
-                            <option value="{{ $statusValue }}">{{ $statusLabel }}</option>
+                            <option value="{{ $statusValue }}">{{ __($statusLabel) }}</option>
                         @endforeach
                     </select>
                 </div>
+                <!-- Driver Status Filter -->
+                <div class="space-y-1 lg:col-span-1">
+                    <label for="driverStatus" class="block text-xs font-medium text-gray-600">
+                        <i class="fas fa-user-slash mr-1 text-yellow-500"></i>{{ __('Driver Status') }}
+                    </label>
+                    <select wire:model.live="driverStatus" id="driverStatus"
+                        class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:border-yellow-500 focus:ring-0 transition-colors hover:border-gray-400">
+                        <option value="">{{ __('All') }}</option>
+                        <option value="active">{{ __('Active') }}</option>
+                        <option value="inactive">{{ __('Inactive') }}</option>
+                    </select>
+                </div>
                 <!-- Specific Date -->
-                <div class="space-y-1 lg:col-span-1"> <!-- Added col-span -->
+                <div class="space-y-1 lg:col-span-1">
                     <label for="selectedDate" class="block text-xs font-medium text-gray-600">
                         <i class="fas fa-calendar-day mr-1 text-green-500"></i>{{ __('Specific Date') }}
                     </label>
@@ -135,7 +147,7 @@
                         class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:border-green-500 focus:ring-0 transition-colors hover:border-gray-400">
                 </div>
                 <!-- Date From -->
-                <div class="space-y-1 lg:col-span-1"> <!-- Added col-span -->
+                <div class="space-y-1 lg:col-span-1">
                     <label for="dateFrom" class="block text-xs font-medium text-gray-600">
                         <i class="fas fa-calendar-alt mr-1 text-purple-500"></i>{{ __('From') }}
                     </label>
@@ -143,7 +155,7 @@
                         class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white focus:border-purple-500 focus:ring-0 transition-colors hover:border-gray-400">
                 </div>
                 <!-- Date To -->
-                <div class="space-y-1 lg:col-span-1"> <!-- Added col-span -->
+                <div class="space-y-1 lg:col-span-1">
                     <label for="dateTo" class="block text-xs font-medium text-gray-600">
                         <i class="fas fa-calendar-check mr-1 text-orange-500"></i>{{ __('To') }}
                     </label>
@@ -170,7 +182,7 @@
                         </div>
                     </div>
                     <!-- Active Filters -->
-                    @if ($selectedDriverId || $selectedDate || $dateFrom || $dateTo || $selectedStatus)
+                    @if ($selectedDriverId || $selectedDate || $dateFrom || $dateTo || $selectedStatus || $driverStatus)
                         <div class="flex items-center gap-1 flex-wrap">
                             <span class="text-xs font-medium text-gray-600">{{ __('Active:') }}</span>
                             @if ($selectedDriverId && $selectedDriverName)
@@ -186,9 +198,19 @@
                             @if ($selectedStatus)
                                 <span
                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                    {{ $availableStatuses[$selectedStatus] }}
+                                    {{ __($availableStatuses[$selectedStatus]) }}
                                     <button wire:click="$set('selectedStatus', '')"
                                         class="ml-1 hover:bg-red-200 rounded-full">
+                                        <i class="fas fa-times text-xs"></i>
+                                    </button>
+                                </span>
+                            @endif
+                            @if ($driverStatus)
+                                <span
+                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    {{ ucfirst($driverStatus) }} {{__('Driver')}}
+                                    <button wire:click="$set('driverStatus', '')"
+                                        class="ml-1 hover:bg-yellow-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>
                                     </button>
                                 </span>
@@ -196,7 +218,7 @@
                             @if ($selectedDate)
                                 <span
                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                    {{ \Carbon\Carbon::parse($selectedDate)->format('M d') }}
+                                    {{ \Carbon\Carbon::parse($selectedDate)->locale('pl')->isoFormat('D MMM') }}
                                     <button wire:click="$set('selectedDate', '')"
                                         class="ml-1 hover:bg-green-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>
@@ -206,7 +228,7 @@
                             @if ($dateFrom)
                                 <span
                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                    {{ __('From:') }} {{ \Carbon\Carbon::parse($dateFrom)->format('M d') }}
+                                    {{ __('From:') }} {{ \Carbon\Carbon::parse($dateFrom)->locale('pl')->isoFormat('D MMM') }}
                                     <button wire:click="$set('dateFrom', '')"
                                         class="ml-1 hover:bg-purple-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>
@@ -216,7 +238,7 @@
                             @if ($dateTo)
                                 <span
                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                                    {{ __('To:') }} {{ \Carbon\Carbon::parse($dateTo)->format('M d') }}
+                                    {{ __('To:') }} {{ \Carbon\Carbon::parse($dateTo)->locale('pl')->isoFormat('D MMM') }}
                                     <button wire:click="$set('dateTo', '')"
                                         class="ml-1 hover:bg-orange-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>

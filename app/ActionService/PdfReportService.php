@@ -272,8 +272,8 @@ class PdfReportService
 
         $pdf->SetCreator(PDF_CREATOR);
         $pdf->SetAuthor('System');
-        $pdf->SetTitle('Raport Przepustowości Pralni');
-        $pdf->SetSubject('Raport przepustowości i przychodów');
+        $pdf->SetTitle('Raport Wydajności Pralni');
+        $pdf->SetSubject('Raport Wydajności i przychodów');
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
         $pdf->SetMargins(10, 15, 10);
@@ -283,7 +283,7 @@ class PdfReportService
 
         // Title
         $pdf->SetFont('dejavusans', 'B', 16);
-        $pdf->Cell(0, 10, 'Raport Przepustowości Pralni', 0, 1, 'C');
+        $pdf->Cell(0, 10, 'Raport Wydajności Pralni', 0, 1, 'C');
         $pdf->Ln(3);
 
         // Generation Date

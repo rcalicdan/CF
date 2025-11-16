@@ -19,7 +19,7 @@ class LaundryThroughputCsvReportService
         $csv->addFormatter(new EscapeFormula());
 
         // Header
-        $csv->insertOne(['Raport przepustowości pralni - Wygenerowano: ' . Carbon::now()->format('d.m.Y H:i')]);
+        $csv->insertOne(['Raport wydajności pralni - Wygenerowano: ' . Carbon::now()->format('d.m.Y H:i')]);
         $csv->insertOne([]);
 
         // Summary section

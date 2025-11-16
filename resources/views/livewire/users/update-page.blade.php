@@ -1,6 +1,6 @@
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 my-auto">
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <form wire:submit.prevent="update" x-data="{ showPasswordFields: false }" class="p-6 space-y-6">
+        <form wire:submit.prevent="update" x-data="{ showPasswordFields: false, isActive: @entangle('active') }" class="p-6 space-y-6">
             <div class="space-y-6">
                 <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                     {{ __('Personal Information') }}</h3>
@@ -42,6 +42,38 @@
                         <x-forms.select name="role" wire:model="role" placeholder="{{ __('Select user role') }}"
                             :options="$roleOptions" required />
                     </x-forms.field>
+
+                    {{-- Only show the active status toggle if the user is NOT editing their own profile --}}
+                    @if ($user->id !== auth()->id())
+                        <div class="md:col-span-2 flex items-center">
+                            <span class="text-sm font-medium text-gray-900 mr-3" id="active-status-label">
+                                {{ __('Active Status') }}
+                            </span>
+                            <button type="button"
+                                class="relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full border-2 transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 hover:scale-105"
+                                :class="{
+                                    'bg-green-500 border-green-600 shadow-lg shadow-green-500/30 focus:ring-green-500': isActive,
+                                    'bg-gray-300 border-gray-400 shadow-md focus:ring-gray-400': !isActive
+                                }"
+                                role="switch"
+                                :aria-checked="isActive.toString()"
+                                @click="isActive = !isActive"
+                                aria-labelledby="active-status-label">
+                                <span class="pointer-events-none relative inline-block h-6 w-6 transform rounded-full shadow-lg transition-all duration-200 ease-out border-2"
+                                    :class="{
+                                        'translate-x-6 bg-white border-green-100': isActive,
+                                        'translate-x-0 bg-gray-100 border-gray-300': !isActive
+                                    }"
+                                    style="top: -1px;">
+                                </span>
+                            </button>
+                            <span class="ml-3 text-sm transition-all duration-200" 
+                                :class="isActive ? 'text-green-600 font-medium' : 'text-gray-500'">
+                                <span x-show="isActive">{{ __('Active') }}</span>
+                                <span x-show="!isActive">{{ __('Inactive') }}</span>
+                            </span>
+                        </div>
+                    @endif
 
                     <div class="md:col-span-2 flex items-center">
                         <span class="text-sm font-medium text-gray-900 mr-3" id="update-password-label">
@@ -109,7 +141,7 @@
                                     placeholder="{{ __('Enter new password') }}" />
                             </x-forms.field>
                             <x-forms.field label="{{ __('Confirm New Password') }}" name="password_confirmation">
-                                <x-forms.input type="password" name="password_confirmation"
+                                <x-forms.input type="password" name="password_confirmation" wire:model="password_confirmation"
                                     placeholder="{{ __('Confirm new password') }}" />
                             </x-forms.field>
                         </div>

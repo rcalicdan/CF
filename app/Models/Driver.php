@@ -3,15 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
  * @property int $user_id
  * @property string|null $license_number
  * @property string|null $vehicle_details
+ * @property string|null $phone_number
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read bool $is_active
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> $orders
  * @property-read int|null $orders_count
  * @property-read \App\Models\User $user
@@ -22,16 +23,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereLicenseNumber($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver wherePhoneNumber($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereUserId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereVehicleDetails($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver active()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver inactive()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereActive($value)
  *
  * @mixin \Eloquent
  */
 class Driver extends Model
 {
-    use SoftDeletes;
-
     public $fillable = [
         'user_id',
         'license_number',
@@ -47,5 +50,41 @@ class Driver extends Model
     public function orders()
     {
         return $this->hasMany(Order::class, 'assigned_driver_id');
+    }
+
+    public function getIsActiveAttribute(): bool
+    {
+        return $this->user?->active ?? false;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->user?->active ?? false;
+    }
+
+    public function isInactive(): bool
+    {
+        return !$this->isActive();
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereHas('user', function ($q) {
+            $q->where('active', true);
+        });
+    }
+
+    public function scopeInactive($query)
+    {
+        return $query->whereHas('user', function ($q) {
+            $q->where('active', false);
+        });
+    }
+
+    public function scopeWhereActive($query, bool $active = true)
+    {
+        return $query->whereHas('user', function ($q) use ($active) {
+            $q->where('active', $active);
+        });
     }
 }

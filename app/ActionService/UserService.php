@@ -6,9 +6,15 @@ use App\Models\User;
 
 class UserService
 {
+    /**
+     * Get a paginated list of users.
+     * By default, it returns only active users.
+     * This can be overridden by passing the 'active' query parameter.
+     * e.g., ?active=false (for inactive) or ?active=all (for all users).
+     */
     public function getAllUsers()
     {
-        $users = User::with('driver')
+        $query = User::with('driver')
             ->when(request('first_name'), function ($query) {
                 $query->where('first_name', 'like', '%'.request('first_name').'%');
             })
@@ -20,17 +26,25 @@ class UserService
             })
             ->when(request('role'), function ($query) {
                 $query->where('role', request('role'));
-            })
-            ->paginate(30);
+            });
 
-        return $users;
+        if (request()->has('active')) {
+            if (request('active') !== 'all') {
+                $query->where('active', filter_var(request('active'), FILTER_VALIDATE_BOOLEAN));
+            }
+        } else {
+            $query->where('active', true);
+        }
+
+        return $query->paginate(30);
     }
 
+    /**
+     * Load the 'driver' relationship on the given user instance.
+     */
     public function getUserInformation(User $user)
     {
-        $user::with('driver')->get();
-
-        return $user;
+        $user->load('driver');
     }
 
     public function storeNewUser(array $data)

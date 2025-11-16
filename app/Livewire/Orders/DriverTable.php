@@ -5,7 +5,7 @@ namespace App\Livewire\Orders;
 use App\ActionService\OrderService;
 use App\DataTable\DataTableFactory;
 use App\Enums\UserRoles;
-use App\Enums\OrderStatus; 
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Driver;
 use App\Traits\Livewire\WithDataTable;
@@ -28,6 +28,7 @@ class DriverTable extends Component
     public $showDriverDropdown = false;
     public $selectedDriverName = '';
     public $selectedStatus = '';
+    public $driverStatus = '';
 
     public function boot(OrderService $orderService)
     {
@@ -71,6 +72,11 @@ class DriverTable extends Component
     }
 
     public function updatedSelectedStatus()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDriverStatus()
     {
         $this->resetPage();
     }
@@ -127,10 +133,11 @@ class DriverTable extends Component
                     'sortable' => true,
                 ],
                 [
-                    'key' => 'status',
+                    'key' => 'status_label',
                     'label' => 'Status',
-                    'sortable' => true,
-                    'type' => 'badge'
+                    'sortable' => false,
+                    'type' => 'badge',
+                    'accessor' => true
                 ],
                 [
                     'key' => 'total_amount',
@@ -205,6 +212,12 @@ class DriverTable extends Component
             $query->where('status', $this->selectedStatus);
         }
 
+        if ($this->driverStatus === 'active') {
+            $query->whereHas('driver.user', fn($q) => $q->where('active', true));
+        } elseif ($this->driverStatus === 'inactive') {
+            $query->whereHas('driver.user', fn($q) => $q->where('active', false));
+        }
+
         if ($user->role === UserRoles::DRIVER->value) {
             $query->where('assigned_driver_id', $user->driver->id);
         }
@@ -238,6 +251,7 @@ class DriverTable extends Component
         $this->dateFrom = '';
         $this->dateTo = '';
         $this->selectedStatus = '';
+        $this->driverStatus = '';
         $this->driverSearch = '';
         $this->showDriverDropdown = false;
         $this->resetPage();

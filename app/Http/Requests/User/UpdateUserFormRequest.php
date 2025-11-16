@@ -34,6 +34,7 @@ class UpdateUserFormRequest extends FormRequest
             ],
             'role' => ['sometimes', 'required', Rule::enum(UserRoles::class)],
             'password' => ['sometimes', 'required', 'string', 'min:8'],
+            'active' => ['sometimes', 'required', 'boolean'],
         ];
     }
 }

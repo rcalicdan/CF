@@ -147,6 +147,14 @@ class AuthController extends Controller
     {
         $user = $this->authService->authenticateUser($request->validated());
 
+        if (! $user->isActive()) {
+            return $this->errorResponse([
+                'status' => 'error',
+                'message' => 'Your account has been deactivated.',
+                'code' => 403,
+            ], 403);
+        }
+
         if (! $user) {
             return $this->errorResponse([
                 'status' => 'error',

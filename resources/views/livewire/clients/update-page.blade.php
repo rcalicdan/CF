@@ -23,12 +23,12 @@
                 <h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                     {{ __('Address Information') }}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <x-forms.field label="{{ __('Street Number') }}" name="street_number" required>
-                        <x-forms.input name="street_number" wire:model="street_number" placeholder="{{ __('Enter street number') }}"
-                            required />
-                    </x-forms.field>
                     <x-forms.field label="{{ __('Street Name') }}" name="street_name" required>
                         <x-forms.input name="street_name" wire:model="street_name" placeholder="{{ __('Enter street name') }}"
+                            required />
+                    </x-forms.field>
+                                        <x-forms.field label="{{ __('Street Number') }}" name="street_number" required>
+                        <x-forms.input name="street_number" wire:model="street_number" placeholder="{{ __('Enter street number') }}"
                             required />
                     </x-forms.field>
                     <x-forms.field label="{{ __('City') }}" name="city" required>

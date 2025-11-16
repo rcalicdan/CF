@@ -30,7 +30,23 @@ class OrderService
             $query->where('assigned_driver_id', $user->driver->id);
         }
 
-        $query->when(request('order_id'), fn($q) => $q->where('id', request('order_id')))
+        $query->when(request('search'), function($q) {
+                $searchTerm = '%' . request('search') . '%';
+                return $q->where(function($query) use ($searchTerm) {
+                    $query->where('id', 'like', $searchTerm)
+                        ->orWhereHas('client', function($q) use ($searchTerm) {
+                            $q->where('first_name', 'ilike', $searchTerm)
+                                ->orWhere('last_name', 'ilike', $searchTerm)
+                                ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
+                        })
+                        ->orWhereHas('driver.user', function($q) use ($searchTerm) {
+                            $q->where('first_name', 'ilike', $searchTerm)
+                                ->orWhere('last_name', 'ilike', $searchTerm)
+                                ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
+                        });
+                });
+            })
+            ->when(request('order_id'), fn($q) => $q->where('id', request('order_id')))
             ->when(request('client_first_name'), fn($q) => $q->whereHas('client', fn($s) => $s->where('first_name', 'like', '%' . request('client_first_name') . '%')))
             ->when(request('client_last_name'), fn($q) => $q->whereHas('client', fn($s) => $s->where('last_name', 'like', '%' . request('client_last_name') . '%')))
             ->when(request('price_list_name'), fn($q) => $q->whereHas('priceList', fn($s) => $s->where('name', 'like', '%' . request('price_list_name') . '%')))
@@ -65,7 +81,7 @@ class OrderService
 
             SendSmsJob::dispatch(
                 preg_replace('/[^\d]/', '', $order->client->phone_number),
-                'Your order has been created. We will send later the schedule date for delivery'
+                __('Your order has been created. We will send later the schedule date for delivery')
             )->afterCommit();
 
             return [
