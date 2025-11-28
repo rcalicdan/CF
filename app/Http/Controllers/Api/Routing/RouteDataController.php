@@ -185,10 +185,16 @@ class RouteDataController extends Controller
         try {
             $optimization = $this->routeDataService->saveRouteOptimization($request->all());
 
+            $isManualOnly = $request->input('manual_modifications.is_manual_only', false);
+            $message = $isManualOnly
+                ? 'Manual route saved successfully. You can optimize it later.'
+                : 'Route optimization saved successfully';
+
             return $this->successResponse([
                 'success' => true,
-                'message' => 'Route optimization saved successfully',
-                'data' => $optimization
+                'message' => $message,
+                'data' => $optimization,
+                'requires_optimization' => $isManualOnly
             ]);
         } catch (\Exception $e) {
             return $this->errorResponse([

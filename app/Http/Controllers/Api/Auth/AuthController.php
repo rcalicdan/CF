@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\ActionService\AuthService;
+use App\Exceptions\AccountDeactivatedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginFormRequest;
 use App\Http\Requests\Auth\RegisterFormRequest;
@@ -145,32 +146,38 @@ class AuthController extends Controller
      */
     public function login(LoginFormRequest $request): JsonResponse
     {
-        $user = $this->authService->authenticateUser($request->validated());
+        try {
+            $user = $this->authService->authenticateUser($request->validated());
 
-        if (! $user->isActive()) {
+            if (! $user) {
+                return $this->errorResponse([
+                    'status' => 'error',
+                    'message' => 'Invalid Credentials',
+                    'code' => 401,
+                ], 401);
+            }
+
+            $token = $this->authService->generateToken($user);
+
+            return $this->successResponse([
+                'status' => 'success',
+                'message' => 'Login Successful!',
+                'user' => new UserResource($user),
+                'token' => $token,
+            ]);
+        } catch (AccountDeactivatedException $e) {
             return $this->errorResponse([
                 'status' => 'error',
-                'message' => 'Your account has been deactivated.',
+                'message' => "Your account has been deactivated.",
                 'code' => 403,
             ], 403);
-        }
-
-        if (! $user) {
+        } catch (\Exception $e) {
             return $this->errorResponse([
                 'status' => 'error',
-                'message' => 'Invalid Credentials',
-                'code' => 401,
-            ], 401);
+                'message' => 'An error occurred while logging in. Please try again.',
+                'code' => 500,
+            ]);
         }
-
-        $token = $this->authService->generateToken($user);
-
-        return $this->successResponse([
-            'status' => 'success',
-            'message' => 'Login Successful!',
-            'user' => new UserResource($user),
-            'token' => $token,
-        ]);
     }
 
     /**

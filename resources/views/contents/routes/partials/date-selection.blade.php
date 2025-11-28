@@ -8,8 +8,12 @@
     <div class="space-y-4">
         <!-- Wybór daty -->
         <div class="date-picker-container">
-            <input type="date" x-model="selectedDate" :min="getMinDate()" :max="getMaxDate()"
-                @change="onDateChange($event)" class="date-picker-input w-full" id="deliveryDate" />
+            <!--
+                THE ONLY CHANGE IS HERE:
+                The `:min="getMinDate()"` attribute has been removed to allow selecting past dates.
+            -->
+            <input type="date" x-model="selectedDate" :max="getMaxDate()" @change="onDateChange($event)"
+                class="date-picker-input w-full" id="deliveryDate" />
         </div>
 
         <!-- Karta informacji o dacie -->
@@ -40,7 +44,7 @@
             </div>
         </div>
 
-        <!-- Szybka nawigacja po dacie -->
+        <!-- Szybka nawigacja po dacie  -->
         <div class="date-navigation">
             <button @click="selectedDate = getTodayDate(); setSelectedDate(selectedDate);"
                 :class="selectedDate === getTodayDate() ? 'bg-blue-100 border-blue-300 text-blue-700' :

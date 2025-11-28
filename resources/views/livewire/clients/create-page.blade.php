@@ -51,7 +51,7 @@
 
                     <x-forms.field class="md:col-span-2" label="{{ __('Notes') }}" name="notes"
                         help="{{ __('Optional - Additional notes about the client') }}">
-                        <x-forms.textarea name="notes" wire:model="notes" placeholder="{{ __('Enter any additional notes...') }}"
+                        <x-forms.textarea name="notes" wire:model="remarks" placeholder="{{ __('Enter any additional notes...') }}"
                             rows="3" />
                     </x-forms.field>
                 </div>

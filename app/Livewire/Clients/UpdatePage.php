@@ -17,7 +17,7 @@ class UpdatePage extends Component
     public $street_number = '';
     public $city = '';
     public $postal_code = '';
-    public $notes = '';
+    public $remarks = '';
 
     protected ClientService $clientService;
 
@@ -50,7 +50,7 @@ class UpdatePage extends Component
             'street_number' => 'required|string|max:20',
             'city' => 'required|string|max:255',
             'postal_code' => 'required|string|max:20',
-            'notes' => 'nullable|string|max:1000',
+            'remarks' => 'nullable|string|max:1000',
         ];
     }
 
@@ -79,7 +79,7 @@ class UpdatePage extends Component
             'street_number' => $this->street_number,
             'city' => $this->city,
             'postal_code' => $this->postal_code,
-            'notes' => $this->notes ?: null,
+            'remarks' => $this->remarks ?: null,
         ];
 
         try {

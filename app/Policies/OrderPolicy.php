@@ -68,7 +68,7 @@ class OrderPolicy
 
     public function createCarpet(User $user, Order $order)
     {
-        return $user->isEmployee() && $user->id === $order->user_id;
+        return $user->isEmployee();
     }
 
     /**

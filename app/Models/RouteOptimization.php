@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class RouteOptimization extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'driver_id',
         'optimization_date',
@@ -27,7 +27,8 @@ class RouteOptimization extends Model
         'order_sequence' => 'array',
         'manual_modifications' => 'array',
         'is_manual_edit' => 'boolean',
-        'optimization_date' => 'date'
+        'optimization_date' => 'date',
+        'requires_optimization' => 'boolean'
     ];
 
     public function driver()

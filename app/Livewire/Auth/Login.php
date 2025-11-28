@@ -3,6 +3,7 @@
 namespace App\Livewire\Auth;
 
 use App\ActionService\AuthService;
+use App\Exceptions\AccountDeactivatedException;
 use App\Traits\DispatchFlashMessage;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -60,26 +61,24 @@ class Login extends Component
 
             $user = $this->authService->authenticateUser($credentials);
 
-            if (!$user->isActive()) {
-                $this->dispatchFlashMessage('error', __('Your account has been deactivated.'));
-
-                return;
-            } elseif ($user) {
-                $token = $this->authService->generateToken($user);
-                session(['api_token' => $token]);
-
-                if ($this->remember) {
-                    Auth::login($user, true);
-                }
-
-                $this->dispatchFlashMessage('success', 'Zalogowano pomyślnie! Przekierowywanie...');
-
-                $this->dispatch('user-logged-in', $user->toArray());
-
-                return $this->redirectIntended('/', false);
-            } else {
+            if (!$user) {
                 $this->dispatchFlashMessage('error', 'Nieprawidłowe dane logowania');
+                return;
             }
+
+            $token = $this->authService->generateToken($user);
+            session(['api_token' => $token]);
+
+            if ($this->remember) {
+                Auth::login($user, true);
+            }
+
+            $this->dispatchFlashMessage('success', 'Zalogowano pomyślnie! Przekierowywanie...');
+            $this->dispatch('user-logged-in', $user->toArray());
+
+            return $this->redirectIntended('/', false);
+        } catch (AccountDeactivatedException $e) {
+            $this->dispatchFlashMessage('error', __('Your account has been deactivated.'));
         } catch (\Exception $e) {
             $this->dispatchFlashMessage('error', 'Wystąpił błąd podczas logowania. Proszę spróbować ponownie.');
         }

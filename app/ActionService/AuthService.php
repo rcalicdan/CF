@@ -4,6 +4,7 @@ namespace App\ActionService;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use App\Exceptions\AccountDeactivatedException;
 
 /**
  * Class AuthService
@@ -34,21 +35,23 @@ class AuthService
         return $user->createToken('Personal Access Token')->accessToken;
     }
 
-    /**
-     * Authenticate a user based on their credentials
-     *
-     * @param  array  $userCredentials  User login credentials (email, password)
-     * @return User|null The authenticated user or null if credentials are invalid
-     */
     public function authenticateUser(array $userCredentials): ?User
     {
-        if (Auth::attempt($userCredentials)) {
-            $user = Auth::user(); // Get the authenticated user
+        $user = User::where('email', $userCredentials['email'])->first();
 
-            return $user; // Return the user object
+        if (!$user) {
+            return null;
         }
 
-        return null; // Return null if authentication fails
+        if (!$user->isActive()) {
+            throw new AccountDeactivatedException();
+        }
+        
+        if (Auth::attempt($userCredentials)) {
+            return Auth::user();
+        }
+
+        return null;
     }
 
     /**

@@ -2,6 +2,7 @@
     <x-flash-session />
     <x-partials.dashboard.content-header :title="__('Orders Management by Driver')" />
     <div class="bg-white rounded-lg shadow-md border border-gray-200 mb-6 overflow-visible">
+
         <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
@@ -10,6 +11,35 @@
                     </div>
                     <div>
                         <h3 class="text-base font-semibold text-white">{{ __('Filter Orders') }}</h3>
+
+                        <p class="text-sm text-blue-100 font-medium mt-0.5 flex items-center">
+                            <i class="fas fa-calendar-alt mr-1.5 text-xs"></i>
+                            <span>
+                                @if ($selectedDate)
+                                    @php
+                                        $carbonDate = \Carbon\Carbon::parse($selectedDate);
+                                        if ($carbonDate->isToday()) {
+                                            echo __('Today');
+                                        } elseif ($carbonDate->isYesterday()) {
+                                            echo __('Yesterday');
+                                        } else {
+                                            echo $carbonDate->locale('pl')->isoFormat('D MMMM YYYY');
+                                        }
+                                    @endphp
+                                @elseif($dateFrom && $dateTo)
+                                    {{ \Carbon\Carbon::parse($dateFrom)->locale('pl')->isoFormat('D MMM') }} →
+                                    {{ \Carbon\Carbon::parse($dateTo)->locale('pl')->isoFormat('D MMM') }}
+                                @elseif($dateFrom)
+                                    {{ __('From:') }}
+                                    {{ \Carbon\Carbon::parse($dateFrom)->locale('pl')->isoFormat('D MMM') }}
+                                @elseif($dateTo)
+                                    {{ __('To:') }}
+                                    {{ \Carbon\Carbon::parse($dateTo)->locale('pl')->isoFormat('D MMM') }}
+                                @else
+                                    {{ __('All Dates') }}
+                                @endif
+                            </span>
+                        </p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2">
@@ -23,6 +53,7 @@
                 </div>
             </div>
         </div>
+
         <div class="p-4 overflow-visible">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3 overflow-visible">
                 <div class="space-y-1 relative overflow-visible lg:col-span-2" x-data="{
@@ -208,7 +239,7 @@
                             @if ($driverStatus)
                                 <span
                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                    {{ ucfirst($driverStatus) }} {{__('Driver')}}
+                                    {{ ucfirst($driverStatus) }} {{ __('Driver') }}
                                     <button wire:click="$set('driverStatus', '')"
                                         class="ml-1 hover:bg-yellow-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>
@@ -228,7 +259,8 @@
                             @if ($dateFrom)
                                 <span
                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                    {{ __('From:') }} {{ \Carbon\Carbon::parse($dateFrom)->locale('pl')->isoFormat('D MMM') }}
+                                    {{ __('From:') }}
+                                    {{ \Carbon\Carbon::parse($dateFrom)->locale('pl')->isoFormat('D MMM') }}
                                     <button wire:click="$set('dateFrom', '')"
                                         class="ml-1 hover:bg-purple-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>
@@ -238,7 +270,8 @@
                             @if ($dateTo)
                                 <span
                                     class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                                    {{ __('To:') }} {{ \Carbon\Carbon::parse($dateTo)->locale('pl')->isoFormat('D MMM') }}
+                                    {{ __('To:') }}
+                                    {{ \Carbon\Carbon::parse($dateTo)->locale('pl')->isoFormat('D MMM') }}
                                     <button wire:click="$set('dateTo', '')"
                                         class="ml-1 hover:bg-orange-200 rounded-full">
                                         <i class="fas fa-times text-xs"></i>

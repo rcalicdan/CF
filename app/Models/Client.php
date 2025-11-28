@@ -22,6 +22,7 @@ class Client extends Model
         'phone_number',
         'latitude',
         'longitude',
+        'remarks',
     ];
 
     protected $casts = [

@@ -460,8 +460,8 @@ function routeOptimizer() {
         },
 
         async saveManualChanges() {
-            if (!this.optimizationResult) {
-                this.showNotification('Najpierw zoptymalizuj trasę przed zapisaniem zmian', 'error');
+            if (this.orders.length === 0) {
+                this.showNotification('Brak zamówień do zapisania', 'error');
                 return;
             }
 
@@ -472,21 +472,46 @@ function routeOptimizer() {
             this.loading = true;
 
             try {
+                const optimizationResult = this.optimizationResult || {
+                    total_distance: null,
+                    total_time: null,
+                    savings: null,
+                    route_steps: this.orders.map((order, index) => ({
+                        step: index + 1,
+                        location: order.address,
+                        description: `Dostawa do ${order.client_name}`,
+                        order_id: order.id,
+                        client_name: order.client_name,
+                        amount: order.total_amount,
+                        priority: order.priority,
+                        coordinates: order.coordinates,
+                        isCustom: order.isCustom || false
+                    })),
+                    driver: this.selectedDriver,
+                    optimization_timestamp: new Date().toISOString(),
+                    total_orders: this.orders.length,
+                    total_value: this.orders.reduce((sum, order) => sum + order.total_amount, 0),
+                    is_manual_only: !this.optimizationResult,
+                    geometry: null
+                };
+
                 const saveData = {
                     driver_id: this.selectedDriver.id,
                     optimization_date: this.selectedDate,
-                    optimization_result: this.optimizationResult,
+                    optimization_result: optimizationResult,
                     order_sequence: this.orders.map((order, index) => ({
                         order_id: order.id,
                         sequence: index + 1
                     })),
-                    total_distance: this.optimizationResult.total_distance || null,
-                    total_time: this.optimizationResult.total_time || null,
+                    total_distance: optimizationResult.total_distance,
+                    total_time: optimizationResult.total_time,
                     is_manual_edit: true,
                     manual_modifications: {
                         edit_mode_used: this.manualEditMode,
                         custom_stops_added: this.orders.filter(o => o.isCustom).length,
-                        saved_at: new Date().toISOString()
+                        saved_at: new Date().toISOString(),
+                        is_manual_only: !this.optimizationResult,
+                        requires_optimization: !this.optimizationResult
                     }
                 };
 
@@ -495,7 +520,11 @@ function routeOptimizer() {
                     body: JSON.stringify(saveData)
                 });
 
-                this.showNotification('Trasa zapisana pomyślnie!', 'success');
+                const message = this.optimizationResult
+                    ? 'Trasa zapisana pomyślnie!'
+                    : 'Ręczna trasa zapisana! Możesz ją zoptymalizować później.';
+
+                this.showNotification(message, 'success');
 
                 this.manualEditMode = false;
                 if (window.mapManager) {

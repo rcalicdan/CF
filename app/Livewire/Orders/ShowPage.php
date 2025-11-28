@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderCarpet;
 use App\Traits\Livewire\WithDataTable;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -33,7 +34,7 @@ class ShowPage extends Component
             'driver.user',
             'orderPayment',
             'orderDeliveryConfirmation',
-            'orderHistories.user' 
+            'orderHistories.user'
         ]);
         $this->authorize('view', $order);
     }
@@ -100,14 +101,40 @@ class ShowPage extends Component
 
     private function buildQuery()
     {
-        $query = OrderCarpet::with([
-            'services',
-            'orderCarpetPhotos.user',
-            'complaint'
-        ])->where('order_id', $this->order->id);
+        $query = OrderCarpet::query()
+            ->where('order_id', $this->order->id)
+            ->with([
+                'services',
+                'orderCarpetPhotos.user',
+                'complaint'
+            ]);
 
-        $dataTable = $this->getDataTableConfig();
-        $this->applySearchAndSort($query, ['carpet_type', 'status'], $dataTable);
+        if (!empty($this->search)) {
+            $searchTerm = '%' . $this->search . '%';
+            $query->where('carpet_type', 'like', $searchTerm);
+        }
+
+        if (!empty($this->sortColumn)) {
+            switch ($this->sortColumn) {
+                case 'total_price':
+                    $query->select('order_carpets.*', DB::raw('SUM(carpet_services.total_price) as calculated_total_price'))
+                        ->leftJoin('carpet_services', 'order_carpets.id', '=', 'carpet_services.order_carpet_id')
+                        ->groupBy('order_carpets.id')
+                        ->orderBy('calculated_total_price', $this->sortDirection);
+                    break;
+
+                case 'services_count':
+                    $query->select('order_carpets.*', DB::raw('COUNT(carpet_services.id) as calculated_services_count'))
+                        ->leftJoin('carpet_services', 'order_carpets.id', '=', 'carpet_services.order_carpet_id')
+                        ->groupBy('order_carpets.id')
+                        ->orderBy('calculated_services_count', $this->sortDirection);
+                    break;
+
+                default:
+                    $query->orderBy($this->sortColumn, $this->sortDirection);
+                    break;
+            }
+        }
 
         return $query;
     }

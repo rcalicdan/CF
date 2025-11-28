@@ -41,7 +41,6 @@ class RouteDataService
         return Order::with(['client', 'driver.user'])
             ->where('assigned_driver_id', $driverId)
             ->whereDate('schedule_date', $date)
-            // ->whereIn('status', ['completed', 'undelivered'])
             ->get()
             ->map(function ($order) {
                 return $this->transformOrderForRouteData($order);
@@ -50,25 +49,19 @@ class RouteDataService
 
 
     /**
-     * Get all orders within a date range
+     * Get all orders within a date range. Now supports past, present, and future dates.
      */
     public function getAllOrdersForDateRange(?string $startDate = null, ?string $endDate = null): Collection
     {
         $query = Order::with(['client', 'driver.user'])
-            ->whereNotNull('assigned_driver_id')
-            // ->whereIn('status', ['completed', 'undelivered'])
-        ;
+            ->whereNotNull('assigned_driver_id');
 
         if ($startDate) {
             $query->whereDate('schedule_date', '>=', $startDate);
-        } else {
-            $query->whereDate('schedule_date', '>=', Carbon::today());
         }
 
         if ($endDate) {
             $query->whereDate('schedule_date', '<=', $endDate);
-        } else {
-            $query->whereDate('schedule_date', '<=', Carbon::now()->addDays(30));
         }
 
         return $query->orderBy('schedule_date')
@@ -84,6 +77,8 @@ class RouteDataService
      */
     public function saveRouteOptimization(array $data): RouteOptimization
     {
+        $requiresOptimization = $data['manual_modifications']['requires_optimization'] ?? false;
+
         return RouteOptimization::updateOrCreate(
             [
                 'driver_id' => $data['driver_id'],
@@ -97,7 +92,8 @@ class RouteDataService
                 'estimated_fuel_cost' => $data['estimated_fuel_cost'] ?? null,
                 'carbon_footprint' => $data['carbon_footprint'] ?? null,
                 'is_manual_edit' => $data['is_manual_edit'] ?? false,
-                'manual_modifications' => $data['manual_modifications'] ?? null
+                'manual_modifications' => $data['manual_modifications'] ?? null,
+                'requires_optimization' => $requiresOptimization
             ]
         );
     }

@@ -40,8 +40,6 @@ class DriverTable extends Component
 
     public function mount()
     {
-        $this->selectedDate = now()->format('Y-m-d');
-
         if (Auth::user()->isDriver()) {
             $this->selectedDriverId = Auth::user()->driver->id;
             $this->selectedDriverName = Auth::user()->driver->user->full_name;
@@ -181,16 +179,18 @@ class DriverTable extends Component
     private function buildQuery()
     {
         $user = Auth::user();
-        $query = Order::with([
-            'priceList',
-            'client',
-            'driver.user',
-            'orderCarpets.orderCarpetPhotos.user',
-            'orderCarpets.complaint',
-            'orderCarpets.services.priceLists',
-            'orderDeliveryConfirmation',
-            'orderPayment',
-        ]);
+        $query = Order::query()
+            ->select('orders.*')
+            ->with([
+                'priceList',
+                'client',
+                'driver.user',
+                'orderCarpets.orderCarpetPhotos.user',
+                'orderCarpets.complaint',
+                'orderCarpets.services.priceLists',
+                'orderDeliveryConfirmation',
+                'orderPayment',
+            ]);
 
         if ($this->selectedDriverId) {
             $query->where('assigned_driver_id', $this->selectedDriverId);
@@ -222,8 +222,47 @@ class DriverTable extends Component
             $query->where('assigned_driver_id', $user->driver->id);
         }
 
-        $dataTable = $this->getDataTableConfig();
-        $this->applySearchAndSort($query, ['id', 'status'], $dataTable);
+        if (!empty($this->search)) {
+            $searchTerm = '%' . $this->search . '%';
+            $query->where(function ($subQuery) use ($searchTerm) {
+                $subQuery->where('orders.id', 'like', $searchTerm)
+                    ->orWhereHas('client', function ($q) use ($searchTerm) {
+                        $q->where('first_name', 'ilike', $searchTerm)
+                            ->orWhere('last_name', 'ilike', $searchTerm)
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
+                    })
+                    ->orWhereHas('driver.user', function ($q) use ($searchTerm) {
+                        $q->where('first_name', 'ilike', $searchTerm)
+                            ->orWhere('last_name', 'ilike', $searchTerm)
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
+                    });
+            });
+        }
+
+        if (!empty($this->sortColumn)) {
+            switch ($this->sortColumn) {
+                case 'client_name':
+                    $query->leftJoin('clients', 'orders.client_id', '=', 'clients.id')
+                        ->orderBy('clients.first_name', $this->sortDirection)
+                        ->orderBy('clients.last_name', $this->sortDirection);
+                    break;
+
+                case 'driver_name':
+                    $query->leftJoin('drivers', 'orders.assigned_driver_id', '=', 'drivers.id')
+                        ->leftJoin('users', 'drivers.user_id', '=', 'users.id')
+                        ->orderBy('users.first_name', $this->sortDirection)
+                        ->orderBy('users.last_name', $this->sortDirection);
+                    break;
+
+                case 'status_label':
+                    $query->orderBy('status', $this->sortDirection);
+                    break;
+
+                default:
+                    $query->orderBy($this->sortColumn, $this->sortDirection);
+                    break;
+            }
+        }
 
         return $query;
     }
