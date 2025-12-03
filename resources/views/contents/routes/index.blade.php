@@ -1,6 +1,8 @@
 <x-layouts.app>
     <div x-data="routeOptimizer()" x-cloak class="min-h-screen">
         <div class="w-full max-w-full">
+            @include('contents.routes.partials.reoptimization-banner')
+            
             <div class="grid grid-cols-1 xl:grid-cols-4 gap-4 lg:gap-6">
                 <!-- Left Column -->
                 <div class="xl:col-span-1 space-y-4 lg:space-y-6">
