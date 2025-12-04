@@ -55,6 +55,23 @@ class CreatePage extends Component
         ];
     }
 
+    public function messages()
+    {
+        return [
+            'client_id.required' => 'Please select a client.',
+            'client_id.exists' => 'The selected client is invalid.',
+            'assigned_driver_id.exists' => 'The selected driver is invalid.',
+            'schedule_date.date' => 'Please provide a valid schedule date.',
+            'schedule_date.after_or_equal' => 'Schedule date must be today or a future date.',
+            'schedule_date.date_format' => 'Schedule date format is invalid.',
+            'price_list_id.required' => 'Please select a price list.',
+            'price_list_id.exists' => 'The selected price list is invalid.',
+            'status.required' => 'Please select an order status.',
+            'status.in' => 'The selected status is invalid.',
+            'is_complaint.boolean' => 'Complaint status must be yes or no.',
+        ];
+    }
+
     public function updatedClientSearch()
     {
         $this->showClientsDropdown = !empty($this->clientSearch);

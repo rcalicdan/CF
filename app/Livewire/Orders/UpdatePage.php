@@ -83,6 +83,23 @@ class UpdatePage extends Component
         ];
     }
 
+    public function messages()
+    {
+        return [
+            'client_id.required' => 'Proszę wybrać klienta.',
+            'client_id.exists' => 'Wybrany klient jest nieprawidłowy.',
+            'assigned_driver_id.exists' => 'Wybrany kierowca jest nieprawidłowy.',
+            'schedule_date.date' => 'Proszę podać prawidłową datę realizacji.',
+            'schedule_date.after_or_equal' => 'Data realizacji musi być dzisiejsza lub późniejsza.',
+            'schedule_date.date_format' => 'Format daty realizacji jest nieprawidłowy.',
+            'price_list_id.required' => 'Proszę wybrać cennik.',
+            'price_list_id.exists' => 'Wybrany cennik jest nieprawidłowy.',
+            'status.required' => 'Proszę wybrać status zamówienia.',
+            'status.in' => 'Wybrany status jest nieprawidłowy.',
+            'is_complaint.boolean' => 'Status reklamacji musi być oznaczony jako tak lub nie.',
+        ];
+    }
+
     public function updatedClientSearch()
     {
         $this->showClientsDropdown = !empty($this->clientSearch);
@@ -204,8 +221,8 @@ class UpdatePage extends Component
     public function getFilteredDrivers()
     {
         $query = Driver::with('user:id,first_name,last_name')
-            ->active(); 
-            
+            ->active();
+
         if (!empty($this->driverSearch)) {
             $query->whereHas('user', function ($q) {
                 $q->where('first_name', 'like', '%' . $this->driverSearch . '%')
