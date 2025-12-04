@@ -3,7 +3,6 @@
     <x-partials.dashboard.content-header :title="__('Zarządzanie zamówieniami')" />
 
     <div class="mb-4">
-        {{-- Filter Toggle Header --}}
         <div class="flex items-center justify-between mb-3">
             <button wire:click="toggleAdvancedFilters" type="button"
                 class="group inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg text-xs font-semibold text-blue-700 hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow">
@@ -34,14 +33,29 @@
             @endif
         </div>
 
-        {{-- Filters Panel --}}
         <div
             class="transition-all duration-300 ease-in-out {{ $showAdvancedFilters ? 'opacity-100 max-h-[600px]' : 'opacity-0 max-h-0 overflow-hidden' }}">
             <div
                 class="bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl shadow-md p-4 space-y-3">
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {{-- Creation Date Filter --}}
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div>
+                        <label for="dateType" class="flex items-center text-xs font-semibold text-gray-700 mb-1">
+                            <svg class="w-3 h-3 mr-1 text-purple-500" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            {{ __('Typ daty') }}
+                        </label>
+                        <select wire:model.live="dateType" id="dateType"
+                            class="block w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg shadow-sm hover:border-purple-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-medium text-gray-700 transition-all duration-200">
+                            <option value="created_at">{{ __('Data utworzenia') }}</option>
+                            <option value="schedule_date">{{ __('Data zaplanowana') }}</option>
+                        </select>
+                    </div>
+
+                    {{-- Date Filter --}}
                     <div>
                         <label for="dateFilter" class="flex items-center text-xs font-semibold text-gray-700 mb-1">
                             <svg class="w-3 h-3 mr-1 text-blue-500" fill="none" stroke="currentColor"
@@ -49,35 +63,10 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            {{ __('Data utworzenia') }}
+                            {{ __('Okres czasu') }}
                         </label>
                         <select wire:model.live="dateFilter" id="dateFilter"
                             class="block w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium text-gray-700 transition-all duration-200">
-                            <option value="">{{ __('Cały czas') }}</option>
-                            <option value="today">{{ __('Dzisiaj') }}</option>
-                            <option value="yesterday">{{ __('Wczoraj') }}</option>
-                            <option value="last_7_days">{{ __('Ostatnie 7 dni') }}</option>
-                            <option value="last_30_days">{{ __('Ostatnie 30 dni') }}</option>
-                            <option value="this_month">{{ __('Ten miesiąc') }}</option>
-                            <option value="last_month">{{ __('Poprzedni miesiąc') }}</option>
-                            <option value="this_year">{{ __('Ten rok') }}</option>
-                            <option value="custom">{{ __('Zakres niestandardowy') }}</option>
-                        </select>
-                    </div>
-
-                    {{-- Schedule Date Filter --}}
-                    <div>
-                        <label for="scheduleDateFilter"
-                            class="flex items-center text-xs font-semibold text-gray-700 mb-1">
-                            <svg class="w-3 h-3 mr-1 text-purple-500" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {{ __('Data realizacji') }}
-                        </label>
-                        <select wire:model.live="scheduleDateFilter" id="scheduleDateFilter"
-                            class="block w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg shadow-sm hover:border-purple-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-medium text-gray-700 transition-all duration-200">
                             <option value="">{{ __('Cały czas') }}</option>
                             <option value="today">{{ __('Dzisiaj') }}</option>
                             <option value="yesterday">{{ __('Wczoraj') }}</option>
@@ -110,10 +99,8 @@
                             @endforeach
                         </select>
                     </div>
-                </div>
 
-                <div class="grid grid-cols-1 gap-3 mt-3">
-                    {{-- Complaint Status Filter (full width) --}}
+                    {{-- Complaint Status Filter --}}
                     <div>
                         <label for="complaintStatus" class="flex items-center text-xs font-semibold text-gray-700 mb-1">
                             <svg class="w-3 h-3 mr-1 text-yellow-500" fill="none" stroke="currentColor"
@@ -132,95 +119,86 @@
                     </div>
                 </div>
 
-                {{-- Custom Date Ranges --}}
-                @if ($dateFilter === 'custom' || $scheduleDateFilter === 'custom')
-                    <div class="animate-fadeIn mt-3">
-                        @if ($dateFilter === 'custom')
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                                <div class="flex items-center space-x-1.5 mb-2">
-                                    <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    <span
-                                        class="text-xs font-bold text-blue-800">{{ __('Zakres dat utworzenia') }}</span>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div>
-                                        <label for="customStartDate"
-                                            class="block text-xs font-medium text-gray-700 mb-1">
-                                            {{ __('Data rozpoczęcia') }}
-                                        </label>
-                                        <input type="date" wire:model.live="customStartDate" id="customStartDate"
-                                            class="block w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
-                                    </div>
-                                    <div>
-                                        <label for="customEndDate"
-                                            class="block text-xs font-medium text-gray-700 mb-1">
-                                            {{ __('Data zakończenia') }}
-                                        </label>
-                                        <input type="date" wire:model.live="customEndDate" id="customEndDate"
-                                            class="block w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
-                                    </div>
-                                </div>
+                @if ($dateFilter === 'custom')
+                    <div class="animate-fadeIn">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div class="flex items-center space-x-1.5 mb-2">
+                                <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span
+                                    class="text-xs font-bold text-blue-800">{{ __('Zakres dat niestandardowych') }}</span>
                             </div>
-                        @endif
 
-                        @if ($scheduleDateFilter === 'custom')
-                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                                <div class="flex items-center space-x-1.5 mb-2">
-                                    <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span
-                                        class="text-xs font-bold text-purple-800">{{ __('Zakres dat realizacji') }}</span>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label for="customStartDate" class="block text-xs font-medium text-gray-700 mb-1">
+                                        {{ __('Data początkowa') }}
+                                    </label>
+                                    <input type="date" id="customStartDate" wire:model.live="customStartDate"
+                                        class="block w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                    <div>
-                                        <label for="customScheduleStartDate"
-                                            class="block text-xs font-medium text-gray-700 mb-1">
-                                            {{ __('Data rozpoczęcia') }}
-                                        </label>
-                                        <input type="date" wire:model.live="customScheduleStartDate"
-                                            id="customScheduleStartDate"
-                                            class="block w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg shadow-sm hover:border-purple-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
-                                    </div>
-                                    <div>
-                                        <label for="customScheduleEndDate"
-                                            class="block text-xs font-medium text-gray-700 mb-1">
-                                            {{ __('Data zakończenia') }}
-                                        </label>
-                                        <input type="date" wire:model.live="customScheduleEndDate"
-                                            id="customScheduleEndDate"
-                                            class="block w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg shadow-sm hover:border-purple-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
-                                    </div>
+
+                                <div>
+                                    <label for="customEndDate" class="block text-xs font-medium text-gray-700 mb-1">
+                                        {{ __('Data końcowa') }}
+                                    </label>
+                                    <input type="date" id="customEndDate" wire:model.live="customEndDate"
+                                        class="block w-full px-2.5 py-1.5 text-xs bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200">
                                 </div>
                             </div>
-                        @endif
+
+                            @if ($customStartDate || $customEndDate)
+                                <div class="mt-3 p-2 bg-white rounded border border-blue-200">
+                                    <div class="flex items-center">
+                                        <div class="text-xs text-gray-600">
+                                            @if ($customStartDate && $customEndDate)
+                                                <span class="font-medium">{{ __('Wybrany zakres:') }}</span>
+                                                <span
+                                                    class="text-blue-700 font-semibold">{{ \Carbon\Carbon::parse($customStartDate)->format('d/m/Y') }}</span>
+                                                <span class="mx-1">→</span>
+                                                <span
+                                                    class="text-blue-700 font-semibold">{{ \Carbon\Carbon::parse($customEndDate)->format('d/m/Y') }}</span>
+                                                <span
+                                                    class="ml-2 text-gray-500">({{ \Carbon\Carbon::parse($customStartDate)->diffInDays(\Carbon\Carbon::parse($customEndDate)) + 1 }}
+                                                    {{ __('dni') }})</span>
+                                            @elseif($customStartDate)
+                                                <span class="font-medium">{{ __('Od:') }}</span>
+                                                <span
+                                                    class="text-blue-700 font-semibold">{{ \Carbon\Carbon::parse($customStartDate)->format('d/m/Y') }}</span>
+                                            @elseif($customEndDate)
+                                                <span class="font-medium">{{ __('Do:') }}</span>
+                                                <span
+                                                    class="text-blue-700 font-semibold">{{ \Carbon\Carbon::parse($customEndDate)->format('d/m/Y') }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 @endif
 
-                {{-- Active Filters Display --}}
                 @if ($this->activeFiltersCount > 0)
                     <div class="pt-2 border-t border-gray-200">
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="text-xs font-semibold text-gray-600">{{ __('Aktywne:') }}</span>
 
-                            @if ($scheduleDateFilter)
+                            @if ($dateFilter)
                                 <span
-                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-sm">
+                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm">
                                     <svg class="w-2.5 h-2.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd"
-                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
                                             clip-rule="evenodd" />
                                     </svg>
-                                    {{ __('Realizacja:') }}
-                                    @if ($scheduleDateFilter === 'custom' && ($customScheduleStartDate || $customScheduleEndDate))
-                                        {{ $customScheduleStartDate ?: '...' }} →
-                                        {{ $customScheduleEndDate ?: '...' }}
+                                    {{ $dateType === 'schedule_date' ? __('Zaplanowane') : __('Utworzone') }}:
+                                    @if ($dateFilter === 'custom' && ($customStartDate || $customEndDate))
+                                        {{ $customStartDate ? \Carbon\Carbon::parse($customStartDate)->format('d/m/Y') : '...' }}
+                                        →
+                                        {{ $customEndDate ? \Carbon\Carbon::parse($customEndDate)->format('d/m/Y') : '...' }}
                                     @else
                                         {{ collect([
                                             'today' => __('Dzisiaj'),
@@ -230,7 +208,7 @@
                                             'this_month' => __('Ten miesiąc'),
                                             'last_month' => __('Poprzedni miesiąc'),
                                             'this_year' => __('Ten rok'),
-                                        ])->get($scheduleDateFilter) }}
+                                        ])->get($dateFilter) }}
                                     @endif
                                 </span>
                             @endif
@@ -271,22 +249,4 @@
         :bulkDeleteAction="$dataTable['bulkDeleteAction']" :selectedRowsCount="$selectedRowsCount" :selectAll="$selectAll" :selectPage="$selectPage" :selectedRows="$selectedRows" />
 </div>
 
-@push('styles')
-    <style>
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-fadeIn {
-            animation: fadeIn 0.3s ease-out;
-        }
-    </style>
-@endpush
+@include('livewire.orders.assets')

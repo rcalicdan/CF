@@ -22,11 +22,9 @@ class Table extends Component
     public $complaintStatus = null;
     public $statusFilter = '';
     public $dateFilter = '';
+    public $dateType = 'created_at'; // New property for date type selection
     public $customStartDate = '';
     public $customEndDate = '';
-    public $scheduleDateFilter = '';
-    public $customScheduleStartDate = '';
-    public $customScheduleEndDate = '';
     public $showAdvancedFilters = false;
 
     protected function queryString()
@@ -38,12 +36,10 @@ class Table extends Component
             'perPage' => ['except' => 10],
             'statusFilter' => ['except' => ''],
             'dateFilter' => ['except' => ''],
-            'scheduleDateFilter' => ['except' => ''],
+            'dateType' => ['except' => 'created_at'], // Add to query string
             'complaintStatus' => ['except' => ''],
             'customStartDate' => ['except' => ''],
             'customEndDate' => ['except' => ''],
-            'customScheduleStartDate' => ['except' => ''],
-            'customScheduleEndDate' => ['except' => ''],
         ];
     }
 
@@ -59,8 +55,7 @@ class Table extends Component
     {
         $this->complaintStatus = request()->query('complaintStatus');
 
-        if ($this->statusFilter || $this->dateFilter || $this->scheduleDateFilter || $this->complaintStatus || 
-            $this->customStartDate || $this->customEndDate || $this->customScheduleStartDate || $this->customScheduleEndDate) {
+        if ($this->statusFilter || $this->dateFilter || $this->complaintStatus || $this->customStartDate || $this->customEndDate) {
             $this->showAdvancedFilters = true;
         }
     }
@@ -79,12 +74,8 @@ class Table extends Component
         $this->resetPage();
     }
 
-    public function updatedScheduleDateFilter()
+    public function updatedDateType()
     {
-        if ($this->scheduleDateFilter !== 'custom') {
-            $this->customScheduleStartDate = '';
-            $this->customScheduleEndDate = '';
-        }
         $this->resetPage();
     }
 
@@ -108,26 +99,14 @@ class Table extends Component
         $this->resetPage();
     }
 
-    public function updatedCustomScheduleStartDate()
-    {
-        $this->resetPage();
-    }
-
-    public function updatedCustomScheduleEndDate()
-    {
-        $this->resetPage();
-    }
-
     public function clearFilters()
     {
         $this->statusFilter = '';
         $this->dateFilter = '';
-        $this->scheduleDateFilter = '';
+        $this->dateType = 'created_at';
         $this->complaintStatus = null;
         $this->customStartDate = '';
         $this->customEndDate = '';
-        $this->customScheduleStartDate = '';
-        $this->customScheduleEndDate = '';
         $this->resetPage();
     }
 
@@ -300,59 +279,51 @@ class Table extends Component
 
     private function applyDateFilter($query)
     {
-        // Apply creation date filter
-        if (!empty($this->dateFilter)) {
-            $this->applySpecificDateFilter($query, 'created_at', $this->dateFilter, $this->customStartDate, $this->customEndDate);
+        if (empty($this->dateFilter)) {
+            return;
         }
-        
-        // Apply schedule date filter
-        if (!empty($this->scheduleDateFilter)) {
-            $this->applySpecificDateFilter($query, 'schedule_date', $this->scheduleDateFilter, $this->customScheduleStartDate, $this->customScheduleEndDate);
-        }
-    }
 
-    private function applySpecificDateFilter($query, $column, $filter, $customStart, $customEnd)
-    {
         $now = Carbon::now();
+        $dateColumn = $this->dateType; // Use the selected date type (created_at or schedule_date)
 
-        switch ($filter) {
+        switch ($this->dateFilter) {
             case 'today':
-                $query->whereDate($column, $now->toDateString());
+                $query->whereDate($dateColumn, $now->toDateString());
                 break;
 
             case 'yesterday':
-                $query->whereDate($column, $now->copy()->subDay()->toDateString());
+                $query->whereDate($dateColumn, $now->subDay()->toDateString());
                 break;
 
             case 'last_7_days':
-                $query->whereDate($column, '>=', $now->copy()->subDays(7)->toDateString());
+                $query->whereDate($dateColumn, '>=', $now->subDays(7)->toDateString());
                 break;
 
             case 'last_30_days':
-                $query->whereDate($column, '>=', $now->copy()->subDays(30)->toDateString());
+                $query->whereDate($dateColumn, '>=', $now->subDays(30)->toDateString());
                 break;
 
             case 'this_month':
-                $query->whereMonth($column, $now->month)
-                    ->whereYear($column, $now->year);
+                $query->whereMonth($dateColumn, $now->month)
+                    ->whereYear($dateColumn, $now->year);
                 break;
 
             case 'last_month':
-                $lastMonth = $now->copy()->subMonth();
-                $query->whereMonth($column, $lastMonth->month)
-                    ->whereYear($column, $lastMonth->year);
+                $lastMonth = $now->subMonth();
+                $query->whereMonth($dateColumn, $lastMonth->month)
+                    ->whereYear($dateColumn, $lastMonth->year);
                 break;
 
             case 'this_year':
-                $query->whereYear($column, $now->year);
+                $query->whereYear($dateColumn, $now->year);
                 break;
 
             case 'custom':
-                if ($customStart) {
-                    $query->whereDate($column, '>=', $customStart);
+                if ($this->customStartDate) {
+                    $query->whereDate($dateColumn, '>=', $this->customStartDate);
                 }
-                if ($customEnd) {
-                    $query->whereDate($column, '<=', $customEnd);
+                if ($this->customEndDate) {
+                    $query->whereDate($dateColumn, '<=', $this->customEndDate);
                 }
                 break;
         }
@@ -379,7 +350,6 @@ class Table extends Component
         $count = 0;
         if ($this->statusFilter) $count++;
         if ($this->dateFilter) $count++;
-        if ($this->scheduleDateFilter) $count++;
         if ($this->complaintStatus) $count++;
         return $count;
     }
