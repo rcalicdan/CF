@@ -30,22 +30,22 @@ class OrderService
             $query->where('assigned_driver_id', $user->driver->id);
         }
 
-        $query->when(request('search'), function($q) {
-                $searchTerm = '%' . request('search') . '%';
-                return $q->where(function($query) use ($searchTerm) {
-                    $query->where('id', 'like', $searchTerm)
-                        ->orWhereHas('client', function($q) use ($searchTerm) {
-                            $q->where('first_name', 'ilike', $searchTerm)
-                                ->orWhere('last_name', 'ilike', $searchTerm)
-                                ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
-                        })
-                        ->orWhereHas('driver.user', function($q) use ($searchTerm) {
-                            $q->where('first_name', 'ilike', $searchTerm)
-                                ->orWhere('last_name', 'ilike', $searchTerm)
-                                ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
-                        });
-                });
-            })
+        $query->when(request('search'), function ($q) {
+            $searchTerm = '%' . request('search') . '%';
+            return $q->where(function ($query) use ($searchTerm) {
+                $query->where('id', 'like', $searchTerm)
+                    ->orWhereHas('client', function ($q) use ($searchTerm) {
+                        $q->where('first_name', 'ilike', $searchTerm)
+                            ->orWhere('last_name', 'ilike', $searchTerm)
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
+                    })
+                    ->orWhereHas('driver.user', function ($q) use ($searchTerm) {
+                        $q->where('first_name', 'ilike', $searchTerm)
+                            ->orWhere('last_name', 'ilike', $searchTerm)
+                            ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", [$searchTerm]);
+                    });
+            });
+        })
             ->when(request('order_id'), fn($q) => $q->where('id', request('order_id')))
             ->when(request('client_first_name'), fn($q) => $q->whereHas('client', fn($s) => $s->where('first_name', 'like', '%' . request('client_first_name') . '%')))
             ->when(request('client_last_name'), fn($q) => $q->whereHas('client', fn($s) => $s->where('last_name', 'like', '%' . request('client_last_name') . '%')))
@@ -198,12 +198,12 @@ class OrderService
     private function getUpdatedAttributes(Order $order, array $data): array
     {
         return [
-            'client_id' => $data['client_id'] ?? $order->client_id,
-            'assigned_driver_id' => $data['assigned_driver_id'] ?? $order->assigned_driver_id,
-            'schedule_date' => $data['schedule_date'] ?? $order->schedule_date,
-            'price_list_id' => $data['price_list_id'] ?? $order->price_list_id,
-            'status' => $data['status'] ?? $order->status,
-            'is_complaint' => $data['is_complaint'] ?? $order->is_complaint,
+            'client_id' => array_key_exists('client_id', $data) ? $data['client_id'] : $order->client_id,
+            'assigned_driver_id' => array_key_exists('assigned_driver_id', $data) ? $data['assigned_driver_id'] : $order->assigned_driver_id,
+            'schedule_date' => array_key_exists('schedule_date', $data) ? $data['schedule_date'] : $order->schedule_date,
+            'price_list_id' => array_key_exists('price_list_id', $data) ? $data['price_list_id'] : $order->price_list_id,
+            'status' => array_key_exists('status', $data) ? $data['status'] : $order->status,
+            'is_complaint' => array_key_exists('is_complaint', $data) ? $data['is_complaint'] : $order->is_complaint,
         ];
     }
 

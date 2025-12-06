@@ -43,6 +43,11 @@ class Table extends Component
                     'sort_columns' => ['first_name', 'last_name']
                 ],
                 [
+                    'key' => 'email',
+                    'label' => __('Email'),
+                    'sortable' => true
+                ],
+                [
                     'key' => 'phone_number',
                     'label' => __('Phone'),
                     'sortable' => true
@@ -50,8 +55,10 @@ class Table extends Component
                 [
                     'key' => 'full_address',
                     'label' => __('Address'),
-                    'sortable' => false,
-                    'accessor' => true
+                    'sortable' => true,
+                    'accessor' => true,
+                    'search_columns' => ['street_name', 'street_number', 'city', 'postal_code'],
+                    'sort_columns' => ['street_name', 'city']
                 ],
                 [
                     'key' => 'created_at',
@@ -79,7 +86,19 @@ class Table extends Component
         $query = Client::query();
         $dataTable = $this->getDataTableConfig();
 
-        return $this->applySearchAndSort($query, ['first_name', 'last_name', 'phone_number', 'street_name', 'city'], $dataTable);
+        // Define all searchable columns including address fields
+        $searchableColumns = [
+            'first_name', 
+            'last_name', 
+            'email',
+            'phone_number', 
+            'street_name', 
+            'street_number',
+            'city', 
+            'postal_code'
+        ];
+
+        return $this->applySearchAndSort($query, $searchableColumns, $dataTable);
     }
 
     public function getRowsProperty()

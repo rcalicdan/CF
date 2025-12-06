@@ -10,6 +10,7 @@ class CreatePage extends Component
 {
     public $first_name = '';
     public $last_name = '';
+    public $email = '';
     public $phone_number = '';
     public $street_name = '';
     public $street_number = '';
@@ -29,6 +30,7 @@ class CreatePage extends Component
         return [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
             'phone_number' => 'required|string|max:20',
             'street_name' => 'required|string|max:255',
             'street_number' => 'required|string|max:20',
@@ -43,6 +45,7 @@ class CreatePage extends Component
         return [
             'first_name' => 'first name',
             'last_name' => 'last name',
+            'email' => 'email',
             'phone_number' => 'phone number',
             'street_name' => 'street name',
             'street_number' => 'street number',
@@ -58,6 +61,7 @@ class CreatePage extends Component
         $data = [
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
+            'email' => $this->email ?: null,
             'phone_number' => $this->phone_number,
             'street_name' => $this->street_name,
             'street_number' => $this->street_number,

@@ -12,6 +12,9 @@
                     <x-forms.field label="{{ __('Last Name') }}" name="last_name" required>
                         <x-forms.input name="last_name" wire:model="last_name" placeholder="{{ __('Enter last name') }}" required />
                     </x-forms.field>
+                    <x-forms.field label="{{ __('Email') }}" name="email">
+                        <x-forms.input name="email" type="email" wire:model="email" placeholder="{{ __('Enter email address') }}" />
+                    </x-forms.field>
                     <x-forms.field label="{{ __('Phone Number') }}" name="phone_number" required>
                         <x-forms.input name="phone_number" wire:model="phone_number" placeholder="{{ __('Enter phone number') }}"
                             required />
@@ -27,7 +30,7 @@
                         <x-forms.input name="street_name" wire:model="street_name" placeholder="{{ __('Enter street name') }}"
                             required />
                     </x-forms.field>
-                                        <x-forms.field label="{{ __('Street Number') }}" name="street_number" required>
+                    <x-forms.field label="{{ __('Street Number') }}" name="street_number" required>
                         <x-forms.input name="street_number" wire:model="street_number" placeholder="{{ __('Enter street number') }}"
                             required />
                     </x-forms.field>
@@ -38,9 +41,9 @@
                         <x-forms.input name="postal_code" wire:model="postal_code" placeholder="{{ __('Enter postal code') }}"
                             required />
                     </x-forms.field>
-                    <x-forms.field class="md:col-span-2" label="{{ __('Notes') }}" name="notes"
+                    <x-forms.field class="md:col-span-2" label="{{ __('Notes') }}" name="remarks"
                         help="{{ __('Optional - Additional notes about the client') }}">
-                        <x-forms.textarea name="notes" wire:model="remarks" placeholder="{{ __('Enter any additional notes...') }}"
+                        <x-forms.textarea name="remarks" wire:model="remarks" placeholder="{{ __('Enter any additional notes...') }}"
                             rows="3" />
                     </x-forms.field>
                 </div>

@@ -16,6 +16,11 @@
                             :icon="'<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z\'></path>'" />
                     </x-forms.field>
 
+                    <x-forms.field label="{{ __('Email') }}" name="email">
+                        <x-forms.input name="email" type="email" wire:model="email" placeholder="{{ __('Enter email address') }}"
+                            :icon="'<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z\'></path>'" />
+                    </x-forms.field>
+
                     <x-forms.field label="{{ __('Phone Number') }}" name="phone_number" required>
                         <x-forms.input name="phone_number" wire:model="phone_number" placeholder="{{ __('Enter phone number') }}"
                             required :icon="'<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z\'></path>'" />
@@ -49,9 +54,9 @@
                             required :icon="'<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z\'></path>'" />
                     </x-forms.field>
 
-                    <x-forms.field class="md:col-span-2" label="{{ __('Notes') }}" name="notes"
+                    <x-forms.field class="md:col-span-2" label="{{ __('Notes') }}" name="remarks"
                         help="{{ __('Optional - Additional notes about the client') }}">
-                        <x-forms.textarea name="notes" wire:model="remarks" placeholder="{{ __('Enter any additional notes...') }}"
+                        <x-forms.textarea name="remarks" wire:model="remarks" placeholder="{{ __('Enter any additional notes...') }}"
                             rows="3" />
                     </x-forms.field>
                 </div>

@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Driver;
 use App\Models\Order;
 use App\Models\PriceList;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class CreatePage extends Component
@@ -27,6 +28,96 @@ class CreatePage extends Component
     public $selectedPriceList = null;
 
     protected OrderService $orderService;
+
+    public $showCreateClientModal = false;
+    public $newClient = [
+        'first_name' => '',
+        'last_name' => '',
+        'email' => '',
+        'phone_number' => '',
+        'street_name' => '',
+        'street_number' => '',
+        'postal_code' => '',
+        'city' => '',
+        'remarks' => '',
+    ];
+
+    public function openCreateClientModal()
+    {
+        $this->showCreateClientModal = true;
+        $this->resetNewClientForm();
+    }
+
+    public function closeCreateClientModal()
+    {
+        $this->showCreateClientModal = false;
+        $this->resetNewClientForm();
+    }
+
+    public function resetNewClientForm()
+    {
+        $this->newClient = [
+            'first_name' => '',
+            'last_name' => '',
+            'email' => '',
+            'phone_number' => '',
+            'street_name' => '',
+            'street_number' => '',
+            'postal_code' => '',
+            'city' => '',
+            'remarks' => '',
+        ];
+        $this->resetValidation([
+            'newClient.first_name',
+            'newClient.last_name',
+            'newClient.email',
+            'newClient.phone_number',
+            'newClient.street_name',
+            'newClient.street_number',
+            'newClient.postal_code',
+            'newClient.city',
+        ]);
+    }
+
+    public function createClient()
+    {
+        $this->validate([
+            'newClient.first_name' => 'required|string|max:255',
+            'newClient.last_name' => 'required|string|max:255',
+            'newClient.email' => 'nullable|email|max:255',
+            'newClient.phone_number' => 'nullable|string|max:20',
+            'newClient.street_name' => 'required|string|max:255',
+            'newClient.street_number' => 'required|string|max:20',
+            'newClient.postal_code' => 'required|string|max:10',
+            'newClient.city' => 'required|string|max:255',
+            'newClient.remarks' => 'nullable|string',
+        ], [
+            'newClient.first_name.required' => 'Podaj imię klienta.',
+            'newClient.last_name.required' => 'Podaj nazwisko klienta.',
+            'newClient.email.email' => 'Podaj poprawny adres email.',
+            'newClient.street_name.required' => 'Podaj nazwę ulicy.',
+            'newClient.street_number.required' => 'Podaj numer domu.',
+            'newClient.postal_code.required' => 'Podaj kod pocztowy.',
+            'newClient.city.required' => 'Podaj nazwę miasta.',
+        ]);
+
+        try {
+            $client = Client::create($this->newClient);
+
+            $this->showDriversDropdown = false;
+            $this->showPriceListsDropdown = false;
+            $this->showClientsDropdown = false;
+
+            $this->selectClient($client->id, $client->full_name);
+
+            $this->closeCreateClientModal();
+
+            session()->flash('client-created', 'Klient został pomyślnie dodany!');
+        } catch (\Exception $e) {
+            $this->addError('newClient', 'Nie udało się dodać klienta. Spróbuj ponownie.');
+            Log::error('Client creation failed', ['error' => $e->getMessage()]);
+        }
+    }
 
     public function boot(OrderService $orderService)
     {
@@ -58,17 +149,17 @@ class CreatePage extends Component
     public function messages()
     {
         return [
-            'client_id.required' => 'Please select a client.',
-            'client_id.exists' => 'The selected client is invalid.',
-            'assigned_driver_id.exists' => 'The selected driver is invalid.',
-            'schedule_date.date' => 'Please provide a valid schedule date.',
-            'schedule_date.after_or_equal' => 'Schedule date must be today or a future date.',
-            'schedule_date.date_format' => 'Schedule date format is invalid.',
-            'price_list_id.required' => 'Please select a price list.',
-            'price_list_id.exists' => 'The selected price list is invalid.',
-            'status.required' => 'Please select an order status.',
-            'status.in' => 'The selected status is invalid.',
-            'is_complaint.boolean' => 'Complaint status must be yes or no.',
+            'client_id.required' => 'Wybierz klienta z listy.',
+            'client_id.exists' => 'Wybrany klient nie istnieje w systemie.',
+            'assigned_driver_id.exists' => 'Wybrany kierowca nie istnieje w systemie.',
+            'schedule_date.date' => 'Podaj poprawną datę realizacji.',
+            'schedule_date.after_or_equal' => 'Data realizacji nie może być wcześniejsza niż dzisiaj.',
+            'schedule_date.date_format' => 'Format daty jest nieprawidłowy.',
+            'price_list_id.required' => 'Wybierz cennik z listy.',
+            'price_list_id.exists' => 'Wybrany cennik nie istnieje w systemie.',
+            'status.required' => 'Wybierz status zamówienia.',
+            'status.in' => 'Wybrany status jest nieprawidłowy.',
+            'is_complaint.boolean' => 'Zaznacz czy to jest reklamacja.',
         ];
     }
 
