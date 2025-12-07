@@ -5,5 +5,6 @@
         @livewire('complaints.complaint-statistics')
         @livewire('laundry-throughput.charts')
         @livewire('processing-costs.charts')
+        @include('contents.dashboard.partials.order-panel')
     </div>
 </x-layouts.app>
