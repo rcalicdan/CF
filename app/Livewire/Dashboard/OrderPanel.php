@@ -16,12 +16,12 @@ class OrderPanel extends Component
     public $dateRange = 7;
     public $statusFilter = 'all';
     public $perPage = 12;
-
     protected $queryString = [
         'search' => ['except' => ''],
         'dateRange' => ['except' => 7],
         'statusFilter' => ['except' => 'all'],
     ];
+    protected $listeners = ['driver-assigned' => '$refresh'];
 
     public function updatingSearch()
     {
