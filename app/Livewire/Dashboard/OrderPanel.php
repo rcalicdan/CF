@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
 
+
 class OrderPanel extends Component
 {
     use WithPagination;
@@ -16,11 +17,13 @@ class OrderPanel extends Component
     public $dateRange = 7;
     public $statusFilter = 'all';
     public $perPage = 12;
+    
     protected $queryString = [
         'search' => ['except' => ''],
         'dateRange' => ['except' => 7],
         'statusFilter' => ['except' => 'all'],
     ];
+    
     protected $listeners = ['driver-assigned' => '$refresh'];
 
     public function updatingSearch()
@@ -38,6 +41,34 @@ class OrderPanel extends Component
         $this->resetPage();
     }
 
+    protected function applySearchFilter($query)
+    {
+        if ($this->search) {
+            $query->where(function ($q) {
+                $searchTerm = preg_replace('/\s+/', ' ', trim($this->search));
+                $q->where('id', 'ILIKE', '%' . $searchTerm . '%')
+                    ->orWhereHas('client', function ($clientQuery) use ($searchTerm) {
+                        $clientQuery->where(function ($q) use ($searchTerm) {
+                            $q->where('first_name', 'ILIKE', '%' . $searchTerm . '%')
+                                ->orWhere('last_name', 'ILIKE', '%' . $searchTerm . '%')
+                                ->orWhere('street_name', 'ILIKE', '%' . $searchTerm . '%')
+                                ->orWhere('city', 'ILIKE', '%' . $searchTerm . '%')
+                                ->orWhereRaw(
+                                    "REGEXP_REPLACE(first_name || ' ' || last_name, '\\s+', ' ', 'g') ILIKE ?",
+                                    ['%' . $searchTerm . '%']
+                                )
+                                ->orWhereRaw(
+                                    "REGEXP_REPLACE(last_name || ' ' || first_name, '\\s+', ' ', 'g') ILIKE ?",
+                                    ['%' . $searchTerm . '%']
+                                );
+                        });
+                    });
+            });
+        }
+        
+        return $query;
+    }
+
     public function getStatusCountsProperty()
     {
         $query = Order::query();
@@ -46,17 +77,7 @@ class OrderPanel extends Component
             $query->where('schedule_date', '>=', Carbon::now()->subDays($this->dateRange));
         }
 
-        if ($this->search) {
-            $query->where(function ($q) {
-                $q->where('id', 'like', '%' . $this->search . '%')
-                    ->orWhereHas('client', function ($clientQuery) {
-                        $clientQuery->where('first_name', 'like', '%' . $this->search . '%')
-                            ->orWhere('last_name', 'like', '%' . $this->search . '%')
-                            ->orWhere('street_name', 'like', '%' . $this->search . '%')
-                            ->orWhere('city', 'like', '%' . $this->search . '%');
-                    });
-            });
-        }
+        $query = $this->applySearchFilter($query);
         
         $allOrders = $query->get();
 
@@ -85,22 +106,14 @@ class OrderPanel extends Component
             'user', 
             'orderPayment', 
             'orderDeliveryConfirmation'
-        ])
-        ->when($this->search, function ($query) {
-            $query->where(function ($q) {
-                $q->where('id', 'like', '%' . $this->search . '%')
-                    ->orWhereHas('client', function ($clientQuery) {
-                        $clientQuery->where('first_name', 'like', '%' . $this->search . '%')
-                            ->orWhere('last_name', 'like', '%' . $this->search . '%')
-                            ->orWhere('street_name', 'like', '%' . $this->search . '%')
-                            ->orWhere('city', 'like', '%' . $this->search . '%');
-                    });
-            });
-        })
-        ->when($this->dateRange, function ($query) {
+        ]);
+
+        $query = $this->applySearchFilter($query);
+        $query->when($this->dateRange, function ($query) {
             $query->where('schedule_date', '>=', Carbon::now()->subDays($this->dateRange));
-        })
-        ->when($this->statusFilter !== 'all', function ($query) {
+        });
+
+        $query->when($this->statusFilter !== 'all', function ($query) {
             if ($this->statusFilter === 'pending') {
                 $query->where('status', OrderStatus::PENDING->value);
             } elseif ($this->statusFilter === 'in_progress') {
@@ -114,9 +127,10 @@ class OrderPanel extends Component
                     OrderStatus::DELIVERED->value
                 ]);
             }
-        })
-        ->orderBy('schedule_date', 'desc')
-        ->orderBy('created_at', 'desc');
+        });
+
+        $query->orderBy('schedule_date', 'desc')
+              ->orderBy('created_at', 'desc');
 
         $orders = $query->paginate($this->perPage);
 
