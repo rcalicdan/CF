@@ -10,7 +10,8 @@ use L5Swagger\Http\Controllers\SwaggerController;
 Route::get('login', Login::class)->name('login');
 
 Route::middleware(['auth', 'ensure.user.is.active'])->group(function () {
-    Route::view('/', 'contents.dashboard.index')->name('dashboard');
+    Route::view('/', 'contents.main-order-panel.index')->name('dashboard');
+    Route::view('/statistics', 'contents.dashboard.index')->name('statistics');
 
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('', UserTable::class)->name('index');
@@ -74,7 +75,7 @@ Route::middleware(['auth', 'ensure.user.is.active'])->group(function () {
         $safeFilename = basename($filename);
 
         if (!str_ends_with($safeFilename, '.pdf') || $safeFilename !== $filename) {
-        $path = storage_path('app/public' . DIRECTORY_SEPARATOR . basename($filename));
+            $path = storage_path('app/public' . DIRECTORY_SEPARATOR . basename($filename));
         }
 
         $path = storage_path('app/public/' . $safeFilename);

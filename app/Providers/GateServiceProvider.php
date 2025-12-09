@@ -31,7 +31,14 @@ class GateServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::define('view-routes', function ($user) {
+            return $user->isAdmin() || $user->isEmployee();
+        });
+
         Gate::define('generate-qr-code', function ($user) {
+            return $user->isAdmin() || $user->isEmployee();
+        });
+        Gate::define('view-panel', function ($user) {
             return $user->isAdmin() || $user->isEmployee();
         });
     }
