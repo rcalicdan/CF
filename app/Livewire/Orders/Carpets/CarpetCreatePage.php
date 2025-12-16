@@ -23,6 +23,7 @@ class CarpetCreatePage extends Component
     public $selectedServices = [];
     public $serviceSearch = '';
     public $showServicesDropdown = false;
+    public $servicePrices = []; // Add this property
 
     protected $rules = [
         'height' => 'nullable|numeric|min:0',
@@ -39,9 +40,26 @@ class CarpetCreatePage extends Component
 
     public function mount(Order $order)
     {
-        $this->order = $order;
+        $this->order = $order->load('priceList');
         $this->authorize('view', $order);
-        $this->services = Service::orderBy('name')->get();
+        $this->services = Service::with(['priceLists' => function($query) {
+            $query->where('price_list_id', $this->order->price_list_id);
+        }])->orderBy('name')->get();
+        
+        $this->loadServicePrices();
+    }
+
+    private function loadServicePrices()
+    {
+        foreach ($this->services as $service) {
+            $priceListPrice = $service->priceLists->first();
+            $this->servicePrices[$service->id] = $priceListPrice ? $priceListPrice->pivot->price : $service->base_price;
+        }
+    }
+
+    public function getServiceEffectivePrice($serviceId)
+    {
+        return $this->servicePrices[$serviceId] ?? 0;
     }
 
     public function updatedHeight()
@@ -107,10 +125,12 @@ class CarpetCreatePage extends Component
 
     public function calculateServicePrice($service)
     {
+        $effectivePrice = $this->getServiceEffectivePrice($service->id);
+        
         if ($service->is_area_based) {
-            return $this->totalArea > 0 ? $service->base_price * $this->totalArea : 0;
+            return $this->totalArea > 0 ? $effectivePrice * $this->totalArea : 0;
         }
-        return $service->base_price;
+        return $effectivePrice;
     }
 
     public function getTotalPriceProperty()

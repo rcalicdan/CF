@@ -1,5 +1,4 @@
 <?php
-// app/ActionService/OrderCarpetService.php
 
 namespace App\ActionService;
 
@@ -27,7 +26,7 @@ class OrderCarpetService
             'order.priceList',
             'complaint',
             'services.priceLists',
-            'histories.user' 
+            'histories.user'
         ]);
 
         if ($user->role === UserRoles::DRIVER->value) {
@@ -370,6 +369,15 @@ class OrderCarpetService
         if (!empty($servicesData)) {
             $orderCarpet->services()->sync($servicesData);
         }
+    }
+
+    /**
+     * Get the effective price for a service based on order's price list
+     */
+    public function getEffectiveServicePrice(int $serviceId, int $priceListId): float
+    {
+        $service = Service::findOrFail($serviceId);
+        return $this->getServicePrice($serviceId, $priceListId, $service->base_price);
     }
 
     /**

@@ -24,6 +24,7 @@ class CarpetUpdatePage extends Component
     public $selectedServices = [];
     public $serviceSearch = '';
     public $showServicesDropdown = false;
+    public $servicePrices = [];
 
     protected $rules = [
         'height' => 'nullable|numeric|min:0',
@@ -40,9 +41,10 @@ class CarpetUpdatePage extends Component
 
     public function mount(Order $order, OrderCarpet $carpet)
     {
-        $this->order = $order->load('client');
-        $this->carpet = $carpet;
-        $this->authorize('view', $order);
+        $this->carpet = $carpet->load('order.priceList', 'order.client', 'services');
+        $this->order = $this->carpet->order; 
+
+        $this->authorize('view', $this->order);
 
         $this->height = $carpet->height;
         $this->width = $carpet->width;
@@ -50,7 +52,30 @@ class CarpetUpdatePage extends Component
         $this->remarks = $carpet->remarks;
         $this->selectedServices = $carpet->services->pluck('id')->toArray();
 
-        $this->services = Service::orderBy('name')->get();
+        if (!$this->order->price_list_id) {
+            \Log::error('Order has no price_list_id!', ['order_id' => $this->order->id]);
+            session()->flash('error', 'This order has no price list assigned.');
+            return;
+        }
+
+        $this->services = Service::with(['priceLists' => function ($query) {
+            $query->where('price_list_id', $this->order->price_list_id);
+        }])->orderBy('name')->get();
+
+        $this->loadServicePrices();
+    }
+
+    private function loadServicePrices()
+    {
+        foreach ($this->services as $service) {
+            $priceListPrice = $service->priceLists->first();
+            $this->servicePrices[$service->id] = $priceListPrice ? $priceListPrice->pivot->price : $service->base_price;
+        }
+    }
+
+    public function getServiceEffectivePrice($serviceId)
+    {
+        return $this->servicePrices[$serviceId] ?? 0;
     }
 
     public function updatedHeight()
@@ -116,10 +141,12 @@ class CarpetUpdatePage extends Component
 
     public function calculateServicePrice($service)
     {
+        $effectivePrice = $this->getServiceEffectivePrice($service->id);
+
         if ($service->is_area_based) {
-            return $this->totalArea > 0 ? $service->base_price * $this->totalArea : 0;
+            return $this->totalArea > 0 ? $effectivePrice * $this->totalArea : 0;
         }
-        return $service->base_price;
+        return $effectivePrice;
     }
 
     public function getTotalPriceProperty()

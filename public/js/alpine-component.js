@@ -12,6 +12,8 @@ function routeOptimizer() {
         manualEditMode: false,
         isDragging: false,
         draggedOrderIndex: null,
+        routeNeedsReoptimization: false,
+        newOrdersCount: 0,
 
         get drivers() {
             return this.dataInstance.drivers || [];
@@ -214,30 +216,24 @@ function routeOptimizer() {
         },
 
         async reconstructOrdersFromRouteSteps(routeSteps) {
-            console.log('🔄 Reconstructing orders from saved route steps...');
 
             const regularOrders = this.getOrdersForDriverAndDate(
                 this.selectedDriver.id,
                 this.selectedDate
             );
 
-            console.log('📋 Regular orders found:', regularOrders.length);
-
             const orderMap = new Map(regularOrders.map(order => [order.id, order]));
-
             const reconstructedOrders = [];
+            const processedOrderIds = new Set();
 
             routeSteps.forEach((routeStep, index) => {
-                console.log(`Processing route step ${index + 1}:`, routeStep);
 
                 let order = orderMap.get(routeStep.order_id);
 
                 if (order) {
-                    console.log('✅ Regular order found:', order.id);
                     reconstructedOrders.push(order);
+                    processedOrderIds.add(order.id);
                 } else {
-                    console.log('🔷 Custom stop detected:', routeStep.order_id);
-
                     const customOrder = {
                         id: routeStep.order_id,
                         client_name: routeStep.client_name || "Własny przystanek",
@@ -251,14 +247,29 @@ function routeOptimizer() {
                         isCustom: true
                     };
 
-                    console.log('✅ Custom stop reconstructed:', customOrder);
                     reconstructedOrders.push(customOrder);
+                    processedOrderIds.add(customOrder.id);
                 }
             });
 
-            console.log('✅ Total orders reconstructed:', reconstructedOrders.length);
-            console.log('   - Regular orders:', reconstructedOrders.filter(o => !o.isCustom).length);
-            console.log('   - Custom stops:', reconstructedOrders.filter(o => o.isCustom).length);
+            const newOrders = regularOrders.filter(order => !processedOrderIds.has(order.id))
+                .map(order => ({
+                    ...order,
+                    isNewOrder: true
+                }));
+
+            if (newOrders.length > 0) {
+                this.routeNeedsReoptimization = true;
+                this.newOrdersCount = newOrders.length;
+                reconstructedOrders.push(...newOrders);
+                this.showNotification(
+                    `⚠️ Znaleziono ${newOrders.length} ${newOrders.length === 1 ? 'nowe zamówienie' : 'nowych zamówień'}. Rozważ ponowną optymalizację trasy.`,
+                    'warning'
+                );
+            } else {
+                this.routeNeedsReoptimization = false;
+                this.newOrdersCount = 0;
+            }
 
             this.orders = reconstructedOrders;
 
@@ -267,11 +278,6 @@ function routeOptimizer() {
                     window.mapManager.refreshMarkers();
                 }
             });
-        },
-
-        applySavedOrderSequence(savedSequence) {
-            console.log('⚠️ applySavedOrderSequence is deprecated - orders already reconstructed');
-            return;
         },
 
         showNotification(message, type = 'info') {
@@ -607,6 +613,9 @@ function routeOptimizer() {
                 return;
             }
 
+            this.routeNeedsReoptimization = false;
+            this.newOrdersCount = 0;
+
             this.loading = true;
             this.optimizationError = null;
 
@@ -620,6 +629,11 @@ function routeOptimizer() {
             } finally {
                 this.loading = false;
             }
+        },
+
+        dismissReoptimizationWarning() {
+            this.routeNeedsReoptimization = false;
+            this.showNotification('Ostrzeżenie o nowych zamówieniach zostało ukryte', 'info');
         },
 
         onDateChange(event) {

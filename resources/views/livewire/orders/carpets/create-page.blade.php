@@ -54,8 +54,7 @@
                                     <input type="text" wire:model.live="serviceSearch" wire:focus="showAllServices"
                                         class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                         placeholder="{{ __('Search services...') }}">
-                                    <div
-                                        class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd"
                                                 d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
@@ -72,21 +71,40 @@
                                             <div wire:click="toggleService({{ $service->id }})"
                                                 class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50 {{ in_array($service->id, $selectedServices) ? 'bg-indigo-50' : '' }}">
                                                 <div class="flex items-center justify-between">
-                                                    <div class="flex items-center">
+                                                    <div class="flex items-center flex-1">
                                                         <input type="checkbox"
                                                             {{ in_array($service->id, $selectedServices) ? 'checked' : '' }}
                                                             class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded pointer-events-none">
-                                                        <span
-                                                            class="ml-3 block font-medium text-gray-900">{{ $service->name }}</span>
+                                                        <div class="ml-3 flex-1">
+                                                            <span
+                                                                class="block font-medium text-gray-900">{{ $service->name }}</span>
+                                                            @if ($order->priceList)
+                                                                <span class="block text-xs text-gray-500 mt-0.5">
+                                                                    {{ $order->priceList->name }}
+                                                                    @if ($order->priceList->location_postal_code)
+                                                                        ({{ $order->priceList->location_postal_code }})
+                                                                    @endif
+                                                                </span>
+                                                            @endif
+                                                        </div>
                                                     </div>
                                                     <span
-                                                        class="text-sm font-semibold text-gray-600 whitespace-nowrap">
+                                                        class="text-sm font-semibold text-gray-600 whitespace-nowrap ml-2">
+                                                        @php
+                                                            $effectivePrice = $this->getServiceEffectivePrice(
+                                                                $service->id,
+                                                            );
+                                                        @endphp
                                                         @if ($service->is_area_based)
-                                                            {{ number_format($service->base_price, 2, ',', ' ') }}
-                                                            zł / m²
+                                                            {{ number_format($effectivePrice, 2, ',', ' ') }} zł / m²
                                                         @else
-                                                            {{ number_format($service->base_price, 2, ',', ' ') }}
-                                                            zł
+                                                            {{ number_format($effectivePrice, 2, ',', ' ') }} zł
+                                                        @endif
+
+                                                        @if ($effectivePrice != $service->base_price)
+                                                            <span class="text-xs text-gray-400 line-through ml-1">
+                                                                {{ number_format($service->base_price, 2, ',', ' ') }}
+                                                            </span>
                                                         @endif
                                                     </span>
                                                 </div>
@@ -97,8 +115,7 @@
                                     <div
                                         class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-2 text-base ring-1 ring-black ring-opacity-5">
                                         <p class="text-sm text-gray-500 px-3">
-                                            {{ __('No services found matching') }}
-                                            "{{ $serviceSearch }}"
+                                            {{ __('No services found matching') }} "{{ $serviceSearch }}"
                                         </p>
                                     </div>
                                 @endif
@@ -118,8 +135,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <x-forms.field label="Height (m)" name="height">
                                 <x-forms.input type="number" step="0.01" min="0" name="height"
-                                    wire:model.live="height"
-                                    placeholder="{{ __('Enter height in meters') }}" />
+                                    wire:model.live="height" placeholder="{{ __('Enter height in meters') }}" />
                             </x-forms.field>
 
                             <x-forms.field label="Width (m)" name="width">
@@ -144,8 +160,7 @@
                             <div class="space-y-2 mb-4">
                                 <div class="flex justify-between text-sm">
                                     <span class="text-gray-600">{{ __('Height') }}:</span>
-                                    <span
-                                        class="font-medium">{{ $height ? $height . ' m' : __('Not set') }}</span>
+                                    <span class="font-medium">{{ $height ? $height . ' m' : __('Not set') }}</span>
                                 </div>
                                 <div class="flex justify-between text-sm">
                                     <span class="text-gray-600">{{ __('Width') }}:</span>
@@ -154,8 +169,7 @@
                                 @if ($height && $width)
                                     <div class="flex justify-between text-sm border-t pt-2">
                                         <span class="text-gray-600">{{ __('Total Area') }}:</span>
-                                        <span
-                                            class="font-medium">{{ number_format($this->totalArea, 2) }} m²</span>
+                                        <span class="font-medium">{{ number_format($this->totalArea, 2) }} m²</span>
                                     </div>
                                 @endif
                             </div>
@@ -166,8 +180,7 @@
                                     <h5 class="text-sm font-medium text-gray-700">{{ __('Services') }}:</h5>
                                     @foreach ($this->selectedServicesData as $service)
                                         <div class="flex justify-between text-sm">
-                                            <span
-                                                class="text-gray-600 truncate mr-2">{{ $service->name }}</span>
+                                            <span class="text-gray-600 truncate mr-2">{{ $service->name }}</span>
                                             <span class="font-medium whitespace-nowrap">
                                                 {{ number_format($this->calculateServicePrice($service), 2) }} zł
                                             </span>
@@ -179,8 +192,7 @@
                             <!-- Total Price -->
                             <div class="border-t pt-3">
                                 <div class="flex justify-between">
-                                    <span
-                                        class="text-lg font-semibold text-gray-900">{{ __('Total') }}:</span>
+                                    <span class="text-lg font-semibold text-gray-900">{{ __('Total') }}:</span>
                                     <span class="text-lg font-bold text-indigo-600">
                                         {{ number_format($this->totalPrice, 2) }} zł
                                     </span>
