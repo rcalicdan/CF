@@ -35,6 +35,11 @@ class Order extends Model
         return $this->status ? EnumTranslationService::translate(OrderStatus::from($this->status)) : '';
     }
 
+    public function getCreatorFullNameAttribute()
+    {
+        return $this->user ? $this->user->full_name : 'N/A';
+    }
+
     public function orderHistories()
     {
         return $this->hasMany(OrderHistory::class);

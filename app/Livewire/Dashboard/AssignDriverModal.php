@@ -5,6 +5,7 @@ namespace App\Livewire\Dashboard;
 use App\Models\Order;
 use App\Models\Driver;
 use Livewire\Component;
+use Livewire\Attributes\On;
 
 class AssignDriverModal extends Component
 {
@@ -14,8 +15,7 @@ class AssignDriverModal extends Component
     public $selectedDriverId = null;
     public $showDriversDropdown = false;
 
-    protected $listeners = ['assign-driver' => 'openModal'];
-
+    #[On('assign-driver')]
     public function openModal($orderId)
     {
         $this->orderId = $orderId;
@@ -94,7 +94,7 @@ class AssignDriverModal extends Component
                 'type' => 'success',
                 'message' => 'Kierowca został pomyślnie przypisany do zamówienia!'
             ]);
-            
+
             $this->closeModal();
         } catch (\Exception $e) {
             $this->dispatch('notify', [

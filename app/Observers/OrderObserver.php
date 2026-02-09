@@ -4,8 +4,10 @@ namespace App\Observers;
 
 use App\Models\Order;
 use App\Models\OrderHistory;
+use App\Models\RouteOptimization;
 use App\Enums\OrderStatus;
 use App\Jobs\SendSmsJob;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -173,8 +175,22 @@ class OrderObserver
         $oldDate = $original['schedule_date'] ?? null;
         $newDate = $changes['schedule_date'];
 
-        $oldDateFormatted = $oldDate ? \Carbon\Carbon::parse($oldDate)->format('d.m.Y H:i') : 'Nie ustawiono';
-        $newDateFormatted = $newDate ? \Carbon\Carbon::parse($newDate)->format('d.m.Y H:i') : 'Nie ustawiono';
+        $oldDateFormatted = $oldDate ? Carbon::parse($oldDate)->format('d.m.Y H:i') : 'Nie ustawiono';
+        $newDateFormatted = $newDate ? Carbon::parse($newDate)->format('d.m.Y H:i') : 'Nie ustawiono';
+
+        // Jeśli zmienił się dzień, usuń zamówienie z optymalizacji trasy na starą datę
+        if ($oldDate && $order->assigned_driver_id) {
+            $oldDay = Carbon::parse($oldDate)->format('Y-m-d');
+            $newDay = Carbon::parse($newDate)->format('Y-m-d');
+
+            if ($oldDay !== $newDay) {
+                $this->removeOrderFromRouteOptimization(
+                    $order->id,
+                    $order->assigned_driver_id,
+                    $oldDay
+                );
+            }
+        }
 
         $notes = "Data realizacji zmieniona z '{$oldDateFormatted}' na '{$newDateFormatted}'";
 
@@ -192,6 +208,45 @@ class OrderObserver
             ],
             'notes' => $notes,
         ]);
+    }
+
+    /**
+     * Delete order from route optimization if schedule date changes and order is assigned to a driver
+     */
+    private function removeOrderFromRouteOptimization(int $orderId, int $driverId, string $date): void
+    {
+        $optimization = RouteOptimization::where('driver_id', $driverId)
+            ->where('optimization_date', $date)
+            ->first();
+
+        if (!$optimization) {
+            return;
+        }
+
+        $result = $optimization->optimization_result;
+
+        if (!is_array($result) || !isset($result['route_steps'])) {
+            return;
+        }
+
+        $originalCount = count($result['route_steps']);
+
+        $result['route_steps'] = array_values(
+            array_filter($result['route_steps'], fn(array $step) => ($step['order_id'] ?? null) !== $orderId)
+        );
+
+        $newCount = count($result['route_steps']);
+
+        if ($newCount < $originalCount) {
+            $optimization->optimization_result = $result;
+            $optimization->save();
+
+            Log::info('Zamówienie usunięte z optymalizacji trasy', [
+                'order_id' => $orderId,
+                'driver_id' => $driverId,
+                'optimization_date' => $date,
+            ]);
+        }
     }
 
     private function logAmountChange(Order $order, array $changes, array $original): void

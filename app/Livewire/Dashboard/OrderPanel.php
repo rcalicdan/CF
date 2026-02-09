@@ -7,6 +7,7 @@ use App\Enums\OrderStatus;
 use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\On;
 
 
 class OrderPanel extends Component
@@ -17,14 +18,18 @@ class OrderPanel extends Component
     public $dateRange = 7;
     public $statusFilter = 'all';
     public $perPage = 12;
-    
+
     protected $queryString = [
         'search' => ['except' => ''],
         'dateRange' => ['except' => 7],
         'statusFilter' => ['except' => 'all'],
     ];
-    
-    protected $listeners = ['driver-assigned' => '$refresh'];
+
+    #[On('driver-assigned')]
+    public function refreshOrders()
+    {
+        $this->resetPage();
+    }
 
     public function updatingSearch()
     {
@@ -65,20 +70,20 @@ class OrderPanel extends Component
                     });
             });
         }
-        
+
         return $query;
     }
 
     public function getStatusCountsProperty()
     {
         $query = Order::query();
-        
+
         if ($this->dateRange) {
             $query->where('schedule_date', '>=', Carbon::now()->subDays($this->dateRange));
         }
 
         $query = $this->applySearchFilter($query);
-        
+
         $allOrders = $query->get();
 
         return [
@@ -98,13 +103,13 @@ class OrderPanel extends Component
     public function render()
     {
         $query = Order::with([
-            'client', 
-            'driver.user', 
-            'orderServices.service', 
-            'orderCarpets.services', 
-            'priceList', 
-            'user', 
-            'orderPayment', 
+            'client',
+            'driver.user',
+            'orderServices.service',
+            'orderCarpets.services',
+            'priceList',
+            'user',
+            'orderPayment',
             'orderDeliveryConfirmation'
         ]);
 

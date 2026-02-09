@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\ProcessingCost;
+use App\Models\Client;
 use App\Policies\ProcessingCostPolicy;
+use App\Policies\ClientPolicy;
 use Gate;
 use Illuminate\Support\ServiceProvider;
 

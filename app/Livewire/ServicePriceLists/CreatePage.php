@@ -79,7 +79,7 @@ class CreatePage extends Component
         ]);
 
         $services = Service::orderBy('name')->get()->mapWithKeys(fn($service) => [
-            $service->id => $service->name . ' (Base: $' . number_format($service->base_price, 2) . ')'
+            $service->id => $service->name . ' (' . __('Base') . ': ' . number_format($service->base_price, 2) . ')'
         ]);
 
         return view('livewire.service-price-lists.create-page', [

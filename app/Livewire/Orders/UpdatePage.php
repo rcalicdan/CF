@@ -47,7 +47,7 @@ class UpdatePage extends Component
         $this->is_complaint = $order->is_complaint;
 
         if ($order->client) {
-            $this->clientSearch = $order->client->full_name;
+            $this->clientSearch = $this->formatClientDisplay($order->client);
             $this->selectedClient = $order->client;
         }
         if ($order->driver && $order->driver->user) {
@@ -109,12 +109,32 @@ class UpdatePage extends Component
         }
     }
 
-    public function selectClient($clientId, $clientName)
+    public function selectClient($clientId, $clientName, $street = '', $number = '', $city = '')
     {
         $this->client_id = $clientId;
-        $this->clientSearch = $clientName;
+        $this->clientSearch = $this->buildClientLabel($clientName, $street, $number, $city);
         $this->showClientsDropdown = false;
         $this->selectedClient = Client::find($clientId);
+    }
+
+    private function buildClientLabel(string $name, string $street = '', string $number = '', string $city = ''): string
+    {
+        $addressParts = array_filter([
+            trim($street . ' ' . $number),
+            $city,
+        ]);
+
+        return $addressParts ? $name . ', ' . implode(', ', $addressParts) : $name;
+    }
+
+    private function formatClientDisplay(Client $client): string
+    {
+        return $this->buildClientLabel(
+            $client->full_name,
+            $client->street_name ?? '',
+            $client->street_number ?? '',
+            $client->city ?? ''
+        );
     }
 
     public function showAllClients()
@@ -203,11 +223,11 @@ class UpdatePage extends Component
 
     public function getFilteredClients()
     {
-        $query = Client::select(['id', 'first_name', 'last_name']);
+        $query = Client::select(['id', 'first_name', 'last_name', 'street_name', 'street_number', 'city']);
 
         if (!empty($this->clientSearch)) {
             $query->where(function ($q) {
-                $searchTerm = preg_replace('/\s+/', ' ', trim($this->clientSearch)); // normalize spaces
+                $searchTerm = preg_replace('/\s+/', ' ', trim($this->clientSearch));
 
                 $q->where('first_name', 'ILIKE', '%' . $searchTerm . '%')
                     ->orWhere('last_name', 'ILIKE', '%' . $searchTerm . '%')

@@ -124,6 +124,19 @@ class CreatePage extends Component
         $this->orderService = $orderService;
     }
 
+    public function mount(): void
+    {
+        $clientId = request()->query('client_id');
+        if ($clientId) {
+            $client = Client::find($clientId);
+            if ($client) {
+                $this->client_id = $client->id;
+                $this->clientSearch = $client->full_name ?? trim($client->first_name . ' ' . $client->last_name);
+                $this->selectedClient = $client;
+            }
+        }
+    }
+
     public function rules()
     {
         return [
@@ -172,10 +185,10 @@ class CreatePage extends Component
         }
     }
 
-    public function selectClient($clientId, $clientName)
+    public function selectClient($clientId, $clientName, $city = '')
     {
         $this->client_id = $clientId;
-        $this->clientSearch = $clientName;
+        $this->clientSearch = $city ? "{$clientName}, {$city}" : $clientName;
         $this->showClientsDropdown = false;
         $this->selectedClient = Client::find($clientId);
     }
@@ -266,11 +279,11 @@ class CreatePage extends Component
 
     public function getFilteredClients()
     {
-        $query = Client::select(['id', 'first_name', 'last_name']);
+        $query = Client::select(['id', 'first_name', 'last_name', 'street_name', 'street_number', 'city']);
 
         if (!empty($this->clientSearch)) {
             $query->where(function ($q) {
-                $searchTerm = preg_replace('/\s+/', ' ', trim($this->clientSearch)); // normalize spaces
+                $searchTerm = preg_replace('/\s+/', ' ', trim($this->clientSearch));
 
                 $q->where('first_name', 'ILIKE', '%' . $searchTerm . '%')
                     ->orWhere('last_name', 'ILIKE', '%' . $searchTerm . '%')

@@ -30,22 +30,12 @@ class Table extends Component
             ->model(Client::class)
             ->headers([
                 [
-                    'key' => 'id',
-                    'label' => __('ID'),
-                    'sortable' => true
-                ],
-                [
                     'key' => 'full_name',
                     'label' => __('Full Name'),
                     'sortable' => true,
                     'accessor' => true,
                     'search_columns' => ['first_name', 'last_name'],
                     'sort_columns' => ['first_name', 'last_name']
-                ],
-                [
-                    'key' => 'email',
-                    'label' => __('Email'),
-                    'sortable' => true
                 ],
                 [
                     'key' => 'phone_number',
@@ -59,12 +49,6 @@ class Table extends Component
                     'accessor' => true,
                     'search_columns' => ['street_name', 'street_number', 'city', 'postal_code'],
                     'sort_columns' => ['street_name', 'city']
-                ],
-                [
-                    'key' => 'created_at',
-                    'label' => __('Created'),
-                    'sortable' => true,
-                    'type' => 'datetime'
                 ],
             ])
             ->deleteAction('deleteClient')
