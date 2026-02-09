@@ -74,10 +74,8 @@ class OrderCarpetService
 
             $orderCarpet = OrderCarpet::create($data);
 
-            // Log carpet creation to order history
             OrderObserver::logCarpetAdded($order, $orderCarpet->id);
 
-            // Sync services and log them
             $this->syncServicesWithHistory($orderCarpet, $order, $data['services'] ?? []);
 
             if (! $order->is_complaint) {
@@ -101,25 +99,18 @@ class OrderCarpetService
             $order = $orderCarpet->order;
             $originalServices = $orderCarpet->services->pluck('id')->toArray();
 
-            // Calculate total_area automatically if height and width are provided
             if (
                 isset($data['height']) && isset($data['width']) &&
                 is_numeric($data['height']) && is_numeric($data['width'])
             ) {
                 $data['total_area'] = round((float)$data['height'] * (float)$data['width'], 2);
-
-                // If this is the first time being measured, set measured_at
                 if (!$orderCarpet->measured_at) {
                     $data['measured_at'] = now();
                 }
             }
 
-            // Store original data for history tracking
-            $original = $orderCarpet->toArray();
-
             $orderCarpet->update($data);
 
-            // Sync services with history tracking
             $this->syncServicesWithHistory($orderCarpet, $order, $data['services'] ?? [], $originalServices);
 
             if (! $order->is_complaint) {
@@ -145,7 +136,6 @@ class OrderCarpetService
 
             $orderCarpet->delete();
 
-            // Log carpet removal to order history
             OrderObserver::logCarpetRemoved($order, $carpetId);
 
             $order->load('orderCarpets.services');
@@ -155,23 +145,19 @@ class OrderCarpetService
         return true;
     }
 
-    /**
-     * Add a single service to carpet with history logging
-     */
     public function addServiceToCarpet(OrderCarpet $orderCarpet, int $serviceId): void
     {
         DB::transaction(function () use ($orderCarpet, $serviceId) {
             $service = Service::findOrFail($serviceId);
             $totalPrice = $this->calculateServiceTotal($serviceId, $orderCarpet->order, $orderCarpet);
 
-            // Check if service is not already attached
             if (!$orderCarpet->services()->where('service_id', $serviceId)->exists()) {
-                $orderCarpet->services()->attach($serviceId, ['total_price' => $totalPrice]);
-
-                // Log service addition
+                $orderCarpet->services()->attach($serviceId, [
+                    'total_price' => $totalPrice,
+                    'quantity' => null
+                ]);
                 OrderCarpetObserver::logServiceAdded($orderCarpet, $serviceId, $service->name);
 
-                // Recalculate order totals if not a complaint
                 if (!$orderCarpet->order->is_complaint) {
                     $this->recalculateOrderTotals($orderCarpet->order);
                 }
@@ -179,22 +165,14 @@ class OrderCarpetService
         });
     }
 
-    /**
-     * Remove a service from carpet with history logging
-     */
     public function removeServiceFromCarpet(OrderCarpet $orderCarpet, int $serviceId): void
     {
         DB::transaction(function () use ($orderCarpet, $serviceId) {
             $service = Service::findOrFail($serviceId);
-
-            // Check if service is attached
             if ($orderCarpet->services()->where('service_id', $serviceId)->exists()) {
                 $orderCarpet->services()->detach($serviceId);
-
-                // Log service removal
                 OrderCarpetObserver::logServiceRemoved($orderCarpet, $serviceId, $service->name);
 
-                // Recalculate order totals if not a complaint
                 if (!$orderCarpet->order->is_complaint) {
                     $this->recalculateOrderTotals($orderCarpet->order);
                 }
@@ -202,22 +180,15 @@ class OrderCarpetService
         });
     }
 
-    /**
-     * Update carpet status with automatic history logging
-     */
     public function updateCarpetStatus(OrderCarpet $orderCarpet, string $status, ?string $notes = null): OrderCarpet
     {
         $orderCarpet->update([
             'status' => $status,
             'remarks' => $notes ?? $orderCarpet->remarks,
         ]);
-
         return $orderCarpet->fresh();
     }
 
-    /**
-     * Update carpet measurements with history logging
-     */
     public function updateCarpetMeasurements(OrderCarpet $orderCarpet, float $height, float $width, ?string $remarks = null): OrderCarpet
     {
         $totalArea = round($height * $width, 2);
@@ -230,7 +201,6 @@ class OrderCarpetService
             'remarks' => $remarks ?? $orderCarpet->remarks,
         ]);
 
-        // Recalculate service prices for area-based services
         $this->recalculateAreaBasedServices($orderCarpet);
 
         if (!$orderCarpet->order->is_complaint) {
@@ -240,13 +210,9 @@ class OrderCarpetService
         return $orderCarpet->fresh();
     }
 
-    /**
-     * Bulk update carpet statuses
-     */
     public function bulkUpdateStatus(array $carpetIds, string $status): int
     {
         $updated = 0;
-
         DB::transaction(function () use ($carpetIds, $status, &$updated) {
             foreach ($carpetIds as $carpetId) {
                 $carpet = OrderCarpet::find($carpetId);
@@ -256,7 +222,6 @@ class OrderCarpetService
                 }
             }
         });
-
         return $updated;
     }
 
@@ -269,100 +234,92 @@ class OrderCarpetService
 
     private function recalculateOrderTotals(Order $order): void
     {
-        $totalAmount = 0;
-
-        foreach ($order->orderCarpets as $carpet) {
-            foreach ($carpet->services as $service) {
-                $totalAmount += $service->pivot->total_price;
-            }
-        }
-
+        // Refresh the relationship to get the latest pivot data
+        $order->load('orderCarpets.services');
+        $totalAmount = $order->orderCarpets->sum(function($carpet) {
+            return $carpet->services->sum('pivot.total_price');
+        });
         $this->updateOrderAmount($order, $totalAmount);
     }
 
     private function updateOrderAmount(Order $order, float $totalAmount): void
     {
-        $order->update([
-            'total_amount' => $totalAmount,
-        ]);
+        $order->update(['total_amount' => $totalAmount]);
     }
 
-    /**
-     * Sync services with history tracking
-     */
-    private function syncServicesWithHistory(OrderCarpet $orderCarpet, Order $order, array $serviceIds, array $originalServices = [])
+    private function syncServicesWithHistory(OrderCarpet $orderCarpet, Order $order, array $servicesData, array $originalServices = [])
     {
-        if (empty($serviceIds)) {
-            // If no services provided, remove all existing services
+        $currentServiceIds = array_column($servicesData, 'id');
+
+        if (empty($currentServiceIds)) {
             if (!empty($originalServices)) {
                 foreach ($originalServices as $serviceId) {
                     $service = Service::find($serviceId);
-                    if ($service) {
-                        OrderCarpetObserver::logServiceRemoved($orderCarpet, $serviceId, $service->name);
-                    }
+                    if ($service) OrderCarpetObserver::logServiceRemoved($orderCarpet, $serviceId, $service->name);
                 }
             }
             $orderCarpet->services()->sync([]);
             return;
         }
 
-        $servicesData = array_reduce($serviceIds, function ($result, $serviceId) use ($order, $orderCarpet) {
-            $result[$serviceId] = [
-                'total_price' => $this->calculateServiceTotal($serviceId, $order, $orderCarpet),
-            ];
-            return $result;
-        }, []);
+        $syncPayload = [];
+        foreach ($servicesData as $item) {
+            $serviceId = $item['id'];
+            $quantity = isset($item['quantity']) ? (float)$item['quantity'] : null;
 
-        // Track added services
-        $addedServices = array_diff($serviceIds, $originalServices);
+            $totalPrice = $this->calculateServiceTotal($serviceId, $order, $orderCarpet, $quantity);
+
+            $syncPayload[$serviceId] = [
+                'total_price' => $totalPrice,
+                'quantity' => $quantity,
+            ];
+        }
+
+        $addedServices = array_diff($currentServiceIds, $originalServices);
         foreach ($addedServices as $serviceId) {
             $service = Service::find($serviceId);
-            if ($service) {
-                OrderCarpetObserver::logServiceAdded($orderCarpet, $serviceId, $service->name);
-            }
+            if ($service) OrderCarpetObserver::logServiceAdded($orderCarpet, $serviceId, $service->name);
         }
 
-        // Track removed services
-        $removedServices = array_diff($originalServices, $serviceIds);
+        $removedServices = array_diff($originalServices, $currentServiceIds);
         foreach ($removedServices as $serviceId) {
             $service = Service::find($serviceId);
-            if ($service) {
-                OrderCarpetObserver::logServiceRemoved($orderCarpet, $serviceId, $service->name);
-            }
+            if ($service) OrderCarpetObserver::logServiceRemoved($orderCarpet, $serviceId, $service->name);
         }
 
-        $orderCarpet->services()->sync($servicesData);
+        $orderCarpet->services()->sync($syncPayload);
     }
 
-    private function calculateServiceTotal(int $serviceId, Order $order, OrderCarpet $orderCarpet): float
+    private function calculateServiceTotal(int $serviceId, Order $order, OrderCarpet $orderCarpet, ?float $quantity = null): float
     {
         $service = Service::findOrFail($serviceId);
-        $price = $this->getServicePrice(
-            $service->id,
-            $order->price_list_id,
-            $service->base_price
-        );
+        $unitPrice = $this->getServicePrice($service->id, $order->price_list_id, $service->base_price);
 
         if ($order->is_complaint) {
             return 0.0;
         }
 
-        return $service->is_area_based
-            ? $price * ($orderCarpet->total_area ?? 0)
-            : $price;
+        if (!is_null($quantity) && $quantity > 0) {
+            return $unitPrice * $quantity;
+        }
+
+        if ($service->is_area_based) {
+            return $unitPrice * ($orderCarpet->total_area ?? 0);
+        }
+
+        return $unitPrice;
     }
 
-    /**
-     * Recalculate prices for area-based services when measurements change
-     */
     private function recalculateAreaBasedServices(OrderCarpet $orderCarpet): void
     {
         $order = $orderCarpet->order;
         $servicesData = [];
 
         foreach ($orderCarpet->services as $service) {
+            $existingQuantity = $service->pivot->quantity;
             $servicesData[$service->id] = [
-                'total_price' => $this->calculateServiceTotal($service->id, $order, $orderCarpet),
+                'total_price' => $this->calculateServiceTotal($service->id, $order, $orderCarpet, $existingQuantity),
+                'quantity' => $existingQuantity,
             ];
         }
 
@@ -371,18 +328,12 @@ class OrderCarpetService
         }
     }
 
-    /**
-     * Get the effective price for a service based on order's price list
-     */
     public function getEffectiveServicePrice(int $serviceId, int $priceListId): float
     {
         $service = Service::findOrFail($serviceId);
         return $this->getServicePrice($serviceId, $priceListId, $service->base_price);
     }
 
-    /**
-     * Get carpet statistics for dashboard
-     */
     public function getCarpetStatistics(): array
     {
         $user = Auth::user();
@@ -402,9 +353,6 @@ class OrderCarpetService
         ];
     }
 
-    /**
-     * Search carpets by QR code or reference
-     */
     public function searchByQrCode(string $qrCode): ?OrderCarpet
     {
         return OrderCarpet::with([

@@ -12,6 +12,7 @@ class CarpetService extends Pivot
         'order_carpet_id',
         'service_id',
         'total_price',
+        'quantity', 
     ];
 
     public function orderCarpet()

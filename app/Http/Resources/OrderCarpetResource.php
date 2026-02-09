@@ -14,7 +14,6 @@ class OrderCarpetResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        // return parent::toArray($request);
         return [
             'id' => $this->id,
             'qr_code' => $this->qr_code,
@@ -28,7 +27,7 @@ class OrderCarpetResource extends JsonResource
             'created_at' => $this->created_at->toIso8601String(),
             'updated_at' => $this->updated_at->toIso8601String(),
             'services' => $this->whenLoaded('services', function () {
-                $priceListId = $this->price_list_id ?? null;
+                $priceListId = $this->order->price_list_id ?? null;
 
                 return $this->services->map(function ($service) use ($priceListId) {
                     $priceList = $priceListId
@@ -40,6 +39,7 @@ class OrderCarpetResource extends JsonResource
                         'service_name' => $service->name,
                         'service_base_price' => $service->base_price,
                         'service_price_list_price' => $priceList?->pivot->price ?? null,
+                        'quantity' => $service->pivot->quantity,
                         'total_price' => $service->pivot->total_price,
                     ];
                 });

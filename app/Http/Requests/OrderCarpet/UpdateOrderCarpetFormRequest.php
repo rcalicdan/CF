@@ -16,6 +16,10 @@ class UpdateOrderCarpetFormRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Prepare the data for validation.
+     * This method ensures backward compatibility by normalizing the 'services' input.
+     */
     protected function prepareForValidation(): void
     {
         if (empty($this->status)) {
@@ -23,12 +27,22 @@ class UpdateOrderCarpetFormRequest extends FormRequest
                 'status' => OrderCarpetStatus::PICKED_UP->value,
             ]);
         }
+        
+        if ($this->has('services') && \is_array($this->services)) {
+            $normalizedServices = [];
+            foreach ($this->services as $service) {
+                if (is_numeric($service)) {
+                    $normalizedServices[] = ['id' => (int)$service, 'quantity' => null];
+                } elseif (\is_array($service) && isset($service['id'])) {
+                    $normalizedServices[] = $service;
+                }
+            }
+            $this->merge(['services' => $normalizedServices]);
+        }
     }
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -38,10 +52,8 @@ class UpdateOrderCarpetFormRequest extends FormRequest
             'status' => ['sometimes', 'required', Rule::enum(OrderCarpetStatus::class)],
             'remarks' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'services' => ['required', 'array'],
-            'services.*' => [
-                'integer',
-                Rule::exists('services', 'id'),
-            ],
+            'services.*.id' => ['required', 'integer', Rule::exists('services', 'id')],
+            'services.*.quantity' => ['nullable', 'numeric', 'min:0.01', 'max:9999.99'],
         ];
     }
 }
