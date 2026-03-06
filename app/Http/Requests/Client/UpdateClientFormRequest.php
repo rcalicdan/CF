@@ -25,7 +25,7 @@ class UpdateClientFormRequest extends FormRequest
             'first_name' => ['sometimes', 'required', 'string', 'max:255'],
             'last_name' => ['sometimes', 'required', 'string', 'max:255'],
             'street_name' => ['nullable', 'string', 'max:255'],
-            'street_number' => ['nullable', 'string', 'max:255', 'regex:/^[0-9]+$/'],
+            'street_number' => ['nullable', 'string', 'max:255', 'regex:/^[0-9]+[a-zA-Z]?(\/[0-9]+[a-zA-Z]?)?$/'],
             'postal_code' => ['nullable', 'string', 'max:255', 'regex:/^[0-9]+$/'],
             'city' => ['nullable', 'string', 'max:255'],
             'phone_number' => ['sometimes', 'required', 'string', 'max:255', 'regex:/^[0-9]+$/'],

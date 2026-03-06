@@ -33,7 +33,7 @@
                     class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-sm border border-blue-200 p-6 hover:shadow-lg transition-all duration-300">
                     <div class="flex items-start justify-between">
                         <div class="space-y-2">
-                            <p class="text-sm font-medium text-blue-700">W realizacji</p>
+                            <p class="text-sm font-medium text-blue-700">Przyjęte / W realizacji</p>
                             <p class="text-3xl font-bold text-blue-900">0</p>
                             <div class="flex items-center space-x-2">
                                 <div class="flex items-center bg-blue-200 px-2 py-1 rounded-full">
@@ -214,7 +214,7 @@
         </div>
 
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200">
-            <div class="p-4"> 
+            <div class="p-4">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center space-x-2">
                         <span class="text-xs font-bold text-gray-900">Nr zam: 3180</span>

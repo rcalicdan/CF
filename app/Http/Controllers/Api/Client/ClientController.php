@@ -191,7 +191,7 @@ class ClientController extends Controller
      *             @OA\Property(property="first_name", type="string", maxLength=255, description="The first name of the client (required)."),
      *             @OA\Property(property="last_name", type="string", maxLength=255, description="The last name of the client (required)."),
      *             @OA\Property(property="street_name", type="string", maxLength=255, nullable=true, description="The street name of the client (nullable)."),
-     *             @OA\Property(property="street_number", type="string", maxLength=255, pattern="^[0-9]+$", nullable=true, description="The street number of the client (nullable, must be numeric)."),
+     *             @OA\Property(property="street_number", type="string", maxLength=255, pattern="^[0-9]+[a-zA-Z]?(/[0-9]+[a-zA-Z]?)?$", nullable=true, description="The street number of the client (nullable, e.g. 12, 12A, 12/34, 12A/34B)."),
      *             @OA\Property(property="postal_code", type="string", maxLength=255, pattern="^[0-9]+$", nullable=true, description="The postal code of the client (nullable, must be numeric)."),
      *             @OA\Property(property="city", type="string", maxLength=255, nullable=true, description="The city of the client (nullable)."),
      *             @OA\Property(property="phone_number", type="string", maxLength=255, pattern="^[0-9]+$", description="The phone number of the client (required, must be numeric)."),

@@ -8,10 +8,6 @@
     <div class="space-y-4">
         <!-- Wybór daty -->
         <div class="date-picker-container">
-            <!--
-                THE ONLY CHANGE IS HERE:
-                The `:min="getMinDate()"` attribute has been removed to allow selecting past dates.
-            -->
             <input type="date" x-model="selectedDate" :max="getMaxDate()" @change="onDateChange($event)"
                 class="date-picker-input w-full" id="deliveryDate" />
         </div>
@@ -45,19 +41,27 @@
         </div>
 
         <!-- Szybka nawigacja po dacie  -->
-        <div class="date-navigation">
+        <div class="date-navigation grid grid-cols-5 gap-2">
             <button @click="selectedDate = getTodayDate(); setSelectedDate(selectedDate);"
                 :class="selectedDate === getTodayDate() ? 'bg-blue-100 border-blue-300 text-blue-700' :
                     'bg-white hover:bg-gray-50'"
                 class="date-nav-btn text-xs px-3 py-2">Dzisiaj</button>
 
             <button
-                @click="(() => { const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1); const tomorrowStr = tomorrow.toISOString().split('T')[0]; selectedDate = tomorrowStr; setSelectedDate(tomorrowStr); })()"
-                class="date-nav-btn text-xs px-3 py-2 bg-white hover:bg-gray-50">Jutro</button>
+                @click="(() => { const nextDay = new Date(); nextDay.setDate(nextDay.getDate() + 1); const nextDayStr = nextDay.toISOString().split('T')[0]; selectedDate = nextDayStr; setSelectedDate(nextDayStr); })()"
+                class="date-nav-btn text-xs px-3 py-2 bg-white hover:bg-gray-50">+1</button>
 
             <button
-                @click="(() => { const nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate() + 7); const nextWeekStr = nextWeek.toISOString().split('T')[0]; selectedDate = nextWeekStr; setSelectedDate(nextWeekStr); })()"
-                class="date-nav-btn text-xs px-3 py-2 bg-white hover:bg-gray-50">+7 dni</button>
+                @click="(() => { const nextDay = new Date(); nextDay.setDate(nextDay.getDate() + 2); const nextDayStr = nextDay.toISOString().split('T')[0]; selectedDate = nextDayStr; setSelectedDate(nextDayStr); })()"
+                class="date-nav-btn text-xs px-3 py-2 bg-white hover:bg-gray-50">+2</button>
+
+            <button
+                @click="(() => { const nextDay = new Date(); nextDay.setDate(nextDay.getDate() + 3); const nextDayStr = nextDay.toISOString().split('T')[0]; selectedDate = nextDayStr; setSelectedDate(nextDayStr); })()"
+                class="date-nav-btn text-xs px-3 py-2 bg-white hover:bg-gray-50">+3</button>
+
+            <button
+                @click="(() => { const nextDay = new Date(); nextDay.setDate(nextDay.getDate() + 4); const nextDayStr = nextDay.toISOString().split('T')[0]; selectedDate = nextDayStr; setSelectedDate(nextDayStr); })()"
+                class="date-nav-btn text-xs px-3 py-2 bg-white hover:bg-gray-50">+4</button>
         </div>
     </div>
 </div>

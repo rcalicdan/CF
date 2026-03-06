@@ -10,6 +10,16 @@
         clientName: @json($client->full_name),
         phone: @json($client->phone_number),
 
+        // Tłumaczenia
+        t: {
+            clientLocation: @json(__('Client Location')),
+            address: @json(__('Address')),
+            phone: @json(__('Phone')),
+            getDirections: @json(__('Get Directions')),
+            clientSearchArea: @json(__('Client Search Area')),
+            polska: @json(__('Polska')),
+        },
+
         init() {
             this.$nextTick(() => {
                 this.initMap();
@@ -126,7 +136,7 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-4 8V9"></path>
                             </svg>
-                            Client Location
+                            ${this.t.clientLocation}
                         </div>
                     </div>
                 </div>
@@ -136,7 +146,7 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                             </svg>
-                            Address
+                            ${this.t.address}
                         </div>
                         <div class="section-content">${this.address}</div>
                     </div>
@@ -145,7 +155,7 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
                             </svg>
-                            Phone
+                            ${this.t.phone}
                         </div>
                         <div class="section-content">
                             <a href="tel:${this.phone}" class="phone-link">${this.phone}</a>
@@ -158,7 +168,7 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0V7"></path>
                         </svg>
-                        Get Directions
+                        ${this.t.getDirections}
                     </a>
                 </div>
             </div>
@@ -193,8 +203,8 @@
                     className: 'poland-label',
                     html: `
                     <div class="poland-label-content">
-                        <div class="poland-title">Polska</div>
-                        <div class="poland-subtitle">Client Search Area</div>
+                        <div class="poland-title">${this.t.polska}</div>
+                        <div class="poland-subtitle">${this.t.clientSearchArea}</div>
                     </div>
                 `,
                     iconSize: [180, 60],

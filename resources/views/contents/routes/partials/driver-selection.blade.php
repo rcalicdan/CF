@@ -33,7 +33,7 @@
                     <span x-text="selectedDriver?.full_name || 'Ładowanie...'"></span>
                 </div>
                 <div class="text-xs text-indigo-800 font-medium mt-2">
-                    Prawo jazdy: <span x-text="selectedDriver?.license_number || 'Brak'"></span>
+                    <!--Prawo jazdy: <span x-text="selectedDriver?.license_number || 'Brak'"></span>-->
                 </div>
             </div>
         </div>
@@ -101,8 +101,8 @@
                             <div class="min-w-0 flex-1">
                                 <div class="font-medium text-slate-800 truncate"
                                     x-text="driver?.full_name || 'Nieznany kierowca'"></div>
-                                <div class="text-xs text-slate-400 font-mono mt-1"
-                                    x-text="driver?.license_number || 'Brak prawa jazdy'"></div>
+                                <!--<div class="text-xs text-slate-400 font-mono mt-1"
+                                    x-text="driver?.license_number || 'Brak prawa jazdy'"></div>-->
                             </div>
                             <div x-show="selectedDriver && selectedDriver.id === driver.id"
                                 class="text-indigo-600 ml-3">

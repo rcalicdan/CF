@@ -172,7 +172,7 @@
             handleFileValidation(event) {
                 this.clientError = '';
                 const files = Array.from(event.target.files);
-                const maxSize = 5 * 1024 * 1024; 
+                const maxSize = 20 * 1024 * 1024;
                 const maxFiles = 10;
 
                 if (files.length > maxFiles) {
@@ -211,7 +211,7 @@
 
                 if (oversizedFiles.length) {
                     this.clientError =
-                        '{{ __('The following files are too large (max 5MB each):') }} ' +
+                        '{{ __('The following files are too large (max 20MB each):') }} ' +
                         oversizedFiles.join(', ');
                     this._resetInput(event);
                     return false;

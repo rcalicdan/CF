@@ -23,7 +23,7 @@
                     <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
                         {{ __('Order #:id', ['id' => $order->id]) }}</h1>
                     <p class="text-sm text-gray-500 mt-1">
-                        {{ __('Created on :date', ['date' => $order->created_at->format('M d, Y \a\t g:i A')]) }}</p>
+                        {{ __('Created on :date', ['date' => $order->created_at->format('d.m.Y H:i')]) }}</p>
                 </div>
 
                 <div class="flex justify-start">
@@ -55,7 +55,7 @@
                     <div>
                         <h1 class="text-3xl font-bold text-gray-900">{{ __('Order #:id', ['id' => $order->id]) }}</h1>
                         <p class="text-sm text-gray-500 mt-1">
-                            {{ __('Created on :date', ['date' => $order->created_at->format('M d, Y \a\t g:i A')]) }}
+                            {{ __('Created on :date', ['date' => $order->created_at->format('d.m.Y H:i')]) }}
                         </p>
                     </div>
                 </div>

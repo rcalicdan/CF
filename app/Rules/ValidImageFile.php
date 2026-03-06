@@ -20,7 +20,7 @@ class ValidImageFile implements ValidationRule
     ) {
         $this->allowedExtensions = array_map('strtolower', $allowedExtensions);
         $this->allowedMimeTypes = $allowedMimeTypes;
-        $this->maxSizeInBytes = $maxSizeMB * 1024 * 1024; 
+        $this->maxSizeInBytes = $maxSizeMB * 1024 * 1024;
     }
 
     /**
@@ -38,7 +38,7 @@ class ValidImageFile implements ValidationRule
     /**
      * Create instance with default settings for carpet photos
      */
-    public static function carpet(int $maxSizeMB = 5): self
+    public static function carpet(int $maxSizeMB = 20): self
     {
         return new self(
             allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
@@ -114,7 +114,7 @@ class ValidImageFile implements ValidationRule
     private function isValidMimeType(UploadedFile $file): bool
     {
         $filePath = $file->getRealPath();
-        
+
         if (!$filePath || !file_exists($filePath)) {
             return false;
         }
@@ -136,7 +136,7 @@ class ValidImageFile implements ValidationRule
     private function isValidImageFile(UploadedFile $file): bool
     {
         $filePath = $file->getRealPath();
-        
+
         if (!$filePath || !file_exists($filePath)) {
             return false;
         }
@@ -160,12 +160,12 @@ class ValidImageFile implements ValidationRule
     {
         $units = ['B', 'KB', 'MB', 'GB'];
         $unitIndex = 0;
-        
+
         while ($bytes >= 1024 && $unitIndex < count($units) - 1) {
             $bytes /= 1024;
             $unitIndex++;
         }
-        
+
         return round($bytes, 1) . ' ' . $units[$unitIndex];
     }
 

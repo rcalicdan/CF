@@ -4,17 +4,15 @@
 
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
 
-                <!-- Backdrop with blur -->
                 <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" wire:click="closeModal"
                     x-data x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
                     x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
                     x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
                 </div>
 
-                <!-- Center modal -->
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-                <div class="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+                <div class="relative inline-block align-bottom bg-white rounded-lg text-left overflow-visible shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
                     x-data x-transition:enter="ease-out duration-300"
                     x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
@@ -22,10 +20,8 @@
                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
 
-                    <!-- Modal Header -->
-                    <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4">
+                    <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4 rounded-t-lg">
                         <div class="flex items-center justify-between">
-                            <!-- Title Section -->
                             <div>
                                 <h3 class="text-lg font-semibold text-white" id="modal-title">
                                     Przypisz kierowcę
@@ -33,7 +29,6 @@
                                 <p class="text-sm text-indigo-100">Zamówienie #{{ $orderId }}</p>
                             </div>
 
-                            <!-- Modern Close Button -->
                             <button type="button" wire:click="closeModal"
                                 class="rounded-full p-2 text-white bg-white/20 hover:bg-white hover:text-indigo-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-sm"
                                 aria-label="Zamknij">
@@ -45,10 +40,8 @@
                         </div>
                     </div>
 
-                    <!-- Modal Body -->
                     <div class="bg-white px-6 py-6">
                         <div class="space-y-4">
-                            <!-- Driver Search Field -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
                                     Wybierz kierowcę <span class="text-red-500">*</span>
@@ -65,7 +58,6 @@
                                         class="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
                                         placeholder="Wyszukaj kierowcę po imieniu lub nazwisku...">
 
-                                    <!-- Selected Driver Indicator -->
                                     @if ($selectedDriverId)
                                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
                                             <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
@@ -76,7 +68,6 @@
                                         </div>
                                     @endif
 
-                                    <!-- Drivers Dropdown -->
                                     @if ($showDriversDropdown && count($filteredDrivers) > 0)
                                         <div
                                             class="absolute z-20 mt-2 w-full bg-white shadow-lg max-h-60 rounded-lg py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
@@ -134,7 +125,6 @@
                                     @endif
                                 </div>
 
-                                <!-- Click outside to close dropdown -->
                                 @if ($showDriversDropdown)
                                     <div wire:click="hideDriversDropdown" class="fixed inset-0 z-10"></div>
                                 @endif
@@ -144,7 +134,6 @@
                                 @enderror
                             </div>
 
-                            <!-- Info Box -->
                             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <div class="flex">
                                     <div class="flex-shrink-0">
@@ -168,8 +157,7 @@
                         </div>
                     </div>
 
-                    <!-- Modal Footer -->
-                    <div class="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3">
+                    <div class="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3 rounded-b-lg">
                         <button type="button" wire:click="closeModal"
                             class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                             Anuluj

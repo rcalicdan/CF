@@ -38,7 +38,7 @@
                 </div>
                 <div class="ml-4 flex-1">
                     <div class="font-medium text-blue-800">Główna baza - START</div>
-                    <div class="text-sm text-blue-600">Centrum dystrybucyjne Warszawa</div>
+                    <div class="text-sm text-blue-600">Centrala - Pralnia</div>
                     <div class="text-xs text-blue-500 mt-1">Wyjazd: 08:00</div>
                 </div>
             </div>
@@ -128,7 +128,7 @@
                 </div>
                 <div class="ml-4 flex-1">
                     <div class="font-medium text-green-800">Powrót do bazy - KONIEC</div>
-                    <div class="text-sm text-green-600">Centrum dystrybucyjne Warszawa</div>
+                    <div class="text-sm text-green-600">Centrum dystrybucyjne</div>
                     <div class="text-xs text-green-500 mt-1">
                         Przewidywany powrót: <span x-text="executiveSummary?.returnTime || '18:00'"></span>
                     </div>

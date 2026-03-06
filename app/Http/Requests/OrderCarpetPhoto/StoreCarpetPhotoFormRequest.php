@@ -22,7 +22,7 @@ class StoreCarpetPhotoFormRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'photo' => ['required', 'image', 'max:5120'],
+            'photo' => ['required', 'image', 'max:20480'],
         ];
     }
 }

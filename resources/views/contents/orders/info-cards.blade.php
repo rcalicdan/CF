@@ -234,7 +234,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <dt class="text-sm font-medium text-gray-500">{{ __('Created Date') }}</dt>
-                    <dd class="mt-1 text-base text-gray-900">{{ $order->created_at->format('M d, Y g:i A') }}</dd>
+                    <dd class="mt-1 text-base text-gray-900">{{ $order->created_at->translatedFormat('d M Y H:i') }}</dd>
                 </div>
             </div>
 
@@ -249,7 +249,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <dt class="text-sm font-medium text-gray-500">{{ __('Last Updated') }}</dt>
-                    <dd class="mt-1 text-base text-gray-900">{{ $order->updated_at->format('M d, Y g:i A') }}</dd>
+                    <dd class="mt-1 text-base text-gray-900">{{ $order->updated_at->translatedFormat('d M Y H:i') }}</dd>
                 </div>
             </div>
 

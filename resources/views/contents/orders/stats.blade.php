@@ -67,7 +67,7 @@
                     <dl>
                         <dt class="text-sm font-medium text-gray-500 truncate">{{ __('Schedule Date') }}</dt>
                         <dd class="text-lg font-bold text-gray-900">
-                            {{ $order->schedule_date ? $order->schedule_date->format('M d, Y') : __('Not scheduled') }}
+                            {{ $order->schedule_date ? $order->schedule_date->format('d.m.Y') : __('Not scheduled') }}
                         </dd>
                     </dl>
                 </div>

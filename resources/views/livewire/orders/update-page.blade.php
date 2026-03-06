@@ -26,10 +26,18 @@
                                 <div
                                     class="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                                     @foreach ($filteredClients as $client)
-                                        <div wire:click="selectClient({{ $client->id }}, '{{ $client->full_name }}')"
+                                        <div wire:click="selectClient({{ $client->id }}, '{{ $client->full_name }}', '{{ $client->street_name }}', '{{ $client->street_number }}', '{{ $client->city }}')"
                                             class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50 {{ $client->id == $client_id ? 'bg-indigo-50' : '' }}">
-                                            <span
-                                                class="block font-medium text-gray-900">{{ $client->full_name }}</span>
+                                            @php
+                                                $addressParts = array_filter([
+                                                    trim(($client->street_name ?? '') . ' ' . ($client->street_number ?? '')),
+                                                    $client->city,
+                                                ]);
+                                                $clientLabel = $addressParts ? $client->full_name . ', ' . implode(', ', $addressParts) : $client->full_name;
+                                            @endphp
+                                            <div>
+                                                <span class="block font-medium text-gray-900">{{ $clientLabel }}</span>
+                                            </div>
                                         </div>
                                     @endforeach
                                 </div>
@@ -37,7 +45,8 @@
                                 <div
                                     class="absolute z-20 mt-1 w-full bg-white shadow-lg rounded-md py-2 text-base ring-1 ring-black ring-opacity-5">
                                     <p class="text-sm text-gray-500 px-3">
-                                        {{ __('No clients found matching :search', ['search' => $clientSearch]) }}</p>
+                                        {{ __('No clients found matching :search', ['search' => $clientSearch]) }}
+                                    </p>
                                 </div>
                             @endif
                         </div>

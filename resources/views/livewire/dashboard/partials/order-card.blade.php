@@ -7,7 +7,7 @@
         ],
         'in-progress' => [
             'border' => 'border-l-8 border-blue-500',
-            'label' => 'W realizacji',
+            'label' => 'Przyjęte/W realizacji',
             'labelColor' => 'text-blue-700',
         ],
         'completed' => [
@@ -23,9 +23,11 @@
 
 <div
     class="bg-white rounded-lg shadow-sm border border-gray-200 {{ $config['border'] }} hover:shadow-md transition-all duration-200 h-full flex flex-col">
-    
+
+
     <div class="p-4 flex flex-col h-full">
-        
+
+
         <div>
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center space-x-2">
@@ -40,54 +42,70 @@
                     <table class="w-full text-xs">
                         <thead>
                             <tr class="border-b border-gray-200">
-                                <th class="sticky top-0 bg-white z-10 text-left py-2 px-2 font-semibold text-gray-700 shadow-sm">Produkt</th>
-                                <th class="sticky top-0 bg-white z-10 text-center py-2 px-2 font-semibold text-gray-700 shadow-sm">Ilość</th>
-                                <th class="sticky top-0 bg-white z-10 text-right py-2 px-2 font-semibold text-gray-700 shadow-sm">Brutto</th>
+                                <th
+                                    class="sticky top-0 bg-white z-10 text-left py-2 px-2 font-semibold text-gray-700 shadow-sm">
+                                    Produkt</th>
+                                <th
+                                    class="sticky top-0 bg-white z-10 text-center py-2 px-2 font-semibold text-gray-700 shadow-sm">
+                                    Ilość</th>
+                                <th
+                                    class="sticky top-0 bg-white z-10 text-right py-2 px-2 font-semibold text-gray-700 shadow-sm">
+                                    Brutto</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-50">
-                            @forelse($order->orderServices as $orderService)
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="py-2 px-2 text-gray-700">{{ $orderService->service->name ?? 'N/A' }}</td>
-                                    <td class="py-2 px-2 text-center text-gray-600">{{ $orderService->quantity }} szt</td>
-                                    <td class="py-2 px-2 text-right text-gray-900">
-                                        {{ number_format($orderService->total_price, 2) }} PLN</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="3" class="py-3 text-center text-gray-500 text-xs italic">Brak usług</td>
-                                </tr>
-                            @endforelse
+                            @php
+                                $hasOrderServices = $order->orderServices->isNotEmpty();
+                                $hasCarpets = $order->orderCarpets->isNotEmpty();
+                            @endphp
 
-                            @foreach ($order->orderCarpets as $carpet)
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="py-2 px-2 text-gray-700">
-                                        <div class="flex items-center space-x-1">
-                                            <span>Dywan ({{ $carpet->width }}x{{ $carpet->height }}cm)</span>
-                                            @if ($carpet->services->count() > 0)
-                                                <div class="relative group">
-                                                    <svg class="w-3 h-3 text-indigo-500 cursor-help" fill="currentColor"
-                                                        viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd"
-                                                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                                            clip-rule="evenodd"></path>
-                                                    </svg>
-                                                    <div
-                                                        class="fixed ml-4 hidden group-hover:block z-50 w-48 bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl pointer-events-none">
-                                                        <p class="font-semibold mb-1">Usługi dywanu:</p>
-                                                        @foreach ($carpet->services as $service)
-                                                            <p>• {{ $service->name }}</p>
-                                                        @endforeach
+                            @if ($hasOrderServices || $hasCarpets)
+                                @foreach ($order->orderServices as $orderService)
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="py-2 px-2 text-gray-700">{{ $orderService->service->name ?? 'N/A' }}</td>
+                                        <td class="py-2 px-2 text-center text-gray-600">{{ $orderService->quantity }} szt
+                                        </td>
+                                        <td class="py-2 px-2 text-right text-gray-900">
+                                            {{ number_format($orderService->total_price, 2) }} PLN</td>
+                                    </tr>
+                                @endforeach
+
+                                @foreach ($order->orderCarpets as $carpet)
+                                    <tr class="hover:bg-gray-50 transition-colors">
+                                        <td class="py-2 px-2 text-gray-700">
+                                            <div class="flex items-center space-x-1">
+                                                <span>Dywan ({{ $carpet->width }}x{{ $carpet->height }}cm)</span>
+                                                @if ($carpet->services->count() > 0)
+                                                    <div class="relative group">
+                                                        <svg class="w-3 h-3 text-indigo-500 cursor-help" fill="currentColor"
+                                                            viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd"
+                                                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                                                clip-rule="evenodd"></path>
+                                                        </svg>
+                                                        <div
+                                                            class="fixed ml-4 hidden group-hover:block z-50 w-48 bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl pointer-events-none">
+                                                            <p class="font-semibold mb-1">Usługi dywanu:</p>
+                                                            @foreach ($carpet->services as $service)
+                                                                <p>• {{ $service->name }}</p>
+                                                            @endforeach
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            @endif
-                                        </div>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="py-2 px-2 text-center text-gray-600">1 szt</td>
+                                        <td class="py-2 px-2 text-right text-gray-900">
+                                            {{ number_format($carpet->total_price, 2) }}
+                                            PLN</td>
+                                    </tr>
+                                @endforeach
+                            @else
+                                <tr>
+                                    <td colspan="3" class="py-3 text-center text-gray-500 text-xs italic">Brak usług
                                     </td>
-                                    <td class="py-2 px-2 text-center text-gray-600">1 szt</td>
-                                    <td class="py-2 px-2 text-right text-gray-900">{{ number_format($carpet->total_price, 2) }}
-                                        PLN</td>
                                 </tr>
-                            @endforeach
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -142,7 +160,7 @@
                                 clip-rule="evenodd"></path>
                         </svg>
                         <span class="font-medium">Zakończono:
-                            {{ $order->orderDeliveryConfirmation->delivered_at->format('d.m.Y, H:i') }}</span>
+                            {{ $order->orderDeliveryConfirmation->delivered_at?->format('d.m.Y, H:i') ?? '-' }}</span>
                     </div>
                 </div>
             @endif
@@ -157,7 +175,7 @@
                         {{ $order->client->city ?? '' }}
                     </p>
                     @if($order->client && $order->client->phone_number)
-                        <a href="tel:{{ $order->client->phone_number }}" 
+                        <a href="tel:{{ $order->client->phone_number }}"
                         class="flex items-center text-gray-600 hover:text-indigo-600 transition-colors group mt-1">
                             <svg class="w-3 h-3 mr-1.5 text-gray-400 group-hover:text-indigo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
@@ -166,12 +184,13 @@
                         </a>
                     @endif
                     @if($order->client && $order->client->email)
-                        <a href="mailto:{{ $order->client->email }}" 
+                        <a href="mailto:{{ $order->client->email }}"
                         class="flex items-center text-gray-600 hover:text-indigo-600 transition-colors group">
                             <svg class="w-3 h-3 mr-1.5 text-gray-400 group-hover:text-indigo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                             </svg>
-                            <span class="truncate" title="{{ $order->client->email }}">{{ $order->client->email }}</span>
+                            <span class="truncate"
+                                title="{{ $order->client->email }}">{{ $order->client->email }}</span>
                         </a>
                     @endif
                 </div>
@@ -214,6 +233,7 @@
                     class="flex-1 px-3 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-semibold rounded-lg shadow-sm hover:shadow transition-all duration-200 text-center">
                     Szczegóły
                 </a>
+                <!--
                 <button
                     class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-all duration-200">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,11 +242,12 @@
                         </path>
                     </svg>
                 </button>
+            -->
             </div>
 
             <div class="mt-3 pt-2 border-t border-gray-100">
-                <p class="text-xs text-gray-500">Przyjęcie przez: <span
-                        class="font-medium text-gray-700">{{ $order->user->name ?? 'N/A' }}</span></p>
+                <p class="text-xs text-gray-500">Utworzone przez: <span
+                        class="font-medium text-gray-700">{{ $order->creator_full_name ?? "System" }}</span></p>
             </div>
         </div>
     </div>

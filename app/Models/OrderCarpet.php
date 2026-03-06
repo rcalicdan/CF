@@ -62,7 +62,7 @@ class OrderCarpet extends Model
     {
         return $this->belongsToMany(Service::class, 'carpet_services', 'order_carpet_id', 'service_id')
             ->using(CarpetService::class)
-            ->withPivot(['id', 'total_price']);
+            ->withPivot(['id', 'total_price', 'quantity']);
     }
 
     public function getTotalPriceAttribute()

@@ -5,11 +5,13 @@ namespace App\Providers;
 use App\Models\Client;
 use App\Models\Order;
 use App\Models\OrderCarpet;
+use App\Models\ServicePriceList;
 use App\Models\User;
 use App\Observers\ClientObserver;
 use App\Observers\DriverObserver;
 use App\Observers\OrderCarpetObserver;
 use App\Observers\OrderObserver;
+use App\Observers\ServicePriceListObserver;
 use App\Observers\UserObserver;
 use Illuminate\Support\ServiceProvider;
 
@@ -32,5 +34,6 @@ class ObserverServiceProvider extends ServiceProvider
         Order::observe(OrderObserver::class);
         OrderCarpet::observe(OrderCarpetObserver::class);
         Client::observe(ClientObserver::class);
+        ServicePriceList::observe(ServicePriceListObserver::class);
     }
 }

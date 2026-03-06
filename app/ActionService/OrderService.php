@@ -133,11 +133,19 @@ class OrderService
             foreach ($carpet->services as $service) {
                 $price = $this->getServicePrice($service, $order->price_list_id, $service->base_price);
 
-                $totalPrice = $order->is_complaint
-                    ? 0
-                    : ($service->is_area_based
-                        ? $price * ($carpet->total_area ?? 1)
-                        : $price);
+                if ($order->is_complaint) {
+                    $totalPrice = 0;
+                } else {
+                    $quantity = $service->pivot->quantity;
+
+                    if (! is_null($quantity) && $quantity > 0) {
+                        $totalPrice = $price * $quantity;
+                    } elseif ($service->is_area_based) {
+                        $totalPrice = $price * ($carpet->total_area ?? 0);
+                    } else {
+                        $totalPrice = $price;
+                    }
+                }
 
                 $carpet->services()->updateExistingPivot($service->id, [
                     'total_price' => $totalPrice,

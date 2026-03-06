@@ -41,14 +41,15 @@ class ViewPage extends Component
     public function manualGeocode()
     {
         $this->geocodingInProgress = true;
-        
+
         if ($this->client->forceGeocode()) {
+            $this->client->saveQuietly();
             $this->client->refresh();
             session()->flash('success', __('Address successfully geocoded!'));
         } else {
             session()->flash('error', __('Unable to geocode the address. Please check if the address is correct.'));
         }
-        
+
         $this->geocodingInProgress = false;
         $this->dispatch('addressGeocoded');
     }
@@ -58,7 +59,7 @@ class ViewPage extends Component
         $reportService = new ClientPdfReportService();
         $dateFrom = $this->dateFrom ? Carbon::parse($this->dateFrom)->startOfDay() : null;
         $dateTo = $this->dateTo ? Carbon::parse($this->dateTo)->endOfDay() : null;
-        
+
         $filename = $reportService->generateClientReport($this->client, $dateFrom, $dateTo);
 
         return response()->download(storage_path('app/public/' . $filename))
@@ -100,15 +101,15 @@ class ViewPage extends Component
     {
         $query = $this->client->orders()
             ->with(['driver.user', 'priceList', 'orderCarpets']);
-        
+
         if ($this->dateFrom) {
             $query->where('created_at', '>=', Carbon::parse($this->dateFrom)->startOfDay());
         }
-        
+
         if ($this->dateTo) {
             $query->where('created_at', '<=', Carbon::parse($this->dateTo)->endOfDay());
         }
-        
+
         return $query->latest('created_at')
             ->paginate($this->ordersPerPage, ['*'], 'orders-page');
     }
@@ -117,16 +118,16 @@ class ViewPage extends Component
     {
         $query = OrderCarpet::whereHas('order', function ($query) {
             $subQuery = $query->where('client_id', $this->client->id);
-            
+
             if ($this->dateFrom) {
                 $subQuery->where('created_at', '>=', Carbon::parse($this->dateFrom)->startOfDay());
             }
-            
+
             if ($this->dateTo) {
                 $subQuery->where('created_at', '<=', Carbon::parse($this->dateTo)->endOfDay());
             }
         })->with(['order', 'services']);
-        
+
         return $query->latest('created_at')
             ->paginate($this->carpetsPerPage, ['*'], 'carpets-page');
     }
@@ -145,7 +146,7 @@ class ViewPage extends Component
                      ->where('created_at', '>=', Carbon::parse($this->dateFrom)->startOfDay());
             });
         }
-        
+
         if ($this->dateTo) {
             $ordersQuery->where('created_at', '<=', Carbon::parse($this->dateTo)->endOfDay());
             $carpetsQuery->whereHas('order', function ($query) {

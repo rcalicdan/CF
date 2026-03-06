@@ -31,10 +31,16 @@
                                         <div
                                             class="absolute z-20 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                                             @foreach ($filteredClients as $client)
-                                                <div wire:click="selectClient({{ $client->id }}, '{{ $client->full_name }}')"
+                                                <div wire:click="selectClient({{ $client->id }}, '{{ $client->full_name }}', '{{ $client->city }}')"
                                                     class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50 {{ $client->id == $client_id ? 'bg-indigo-50' : '' }}">
-                                                    <span
-                                                        class="block font-medium text-gray-900">{{ $client->full_name }}</span>
+                                                    <div>
+                                                        <span
+                                                            class="block font-medium text-gray-900">{{ $client->full_name }}</span>
+                                                        <span class="block text-sm text-gray-600">
+                                                            {{ $client->street_name }} {{ $client->street_number }},
+                                                            {{ $client->city }}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             @endforeach
                                         </div>

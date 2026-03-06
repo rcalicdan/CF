@@ -119,7 +119,7 @@ class OrderCarpetController extends Controller
      *                         @OA\Property(property="qr_code", type="string", nullable=true, example=null),
      *                         @OA\Property(property="height", type="string", nullable=true, example="2.00"),
      *                         @OA\Property(property="width", type="string", nullable=true, example="2.00"),
-     *                         @OA\Property(property="total_area", type="integer", nullable=true, example=4),
+     *                         @OA\Property(property="total_area", type="number", nullable=true, example=4, description="Calculated as height × width"),
      *                         @OA\Property(property="measured_at", type="string", format="date-time", nullable=true, example="2025-03-10T15:06:20+00:00"),
      *                         @OA\Property(property="status", type="string", example="pending"),
      *                         @OA\Property(property="remarks", type="string", nullable=true, example=null),
@@ -149,10 +149,11 @@ class OrderCarpetController extends Controller
      *                                 type="object",
      *
      *                                 @OA\Property(property="service_id", type="integer", example=1),
-     *                                 @OA\Property(property="service_name", type="string", example="voluptatem"),
-     *                                 @OA\Property(property="service_base_price", type="string", example="29.15"),
-     *                                 @OA\Property(property="service_price_list_price", type="string", nullable=true, example=null),
-     *                                 @OA\Property(property="total_price", type="string", example="116.60")
+     *                                 @OA\Property(property="service_name", type="string", example="Deep Cleaning"),
+     *                                 @OA\Property(property="service_base_price", type="string", example="29.15", description="Base price per unit from service table"),
+     *                                 @OA\Property(property="service_price_list_price", type="string", nullable=true, example="25.00", description="Overridden price from price list if applicable"),
+     *                                 @OA\Property(property="quantity", type="number", nullable=true, example=2.5, description="Quantity multiplier for this service"),
+     *                                 @OA\Property(property="total_price", type="string", example="116.60", description="Calculated as: (price_list_price OR base_price) × quantity × total_area")
      *                             )
      *                         ),
      *                         @OA\Property(property="complaint", type="object", nullable=true),
@@ -219,7 +220,7 @@ class OrderCarpetController extends Controller
      *     path="/api/order-carpets",
      *     tags={"Order Carpets"},
      *     summary="Create a new order carpet",
-     *     description="Creates a new order carpet and associates it with an existing order.",
+     *     description="Creates a new order carpet and associates it with an existing order. Services can include optional quantity multipliers for pricing calculations.",
      *
      *     @OA\RequestBody(
      *         required=true,
@@ -228,16 +229,30 @@ class OrderCarpetController extends Controller
      *             type="object",
      *             required={"order_id", "services"},
      *
-     *             @OA\Property(property="order_id", type="string", example="1"),
+     *             @OA\Property(property="order_id", type="string", example="1", description="ID of the parent order"),
      *             @OA\Property(property="qr_code", type="string", nullable=true, example="QR123456"),
-     *             @OA\Property(property="status", type="string", example="pending"),
+     *             @OA\Property(property="status", type="string", example="pending", description="Defaults to 'pending' if not provided"),
      *             @OA\Property(property="remarks", type="string", nullable=true, example="Handle with care", description="Maximum 1000 characters"),
      *             @OA\Property(
      *                 property="services",
      *                 type="array",
-     *
-     *                 @OA\Items(type="integer", example=1),
-     *                 description="Array of service IDs"
+     *                 description="Array of services with optional quantity multipliers. Can be simple IDs or objects with quantity.",
+     *                 @OA\Items(
+     *                     oneOf={
+     *                         @OA\Schema(type="integer", example=1, description="Simple service ID (backward compatible)"),
+     *                         @OA\Schema(
+     *                             type="object",
+     *                             required={"id"},
+     *                             @OA\Property(property="id", type="integer", example=1, description="Service ID"),
+     *                             @OA\Property(property="quantity", type="number", format="float", nullable=true, example=2.5, description="Quantity multiplier (0.01-9999.99). If null, quantity defaults to 1 or area-based calculation.")
+     *                         )
+     *                     }
+     *                 ),
+     *                 example={
+     *                     {"id": 1, "quantity": 2.5},
+     *                     {"id": 2, "quantity": null},
+     *                     3
+     *                 }
      *             )
      *         )
      *     ),
@@ -258,7 +273,7 @@ class OrderCarpetController extends Controller
      *                 @OA\Property(property="qr_code", type="string", nullable=true, example=null),
      *                 @OA\Property(property="height", type="number", format="float", nullable=true, example=null),
      *                 @OA\Property(property="width", type="number", format="float", nullable=true, example=null),
-     *                 @OA\Property(property="total_area", type="number", format="float", nullable=true, example=null),
+     *                 @OA\Property(property="total_area", type="number", format="float", nullable=true, example=null, description="Calculated as height × width"),
      *                 @OA\Property(property="measured_at", type="string", format="date-time", nullable=true, example=null),
      *                 @OA\Property(property="status", type="string", example="pending"),
      *                 @OA\Property(property="remarks", type="string", nullable=true, example=null),
@@ -272,10 +287,11 @@ class OrderCarpetController extends Controller
      *                         type="object",
      *
      *                         @OA\Property(property="service_id", type="integer", example=1),
-     *                         @OA\Property(property="service_name", type="string", example="voluptatem"),
-     *                         @OA\Property(property="service_base_price", type="string", example="29.15"),
-     *                         @OA\Property(property="service_price_list_price", type="string", nullable=true, example=null),
-     *                         @OA\Property(property="total_price", type="string", example="0.00")
+     *                         @OA\Property(property="service_name", type="string", example="Deep Cleaning"),
+     *                         @OA\Property(property="service_base_price", type="string", example="29.15", description="Base price per unit"),
+     *                         @OA\Property(property="service_price_list_price", type="string", nullable=true, example="25.00", description="Price from price list if available"),
+     *                         @OA\Property(property="quantity", type="number", nullable=true, example=2.5, description="Quantity multiplier"),
+     *                         @OA\Property(property="total_price", type="string", example="125.00", description="Calculated total price")
      *                     )
      *                 ),
      *                 @OA\Property(
@@ -293,7 +309,7 @@ class OrderCarpetController extends Controller
      *                         @OA\Property(property="postal_code", type="string", example="19410-9689"),
      *                         @OA\Property(property="phone_number", type="string", example="+1-605-536-7506"),
      *                         @OA\Property(property="city", type="string", example="Grimesstad"),
-     *                         @OA\Property(property="remarks", type="string", example="Nesciunt quia temporibus ut. Dolores adipisci ducimus molestiae ut distinctio. Unde necessitatibus aut id quis ut."),
+     *                         @OA\Property(property="remarks", type="string", example="Nesciunt quia temporibus ut."),
      *                         @OA\Property(property="created_at", type="string", format="date-time", example="2025-03-09T15:26:40+00:00"),
      *                         @OA\Property(property="updated_at", type="string", format="date-time", example="2025-03-09T15:26:40+00:00")
      *                     ),
@@ -310,7 +326,7 @@ class OrderCarpetController extends Controller
      *                     ),
      *                     @OA\Property(property="status", type="string", example="pending"),
      *                     @OA\Property(property="is_complaint", type="boolean", example=false),
-     *                     @OA\Property(property="total_amount", type="string", example="29.15"),
+     *                     @OA\Property(property="total_amount", type="string", example="125.00"),
      *                     @OA\Property(property="created_at", type="string", format="date-time", example="2025-03-09T15:26:40+00:00"),
      *                     @OA\Property(property="updated_at", type="string", format="date-time", example="2025-03-09T15:49:17+00:00")
      *                 ),
@@ -331,7 +347,9 @@ class OrderCarpetController extends Controller
      *                 property="errors",
      *                 type="object",
      *                 @OA\Property(property="order_id", type="array", @OA\Items(type="string", example="The order id field is required.")),
-     *                 @OA\Property(property="services", type="array", @OA\Items(type="string", example="The services field is required."))
+     *                 @OA\Property(property="services", type="array", @OA\Items(type="string", example="The services field is required.")),
+     *                 @OA\Property(property="services.0.id", type="array", @OA\Items(type="string", example="The services.0.id field is required.")),
+     *                 @OA\Property(property="services.0.quantity", type="array", @OA\Items(type="string", example="The services.0.quantity must be between 0.01 and 9999.99."))
      *             )
      *         )
      *     )
@@ -353,7 +371,7 @@ class OrderCarpetController extends Controller
      *     path="/api/order-carpets/{id}",
      *     tags={"Order Carpets"},
      *     summary="Get order carpet by ID",
-     *     description="Retrieves the details of a specific order carpet by its ID, including related order information.",
+     *     description="Retrieves the details of a specific order carpet by its ID, including related order information and service pricing with quantity multipliers.",
      *
      *     @OA\Parameter(
      *         name="id",
@@ -387,7 +405,7 @@ class OrderCarpetController extends Controller
      *                     @OA\Property(property="postal_code", type="string", example="19410-9689"),
      *                     @OA\Property(property="city", type="string", example="Grimesstad"),
      *                     @OA\Property(property="phone_number", type="string", example="+1-605-536-7506"),
-     *                     @OA\Property(property="remarks", type="string", example="Nesciunt quia temporibus ut. Dolores adipisci ducimus molestiae ut distinctio. Unde necessitatibus aut id quis ut."),
+     *                     @OA\Property(property="remarks", type="string", example="Nesciunt quia temporibus ut."),
      *                     @OA\Property(property="created_at", type="string", format="date-time", example="2025-03-09T15:26:40+00:00"),
      *                     @OA\Property(property="updated_at", type="string", format="date-time", example="2025-03-09T15:26:40+00:00")
      *                 ),
@@ -414,9 +432,9 @@ class OrderCarpetController extends Controller
      *
      *                         @OA\Property(property="id", type="integer", example=3),
      *                         @OA\Property(property="qr_code", type="string", nullable=true, example=null),
-     *                         @OA\Property(property="height", type="string", nullable=true, example=null),
-     *                         @OA\Property(property="width", type="string", nullable=true, example=null),
-     *                         @OA\Property(property="total_area", type="string", nullable=true, example=null),
+     *                         @OA\Property(property="height", type="string", nullable=true, example="2.50"),
+     *                         @OA\Property(property="width", type="string", nullable=true, example="3.00"),
+     *                         @OA\Property(property="total_area", type="number", nullable=true, example=7.5, description="Calculated as height × width"),
      *                         @OA\Property(property="measured_at", type="string", nullable=true, example=null),
      *                         @OA\Property(property="status", type="string", example="pending"),
      *                         @OA\Property(property="remarks", type="string", nullable=true, example=null),
@@ -435,10 +453,11 @@ class OrderCarpetController extends Controller
      *                                 type="object",
      *
      *                                 @OA\Property(property="service_id", type="integer", example=1),
-     *                                 @OA\Property(property="service_name", type="string", example="voluptatem"),
-     *                                 @OA\Property(property="service_base_price", type="string", example="29.15"),
-     *                                 @OA\Property(property="service_price_list_price", type="string", nullable=true, example=null),
-     *                                 @OA\Property(property="total_price", type="string", example="29.15")
+     *                                 @OA\Property(property="service_name", type="string", example="Deep Cleaning"),
+     *                                 @OA\Property(property="service_base_price", type="string", example="29.15", description="Base price per unit"),
+     *                                 @OA\Property(property="service_price_list_price", type="string", nullable=true, example="25.00", description="Overridden price from price list"),
+     *                                 @OA\Property(property="quantity", type="number", nullable=true, example=2.5, description="Quantity multiplier"),
+     *                                 @OA\Property(property="total_price", type="string", example="468.75", description="Formula: (price_list_price OR base_price) × quantity × total_area")
      *                             )
      *                         ),
      *                         @OA\Property(property="complaint", type="object", nullable=true),
@@ -493,7 +512,7 @@ class OrderCarpetController extends Controller
      *     path="/api/order-carpets/{id}",
      *     tags={"Order Carpets"},
      *     summary="Update an existing order carpet",
-     *     description="Updates the details of an existing order carpet by its ID.",
+     *     description="Updates the details of an existing order carpet by its ID. Services array is required and can include quantity multipliers.",
      *
      *     @OA\Parameter(
      *         name="id",
@@ -509,17 +528,32 @@ class OrderCarpetController extends Controller
      *
      *         @OA\JsonContent(
      *             type="object",
+     *             required={"services"},
      *
-     *             @OA\Property(property="order_id", type="string", example="1"),
+     *             @OA\Property(property="order_id", type="string", example="1", description="Optional: Update the parent order"),
      *             @OA\Property(property="qr_code", type="string", nullable=true, example="QR123456"),
-     *             @OA\Property(property="status", type="string", example="picked up"),
+     *             @OA\Property(property="status", type="string", example="picked up", description="Defaults to 'picked up' if not provided"),
      *             @OA\Property(property="remarks", type="string", nullable=true, example="Updated remarks", description="Maximum 1000 characters"),
      *             @OA\Property(
      *                 property="services",
      *                 type="array",
-     *
-     *                 @OA\Items(type="integer", example=1),
-     *                 description="Array of service IDs"
+     *                 description="Required array of services with optional quantity multipliers",
+     *                 @OA\Items(
+     *                     oneOf={
+     *                         @OA\Schema(type="integer", example=1, description="Simple service ID (backward compatible)"),
+     *                         @OA\Schema(
+     *                             type="object",
+     *                             required={"id"},
+     *                             @OA\Property(property="id", type="integer", example=1, description="Service ID"),
+     *                             @OA\Property(property="quantity", type="number", format="float", nullable=true, example=3.0, description="Quantity multiplier (0.01-9999.99)")
+     *                         )
+     *                     }
+     *                 ),
+     *                 example={
+     *                     {"id": 1, "quantity": 3.0},
+     *                     {"id": 2, "quantity": null},
+     *                     3
+     *                 }
      *             )
      *         )
      *     ),
@@ -538,12 +572,12 @@ class OrderCarpetController extends Controller
      *                 type="object",
      *                 @OA\Property(property="id", type="integer", example=1),
      *                 @OA\Property(property="qr_code", type="string", nullable=true, example="12345678"),
-     *                 @OA\Property(property="height", type="number", format="float", nullable=true, example=null),
-     *                 @OA\Property(property="width", type="number", format="float", nullable=true, example=null),
-     *                 @OA\Property(property="total_area", type="number", format="float", nullable=true, example=null),
-     *                 @OA\Property(property="measured_at", type="string", format="date-time", nullable=true, example=null),
+     *                 @OA\Property(property="height", type="number", format="float", nullable=true, example=2.5),
+     *                 @OA\Property(property="width", type="number", format="float", nullable=true, example=3.0),
+     *                 @OA\Property(property="total_area", type="number", format="float", nullable=true, example=7.5, description="Calculated as height × width"),
+     *                 @OA\Property(property="measured_at", type="string", format="date-time", nullable=true, example="2025-02-16T10:30:00+00:00"),
      *                 @OA\Property(property="status", type="string", example="picked up"),
-     *                 @OA\Property(property="remarks", type="string", nullable=true, example=null),
+     *                 @OA\Property(property="remarks", type="string", nullable=true, example="Updated remarks"),
      *                 @OA\Property(
      *                     property="order_carpet_photos",
      *                     type="array",
@@ -572,10 +606,11 @@ class OrderCarpetController extends Controller
      *                         type="object",
      *
      *                         @OA\Property(property="service_id", type="integer", example=1),
-     *                         @OA\Property(property="service_name", type="string", example="voluptatem"),
-     *                         @OA\Property(property="service_base_price", type="string", example="29.15"),
-     *                         @OA\Property(property="service_price_list_price", type="string", nullable=true, example=null),
-     *                         @OA\Property(property="total_price", type="string", example="0.00")
+     *                         @OA\Property(property="service_name", type="string", example="Deep Cleaning"),
+     *                         @OA\Property(property="service_base_price", type="string", example="29.15", description="Base price per unit"),
+     *                         @OA\Property(property="service_price_list_price", type="string", nullable=true, example="25.00", description="Price from price list"),
+     *                         @OA\Property(property="quantity", type="number", nullable=true, example=3.0, description="Quantity multiplier"),
+     *                         @OA\Property(property="total_price", type="string", example="562.50", description="Calculated: (25.00) × 3.0 × 7.5")
      *                     )
      *                 ),
      *                 @OA\Property(
@@ -593,7 +628,7 @@ class OrderCarpetController extends Controller
      *                         @OA\Property(property="postal_code", type="string", example="37905-9294"),
      *                         @OA\Property(property="city", type="string", example="Warsaw"),
      *                         @OA\Property(property="phone_number", type="string", example="682-244-9815"),
-     *                         @OA\Property(property="remarks", type="string", example="Iure ipsum minima ut porro dolorem voluptatibus officia..."),
+     *                         @OA\Property(property="remarks", type="string", example="Iure ipsum minima ut."),
      *                         @OA\Property(property="created_at", type="string", format="date-time", example="2025-02-14T16:16:30+00:00"),
      *                         @OA\Property(property="updated_at", type="string", format="date-time", example="2025-02-14T16:16:30+00:00")
      *                     ),
@@ -610,7 +645,7 @@ class OrderCarpetController extends Controller
      *                     ),
      *                     @OA\Property(property="status", type="string", example="pending"),
      *                     @OA\Property(property="is_complaint", type="boolean", example=false),
-     *                     @OA\Property(property="total_amount", type="string", example="29.15"),
+     *                     @OA\Property(property="total_amount", type="string", example="562.50"),
      *                     @OA\Property(property="created_at", type="string", format="date-time", example="2025-02-14T16:16:30+00:00"),
      *                     @OA\Property(property="updated_at", type="string", format="date-time", example="2025-02-16T14:40:49+00:00")
      *                 ),
@@ -641,8 +676,9 @@ class OrderCarpetController extends Controller
      *             @OA\Property(
      *                 property="errors",
      *                 type="object",
-     *                 @OA\Property(property="status", type="array", @OA\Items(type="string", example="The status field is required.")),
-     *                 @OA\Property(property="services", type="array", @OA\Items(type="string", example="The services field is required."))
+     *                 @OA\Property(property="services", type="array", @OA\Items(type="string", example="The services field is required.")),
+     *                 @OA\Property(property="services.0.id", type="array", @OA\Items(type="string", example="The services.0.id field is required.")),
+     *                 @OA\Property(property="services.0.quantity", type="array", @OA\Items(type="string", example="The services.0.quantity must be between 0.01 and 9999.99."))
      *             )
      *         )
      *     )
@@ -650,7 +686,10 @@ class OrderCarpetController extends Controller
      */
     public function update(UpdateOrderCarpetFormRequest $request, OrderCarpet $orderCarpet): JsonResponse
     {
-        $orderCarpet = $this->orderCarpetService->updateOrderCarpet($orderCarpet, $request->validated());
+        $orderCarpet = $this->orderCarpetService->updateOrderCarpet(
+            $orderCarpet,
+            $request->validated()
+        );
 
         return $this->successResponse(data: [
             'status' => 'success',
@@ -666,6 +705,7 @@ class OrderCarpetController extends Controller
      *     path="/api/order-carpets/{id}",
      *     tags={"Order Carpets"},
      *     summary="Delete an order carpet",
+     *     description="Permanently deletes an order carpet and its associated service records.",
      *
      *     @OA\Parameter(
      *         name="id",

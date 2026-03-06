@@ -44,7 +44,8 @@
                     </svg>
                 </div>
                 <input type="text" wire:model.live.debounce.300ms="search"
-                    class="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    style="padding-left: 2.5rem"
+                    class="w-full pr-4 py-3 bg-white border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                     placeholder="Nr zamówienia, Imię i Nazwisko, Adres lub Miasto">
             </div>
         </div>
@@ -103,7 +104,7 @@
             @endif
             <div class="flex items-start justify-between">
                 <div class="space-y-2">
-                    <p class="text-sm font-medium text-blue-700">W realizacji</p>
+                    <p class="text-sm font-medium text-blue-700">Przyjęte/W realizacji</p>
                     <p class="text-3xl font-bold text-blue-900">{{ $statusCounts['in_progress'] }}</p>
                     <div class="flex items-center space-x-2">
                         <div class="flex items-center bg-blue-200 px-2 py-1 rounded-full">
@@ -140,7 +141,7 @@
             @endif
             <div class="flex items-start justify-between">
                 <div class="space-y-2">
-                    <p class="text-sm font-medium text-green-700">Zrealizowane</p>
+                    <p class="text-sm font-medium text-green-700">Zrealizowane/Zakończone</p>
                     <p class="text-3xl font-bold text-green-900">{{ $statusCounts['completed'] }}</p>
                     <div class="flex items-center space-x-2">
                         <div class="flex items-center bg-green-200 px-2 py-1 rounded-full">
@@ -196,9 +197,7 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div class="flex items-center justify-between">
                 <p class="text-sm text-gray-600">
-                    Pokazuję <span class="font-semibold text-gray-900">{{ $orders->firstItem() }}</span>
-                    - <span class="font-semibold text-gray-900">{{ $orders->lastItem() }}</span>
-                    z <span class="font-semibold text-gray-900">{{ $orders->total() }}</span> wyników
+
                 </p>
 
                 <div class="flex items-center space-x-1">

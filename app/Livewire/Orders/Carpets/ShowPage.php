@@ -46,8 +46,8 @@ class ShowPage extends Component
             'newPhotos' => 'required|array|min:1|max:10',
             'newPhotos.*' => [
                 'required',
-                'max:5128',
-                ValidImageFile::carpet(5),
+                'max:20480',
+                ValidImageFile::carpet(20),
             ],
         ], [
             'newPhotos.required' => __('validation.carpet_photos.required'),

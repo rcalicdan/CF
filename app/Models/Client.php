@@ -66,7 +66,7 @@ class Client extends Model
     }
 
     /**
-     * Get coordinates in VROOM format [lng, lat] 
+     * Get coordinates in VROOM format [lng, lat]
      */
     public function getVroomCoordinatesAttribute()
     {
@@ -91,7 +91,6 @@ class Client extends Model
         $cacheKey = 'geocode_' . md5($address);
 
         try {
-            // Check cache first (cache for 7 days)
             $coordinates = Cache::remember($cacheKey, 604800, function () use ($address) {
                 return $this->performGeocoding($address);
             });
@@ -103,7 +102,8 @@ class Client extends Model
                 Log::info('Successfully geocoded address', [
                     'client_id' => $this->id,
                     'address' => $address,
-                    'coordinates' => $coordinates
+                    'coordinates' => $coordinates,
+                    'used_variant' => $coordinates['used_variant'] ?? 'original'
                 ]);
 
                 return true;
@@ -120,37 +120,122 @@ class Client extends Model
     }
 
     /**
-     * Perform actual geocoding using Nominatim API
+     * Generate address variants for fallback geocoding
+     */
+    private function generateAddressVariants($address)
+    {
+        $variants = [$address];
+
+        $variant1 = preg_replace('/(\d+)[A-Za-z](\/\d+)/', '$1$2', $address);
+        if ($variant1 !== $address) {
+            $variants[] = $variant1;
+        }
+
+        $variant2 = preg_replace('/(\d+)[A-Za-z]\b/', '$1', $address);
+        if ($variant2 !== $address && !\in_array($variant2, $variants)) {
+            $variants[] = $variant2;
+        }
+
+        $variant3 = preg_replace('/(\d+[A-Za-z]?)\/\d+/', '$1', $address);
+        if ($variant3 !== $address && !\in_array($variant3, $variants)) {
+            $variants[] = $variant3;
+        }
+
+        $variant4 = preg_replace('/(\d+)[A-Za-z]?(\/\d+)?/', '$1', $address);
+        if ($variant4 !== $address && !\in_array($variant4, $variants)) {
+            $variants[] = $variant4;
+        }
+
+        $variant5 = preg_replace('/\d{2}-\d{3},?\s*/', '', $address);
+        if ($variant5 !== $address && !\in_array($variant5, $variants)) {
+            $variants[] = $variant5;
+        }
+
+        return \array_slice($variants, 0, 5);
+    }
+
+    /**
+     * Perform actual geocoding using Nominatim API with fallback variants
      */
     private function performGeocoding($address)
     {
-        try {
-            $response = Http::timeout(10)
-                ->retry(3, 1000)
-                ->withHeaders([
-                    'User-Agent' => config('app.name', 'Laravel') . ' Geocoding Service'
-                ])
-                ->get('https://nominatim.openstreetmap.org/search', [
+        $variants = $this->generateAddressVariants($address);
+
+        foreach ($variants as $index => $variant) {
+            try {
+                $params = [
                     'format' => 'json',
-                    'q' => $address,
+                    'q' => $variant,
                     'limit' => 1,
                     'addressdetails' => 1,
                     'countrycodes' => 'pl'
+                ];
+
+                Log::debug('[Geocoding] REQUEST', [
+                    'variant_index' => $index,
+                    'address' => $variant,
+                    'url' => 'https://nominatim.openstreetmap.org/search?' . http_build_query($params),
                 ]);
 
-            if ($response->successful()) {
-                $results = $response->json();
+                $response = Http::timeout(10)
+                    ->retry(2, 1000)
+                    ->withHeaders([
+                        'User-Agent' => config('app.name', 'Laravel') . ' Geocoding Service'
+                    ])
+                    ->get('https://nominatim.openstreetmap.org/search', $params);
 
-                if (!empty($results) && isset($results[0]['lat'], $results[0]['lon'])) {
-                    return [
-                        'lat' => (float) $results[0]['lat'],
-                        'lng' => (float) $results[0]['lon'],
-                        'display_name' => $results[0]['display_name'] ?? null
-                    ];
+                Log::debug('[Geocoding] RESPONSE', [
+                    'variant_index' => $index,
+                    'address' => $variant,
+                    'http_status' => $response->status(),
+                    'body' => $response->json(),
+                ]);
+
+                if ($response->successful()) {
+                    $results = $response->json();
+
+                    if (!empty($results) && isset($results[0]['lat'], $results[0]['lon'])) {
+                        Log::info('[Geocoding] SUCCESS', [
+                            'original_address' => $address,
+                            'used_variant' => $variant,
+                            'variant_index' => $index,
+                            'lat' => $results[0]['lat'],
+                            'lon' => $results[0]['lon'],
+                            'display_name' => $results[0]['display_name'] ?? null,
+                        ]);
+
+                        return [
+                            'lat' => (float) $results[0]['lat'],
+                            'lng' => (float) $results[0]['lon'],
+                            'display_name' => $results[0]['display_name'] ?? null,
+                            'used_variant' => $variant,
+                            'variant_index' => $index
+                        ];
+                    }
+
+                    Log::warning('[Geocoding] EMPTY RESULTS', [
+                        'variant_index' => $index,
+                        'address' => $variant,
+                    ]);
+                } else {
+                    Log::warning('[Geocoding] HTTP ERROR', [
+                        'variant_index' => $index,
+                        'address' => $variant,
+                        'http_status' => $response->status(),
+                    ]);
                 }
+
+                if ($index < \count($variants) - 1) {
+                    sleep(1);
+                }
+            } catch (\Exception $e) {
+                Log::error('[Geocoding] EXCEPTION', [
+                    'variant_index' => $index,
+                    'address' => $variant,
+                    'error' => $e->getMessage(),
+                ]);
+                continue;
             }
-        } catch (\Exception $e) {
-            throw $e;
         }
 
         return null;

@@ -41,7 +41,7 @@ class OrderCarpetMeasurementService
 
         // Update area-based service prices in the pivot table
         foreach ($orderCarpet->services as $service) {
-            if ($service->is_area_based && ! $orderCarpet->order->is_complaint) {
+            if ($service->is_area_based && is_null($service->pivot->quantity) && ! $orderCarpet->order->is_complaint) {
                 $price = $this->getServicePrice($service->id, $orderCarpet->order->price_list_id, $service->base_price);
                 $newTotal = $price * $orderCarpet->total_area;
                 $orderCarpet->services()->updateExistingPivot($service->id, ['total_price' => $newTotal]);

@@ -34,15 +34,6 @@
                 </h3>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <x-forms.field label="{{ __('Street Number') }}" name="street_number" required>
-                        <x-forms.input name="street_number" wire:model="street_number" placeholder="{{ __('Enter street number') }}"
-                            required :icon="'<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z\'></path><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M15 11a3 3 0 11-6 0 3 3 0 016 0z\'></path>'" />
-                    </x-forms.field>
-
-                    <x-forms.field label="{{ __('Street Name') }}" name="street_name" required>
-                        <x-forms.input name="street_name" wire:model="street_name" placeholder="{{ __('Enter street name') }}"
-                            required :icon="'<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z\'></path><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M15 11a3 3 0 11-6 0 3 3 0 016 0z\'></path>'" />
-                    </x-forms.field>
 
                     <x-forms.field label="{{ __('City') }}" name="city" required>
                         <x-forms.input name="city" wire:model="city" placeholder="{{ __('Enter city') }}" required
@@ -52,6 +43,16 @@
                     <x-forms.field label="{{ __('Postal Code') }}" name="postal_code" required>
                         <x-forms.input name="postal_code" wire:model="postal_code" placeholder="{{ __('Enter postal code') }}"
                             required :icon="'<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z\'></path>'" />
+                    </x-forms.field>
+
+                    <x-forms.field label="{{ __('Street Name') }}" name="street_name" required>
+                        <x-forms.input name="street_name" wire:model="street_name" placeholder="{{ __('Enter street name') }}"
+                            required :icon="'<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z\'></path><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M15 11a3 3 0 11-6 0 3 3 0 016 0z\'></path>'" />
+                    </x-forms.field>
+
+                    <x-forms.field label="{{ __('Street Number') }}" name="street_number" required>
+                        <x-forms.input name="street_number" wire:model="street_number" placeholder="{{ __('Enter street number') }}"
+                            required :icon="'<path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z\'></path><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M15 11a3 3 0 11-6 0 3 3 0 016 0z\'></path>'" />
                     </x-forms.field>
 
                     <x-forms.field class="md:col-span-2" label="{{ __('Notes') }}" name="remarks"
