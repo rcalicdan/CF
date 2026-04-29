@@ -8,7 +8,7 @@ return [
     ],
     'ordercarpetstatus' => [
         'pending'        => 'Oczekujące',
-        'picked up'      => 'Odebrane',
+        'picked up'      => 'Odebrane / Zaakceptowane',
         'at laundry'     => 'W pralni',
         'measured'       => 'Zmierzony',
         'completed'      => 'Zakończony',
@@ -22,9 +22,10 @@ return [
     'orderstatus' => [
         'pending'    => 'Oczekujące',
         'accepted'   => 'Zaakceptowane',
-        'processing' => 'W realizacji',
-        'completed'  => 'Zakończone',
+        'processing' => 'Przyjęte / W realizacji',
+        'completed'  => 'Zakończone / Zrealizowane',
         'undelivered' => 'Niedostarczone',
+        'delivered'  => 'Dostarczone',
         'cancelled'  => 'Anulowane',
     ],
     'orderdeliveryconfirmationtype' => [
@@ -32,12 +33,19 @@ return [
         'signature'  => 'Podpis',
     ],
     'costtype' => [
-        'energy' => 'Energy',
-        'water' => 'Water',
-        'fuel' => 'Fuel',
-        'wages' => 'Wages',
-        'chemicals' => 'Chemicals',
-        'supplies' => 'Supplies',
-        'other' => 'Other',
+        'energy' => 'Energia',
+        'water' => 'Woda',
+        'fuel' => 'Paliwo',
+        'wages' => 'Wynagrodzenia',
+        'chemicals' => 'Chemikalia',
+        'supplies' => 'Materiały',
+        'other' => 'Inne',
+    ],
+    'complaintstatus' => [
+        'open' => 'Otwarte',
+        'in progress' => 'W trakcie realizacji',
+        'resolved' => 'Zakończone',
+        'rejected' => 'Odrzucone',
+        'closed' => 'Zamknięte',
     ],
 ];

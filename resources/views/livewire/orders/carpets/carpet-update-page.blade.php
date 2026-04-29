@@ -26,25 +26,89 @@
                             <h4 class="text-md font-medium text-gray-900 border-b border-gray-200 pb-2">
                                 {{ __('Services') }}</h4>
 
-                            <!-- Selected Services Display -->
+                            <!-- Selected Services Display with Quantity -->
                             @if (count($this->selectedServicesData) > 0)
                                 <div class="mb-4">
-                                    <p class="text-sm font-medium text-gray-700 mb-2">{{ __('Selected Services') }}
+                                    <p class="text-sm font-medium text-gray-700 mb-3">{{ __('Selected Services') }}
                                         ({{ count($selectedServices) }}):</p>
-                                    <div class="flex flex-wrap gap-2">
+
+                                    <div class="space-y-3">
                                         @foreach ($this->selectedServicesData as $service)
-                                            <span
-                                                class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-indigo-100 text-indigo-800">
-                                                {{ $service->name }}
-                                                <button type="button" wire:click="removeService({{ $service->id }})"
-                                                    class="ml-2 inline-flex items-center justify-center w-4 h-4 text-indigo-600 hover:text-indigo-800">
-                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd"
-                                                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                                            clip-rule="evenodd"></path>
-                                                    </svg>
-                                                </button>
-                                            </span>
+                                            <div
+                                                class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                <!-- Service Info -->
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center gap-2">
+                                                        <span
+                                                            class="font-medium text-gray-900">{{ $service->name }}</span>
+                                                        @if ($service->is_area_based)
+                                                            <span
+                                                                class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded whitespace-nowrap">
+                                                                {{ __('Area-based') }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                    <div class="text-xs text-gray-600 mt-0.5">
+                                                        {{ __('Unit price') }}:
+                                                        {{ number_format($this->getServiceEffectivePrice($service->id), 2, ',', ' ') }}
+                                                        zł
+                                                        @if ($service->is_area_based)
+                                                            / m²
+                                                        @endif
+                                                    </div>
+                                                </div>
+
+                                                <!-- Quantity Input -->
+                                                <div class="flex items-center gap-2">
+                                                    <div class="flex flex-col items-end">
+                                                        <label for="quantity_{{ $service->id }}"
+                                                            class="text-xs text-gray-600 mb-1 whitespace-nowrap">
+                                                            {{ __('Multiplier') }}
+                                                        </label>
+                                                        <input type="number" id="quantity_{{ $service->id }}"
+                                                            step="0.01" min="0.01" max="9999.99"
+                                                            placeholder="{{ __('Auto') }}"
+                                                            wire:model.live="serviceQuantities.{{ $service->id }}"
+                                                            class="w-20 px-2 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                                                        @if ($service->is_area_based && is_null($serviceQuantities[$service->id] ?? null))
+                                                            <span
+                                                                class="text-xs text-gray-500 mt-0.5 whitespace-nowrap">
+                                                                ({{ __('uses area') }})
+                                                            </span>
+                                                        @endif
+                                                    </div>
+
+                                                    <!-- Price Display -->
+                                                    <div class="text-right min-w-[80px]">
+                                                        <div class="font-semibold text-gray-900 text-sm">
+                                                            {{ number_format($this->calculateServicePrice($service), 2, ',', ' ') }}
+                                                            zł
+                                                        </div>
+                                                        @if (!is_null($serviceQuantities[$service->id] ?? null) && $serviceQuantities[$service->id] > 0)
+                                                            <div class="text-xs text-gray-600">
+                                                                ×
+                                                                {{ number_format($serviceQuantities[$service->id], 2, ',', ' ') }}
+                                                            </div>
+                                                        @elseif($service->is_area_based && $this->totalArea > 0)
+                                                            <div class="text-xs text-gray-600">
+                                                                × {{ number_format($this->totalArea, 2, ',', ' ') }} m²
+                                                            </div>
+                                                        @endif
+                                                    </div>
+
+                                                    <!-- Remove Button -->
+                                                    <button type="button"
+                                                        wire:click="removeService({{ $service->id }})"
+                                                        class="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
+                                                        title="{{ __('Remove service') }}">
+                                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd"
+                                                                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                                clip-rule="evenodd"></path>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         @endforeach
                                     </div>
                                 </div>
@@ -178,13 +242,39 @@
                             <!-- Services breakdown -->
                             @if (count($selectedServices) > 0)
                                 <div class="space-y-2 mb-4">
-                                    <h5 class="text-sm font-medium text-gray-700">{{ __('Services') }}:</h5>
+                                    <h5 class="text-sm font-medium text-gray-700 border-b pb-1">{{ __('Services') }}:
+                                    </h5>
                                     @foreach ($this->selectedServicesData as $service)
-                                        <div class="flex justify-between text-sm">
-                                            <span class="text-gray-600 truncate mr-2">{{ $service->name }}</span>
-                                            <span class="font-medium whitespace-nowrap">
-                                                {{ number_format($this->calculateServicePrice($service), 2) }} zł
-                                            </span>
+                                        <div class="space-y-0.5">
+                                            <div class="flex justify-between text-sm">
+                                                <span class="text-gray-600 truncate mr-2">{{ $service->name }}</span>
+                                                <span class="font-medium whitespace-nowrap">
+                                                    {{ number_format($this->calculateServicePrice($service), 2, ',', ' ') }}
+                                                    zł
+                                                </span>
+                                            </div>
+                                            @php
+                                                $quantity = $serviceQuantities[$service->id] ?? null;
+                                                $effectivePrice = $this->getServiceEffectivePrice($service->id);
+                                            @endphp
+                                            @if (!is_null($quantity) && $quantity > 0)
+                                                <div class="text-xs text-gray-500 pl-2">
+                                                    {{ number_format($effectivePrice, 2, ',', ' ') }} zł ×
+                                                    {{ number_format($quantity, 2, ',', ' ') }} =
+                                                    {{ number_format($effectivePrice * $quantity, 2, ',', ' ') }} zł
+                                                </div>
+                                            @elseif($service->is_area_based && $this->totalArea > 0)
+                                                <div class="text-xs text-gray-500 pl-2">
+                                                    {{ number_format($effectivePrice, 2, ',', ' ') }} zł/m² ×
+                                                    {{ number_format($this->totalArea, 2, ',', ' ') }} m² =
+                                                    {{ number_format($effectivePrice * $this->totalArea, 2, ',', ' ') }}
+                                                    zł
+                                                </div>
+                                            @elseif($service->is_area_based)
+                                                <div class="text-xs text-amber-600 pl-2">
+                                                    {{ __('Waiting for dimensions') }}
+                                                </div>
+                                            @endif
                                         </div>
                                     @endforeach
                                 </div>

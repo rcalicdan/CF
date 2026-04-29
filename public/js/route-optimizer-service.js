@@ -147,7 +147,8 @@ class RouteOptimizerService {
     }
 
     debugOrders() {
-        const depotCoords = [52.2297, 21.0122];
+        //const depotCoords = [52.2297, 21.0122];
+        const depotCoords = [49.7801015,22.8242059]
 
         this.routeComponent.orders.forEach((order, index) => {
             const hasCoords = order.coordinates && Array.isArray(order.coordinates) && order.coordinates.length === 2;
@@ -221,7 +222,7 @@ class RouteOptimizerService {
     }
 
     buildVroomPayload() {
-        const depotCoords = [21.0122, 52.2297];
+        const depotCoords = [22.8242059,49.7801015];
 
         const vehicle = {
             id: this.routeComponent.selectedDriver.id,

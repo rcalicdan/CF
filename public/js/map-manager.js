@@ -6,7 +6,7 @@ class MapManager {
             'medium': '#f59e0b',
             'low': '#10b981'
         };
-        this.depotCoordinates = [52.2297, 21.0122];
+        this.depotCoordinates = [49.7801015,22.8242059];
         this.editMode = false;
         this.isMapReady = false;
         this.routePolyline = null;
@@ -131,7 +131,7 @@ class MapManager {
                 iconSize: [36, 36],
                 iconAnchor: [18, 18]
             });
-            L.marker(this.depotCoordinates, { icon: depotIcon, zIndexOffset: 1000 }).addTo(this.data.map).bindPopup(`<strong>Main Depot</strong>`);
+            L.marker(this.depotCoordinates, { icon: depotIcon, zIndexOffset: 1000 }).addTo(this.data.map).bindPopup(`<strong>Centrala</strong>`);
         });
     }
 

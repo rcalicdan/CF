@@ -21,17 +21,22 @@ class ShowPage extends Component
     public function mount(OrderCarpet $carpet)
     {
         $this->orderCarpet = OrderCarpet::with([
-            'order',
+            'order.priceList',
             'orderCarpetPhotos',
-            'services' => function ($q) {
-                $q->withPivot(['total_price']);
+            'services' => function ($q) use ($carpet) { 
+                $q->withPivot(['total_price', 'quantity'])
+                    ->with(['priceLists' => function ($query) use ($carpet) {
+                        if ($carpet->order && $carpet->order->price_list_id) {
+                            $query->where('price_list_id', $carpet->order->price_list_id);
+                        }
+                    }]);
             },
             'histories' => function ($q) {
                 $q->with('user')->orderBy('created_at', 'desc');
             }
         ])->findOrFail($carpet->id);
     }
-
+    
     public function removePhoto($photoIndex)
     {
         if (isset($this->newPhotos[$photoIndex])) {

@@ -22,6 +22,7 @@ class CarpetUpdatePage extends Component
     public $remarks = '';
     public $services = [];
     public $selectedServices = [];
+    public $serviceQuantities = [];
     public $serviceSearch = '';
     public $showServicesDropdown = false;
     public $servicePrices = [];
@@ -32,17 +33,21 @@ class CarpetUpdatePage extends Component
         'status' => 'required|string|max:255',
         'remarks' => 'nullable|string',
         'selectedServices' => 'array',
-        'selectedServices.*' => 'exists:services,id'
+        'selectedServices.*' => 'exists:services,id',
+        'serviceQuantities.*' => 'nullable|numeric|min:0.01|max:9999.99'
     ];
 
     protected $messages = [
         'selectedServices.*.exists' => 'One or more selected services are invalid.',
+        'serviceQuantities.*.numeric' => 'Quantity must be a valid number.',
+        'serviceQuantities.*.min' => 'Quantity must be at least 0.01.',
+        'serviceQuantities.*.max' => 'Quantity cannot exceed 9999.99.',
     ];
 
     public function mount(Order $order, OrderCarpet $carpet)
     {
         $this->carpet = $carpet->load('order.priceList', 'order.client', 'services');
-        $this->order = $this->carpet->order; 
+        $this->order = $this->carpet->order;
 
         $this->authorize('view', $this->order);
 
@@ -51,6 +56,10 @@ class CarpetUpdatePage extends Component
         $this->status = $carpet->status;
         $this->remarks = $carpet->remarks;
         $this->selectedServices = $carpet->services->pluck('id')->toArray();
+
+        foreach ($carpet->services as $service) {
+            $this->serviceQuantities[$service->id] = $service->pivot->quantity;
+        }
 
         if (!$this->order->price_list_id) {
             \Log::error('Order has no price_list_id!', ['order_id' => $this->order->id]);
@@ -97,14 +106,27 @@ class CarpetUpdatePage extends Component
     {
         if (in_array($serviceId, $this->selectedServices)) {
             $this->selectedServices = array_filter($this->selectedServices, fn($id) => $id != $serviceId);
+            unset($this->serviceQuantities[$serviceId]);
         } else {
             $this->selectedServices[] = $serviceId;
+            // for backward compatibility
+            $this->serviceQuantities[$serviceId] = null;
         }
     }
 
     public function removeService($serviceId)
     {
         $this->selectedServices = array_filter($this->selectedServices, fn($id) => $id != $serviceId);
+        unset($this->serviceQuantities[$serviceId]);
+    }
+
+    public function updateServiceQuantity($serviceId, $quantity)
+    {
+        if ($quantity === '' || $quantity === null) {
+            $this->serviceQuantities[$serviceId] = null;
+        } else {
+            $this->serviceQuantities[$serviceId] = (float) $quantity;
+        }
     }
 
     public function showAllServices()
@@ -142,10 +164,16 @@ class CarpetUpdatePage extends Component
     public function calculateServicePrice($service)
     {
         $effectivePrice = $this->getServiceEffectivePrice($service->id);
+        $quantity = $this->serviceQuantities[$service->id] ?? null;
+
+        if ($quantity !== null && $quantity > 0) {
+            return $effectivePrice * $quantity;
+        }
 
         if ($service->is_area_based) {
             return $this->totalArea > 0 ? $effectivePrice * $this->totalArea : 0;
         }
+
         return $effectivePrice;
     }
 
@@ -164,12 +192,20 @@ class CarpetUpdatePage extends Component
         $this->validate();
 
         try {
+            $servicesData = [];
+            foreach ($this->selectedServices as $serviceId) {
+                $servicesData[] = [
+                    'id' => $serviceId,
+                    'quantity' => $this->serviceQuantities[$serviceId] ?? null
+                ];
+            }
+
             $data = [
                 'height' => $this->height ?: null,
                 'width' => $this->width ?: null,
                 'status' => $this->status,
                 'remarks' => $this->remarks ?: null,
-                'services' => $this->selectedServices,
+                'services' => $servicesData,
             ];
 
             if ($this->height && $this->width && !$this->carpet->measured_at) {
