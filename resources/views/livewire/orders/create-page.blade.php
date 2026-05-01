@@ -204,8 +204,8 @@
                         <x-forms.input type="datetime-local" name="schedule_date" wire:model="schedule_date" />
                     </x-forms.field>
 
-                    <x-forms.field label="Czas obsługi (minuty)" name="service_time">
-                        <select wire:model="service_time"
+                    <x-forms.field class="md:col-span-2" label="Czas obsługi (minuty)" name="service_time">
+                        <select wire:model.live="service_time"
                             class="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                             <option value="5">5 minut (Szybki odbiór)</option>
                             <option value="10">10 minut (Standard)</option>
@@ -214,6 +214,9 @@
                             <option value="25">25 minut</option>
                             <option value="30">30 minut (Skomplikowane)</option>
                         </select>
+                        @error('service_time')
+                            <span class="text-sm text-red-600 mt-1">{{ $message }}</span>
+                        @enderror
                     </x-forms.field>
 
                     <!-- Complaint Order Checkbox -->

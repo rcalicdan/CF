@@ -9,6 +9,7 @@ use App\Models\Service;
 use App\Models\ServicePriceList;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderService
 {
@@ -65,30 +66,38 @@ class OrderService
 
     public function createOrder(array $data)
     {
-        return DB::transaction(function () use ($data) {
-            $order = Order::create([
-                'client_id' => $data['client_id'],
+        $order = DB::transaction(function () use ($data) {
+            return Order::create([
+                'client_id'          => $data['client_id'],
                 'assigned_driver_id' => $data['assigned_driver_id'] ?? null,
-                'user_id' => Auth::user()->id,
-                'schedule_date' => $data['schedule_date'] ?? null,
-                'price_list_id' => $data['price_list_id'],
-                'status' => 'pending',
-                'total_amount' => 0,
-                'is_complaint' => $data['is_complaint'] ?? false,
+                'user_id'            => Auth::user()->id,
+                'schedule_date'      => $data['schedule_date'] ?? null,
+                'price_list_id'      => $data['price_list_id'],
+                'status'             => 'pending',
+                'total_amount'       => 0,
+                'is_complaint'       => $data['is_complaint'] ?? false,
+                'service_time'       => $data['service_time'] ?? null,
             ]);
+        });
 
-            $order->load('client', 'driver.user', 'priceList', 'orderCarpets.complaint');
+        $order->load('client', 'driver.user', 'priceList', 'orderCarpets.complaint');
 
+        try {
             SendSmsJob::dispatch(
                 preg_replace('/[^\d]/', '', $order->client->phone_number),
                 __('Your order has been created. We will send later the schedule date for delivery')
-            )->afterCommit();
+            );
+        } catch (\Exception $e) {
+            Log::warning('SMS dispatch failed for order ' . $order->id, [
+                'error' => $e->getMessage(),
+                'phone' => $order->client->phone_number ?? 'null',
+            ]);
+        }
 
-            return [
-                'order' => $order,
-                'summary' => $this->generateOrderSummary($order),
-            ];
-        });
+        return [
+            'order'   => $order,
+            'summary' => $this->generateOrderSummary($order),
+        ];
     }
 
     public function updateOrder(Order $order, array $data)

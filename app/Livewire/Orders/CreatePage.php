@@ -146,7 +146,7 @@ class CreatePage extends Component
             'schedule_date' => 'nullable|date|after_or_equal:today',
             'price_list_id' => 'required|exists:price_lists,id',
             'is_complaint' => 'boolean',
-            'service_time' => 'nullable|integer|in:5,10,15,20,25,30',
+            'service_time' => 'required|in:5,10,15,20,25,30',
         ];
     }
 
@@ -329,7 +329,12 @@ class CreatePage extends Component
     public function save()
     {
         $this->authorize('create', Order::class);
-        $this->validate();
+
+        try {
+            $this->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        }
 
         $data = [
             'client_id' => $this->client_id,
@@ -337,7 +342,7 @@ class CreatePage extends Component
             'schedule_date' => $this->schedule_date ?: null,
             'price_list_id' => $this->price_list_id,
             'is_complaint' => $this->is_complaint,
-            'service_time' => $this->service_time,
+            'service_time' => (int) $this->service_time,
         ];
 
         try {
@@ -347,6 +352,14 @@ class CreatePage extends Component
         } catch (\Exception $e) {
             session()->flash('error', 'Wystąpił błąd podczas tworzenia zamówienia. Proszę spróbować ponownie.');
         }
+    }
+
+    public function updatedServiceTime($value)
+    {
+        Log::info('SERVICE TIME UPDATED', [
+            'value' => $value,
+            'type' => gettype($value),
+        ]);
     }
 
     public function render()
