@@ -204,6 +204,18 @@
                         <x-forms.input type="datetime-local" name="schedule_date" wire:model="schedule_date" />
                     </x-forms.field>
 
+                    <x-forms.field label="Czas obsługi (minuty)" name="service_time">
+                        <select wire:model="service_time"
+                            class="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <option value="5">5 minut (Szybki odbiór)</option>
+                            <option value="10">10 minut (Standard)</option>
+                            <option value="15">15 minut (Średni)</option>
+                            <option value="20">20 minut (Dużo dywanów)</option>
+                            <option value="25">25 minut</option>
+                            <option value="30">30 minut (Skomplikowane)</option>
+                        </select>
+                    </x-forms.field>
+
                     <!-- Complaint Order Checkbox -->
                     <x-forms.field class="md:col-span-2" label="Complaint Order" name="is_complaint">
                         <div class="flex items-center">

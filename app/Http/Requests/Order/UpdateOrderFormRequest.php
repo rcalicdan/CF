@@ -30,6 +30,7 @@ class UpdateOrderFormRequest extends FormRequest
             'price_list_id' => ['sometimes', 'required', Rule::exists('price_lists', 'id')],
             'status' => ['sometimes', 'required', Rule::enum(OrderStatus::class)],
             'is_complaint' => ['required', 'boolean'],
+            'service_time' => ['nullable', 'integer', 'in:5,10,15,20,25,30'], 
         ];
     }
 }

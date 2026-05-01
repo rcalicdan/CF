@@ -30,6 +30,7 @@ class StoreOrderFormRequest extends FormRequest
             'price_list_id' => ['required', Rule::exists('price_lists', 'id')],
             'is_complaint' => ['sometimes', 'boolean'],
             'status' => ['nullable', 'string', Rule::enum(OrderStatus::class)],
+            'service_time' => ['nullable', 'integer', 'in:5,10,15,20,25,30'], // <-- ADD THIS
         ];
     }
 }

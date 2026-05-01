@@ -28,6 +28,7 @@ class UpdatePage extends Component
     public $selectedClient = null;
     public $selectedDriver = null;
     public $selectedPriceList = null;
+    public $service_time = 10;
 
     protected OrderService $orderService;
 
@@ -45,6 +46,7 @@ class UpdatePage extends Component
         $this->price_list_id = $order->price_list_id;
         $this->status = $order->status;
         $this->is_complaint = $order->is_complaint;
+        $this->service_time = $order->service_time ?? 10;
 
         if ($order->client) {
             $this->clientSearch = $this->formatClientDisplay($order->client);
@@ -69,6 +71,7 @@ class UpdatePage extends Component
             'price_list_id' => 'required|exists:price_lists,id',
             'status' => 'required|in:' . implode(',', OrderStatus::values()),
             'is_complaint' => 'boolean',
+            'service_time' => 'nullable|integer|in:5,10,15,20,25,30',
         ];
     }
 

@@ -26,6 +26,7 @@ class CreatePage extends Component
     public $selectedClient = null;
     public $selectedDriver = null;
     public $selectedPriceList = null;
+    public $service_time = 10;
 
     protected OrderService $orderService;
 
@@ -145,6 +146,7 @@ class CreatePage extends Component
             'schedule_date' => 'nullable|date|after_or_equal:today',
             'price_list_id' => 'required|exists:price_lists,id',
             'is_complaint' => 'boolean',
+            'service_time' => 'nullable|integer|in:5,10,15,20,25,30',
         ];
     }
 
@@ -335,6 +337,7 @@ class CreatePage extends Component
             'schedule_date' => $this->schedule_date ?: null,
             'price_list_id' => $this->price_list_id,
             'is_complaint' => $this->is_complaint,
+            'service_time' => $this->service_time,
         ];
 
         try {

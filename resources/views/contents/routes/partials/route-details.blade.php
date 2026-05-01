@@ -45,13 +45,15 @@
 
             <!-- Kolejne punkty trasy -->
             <template x-for="(order, index) in orders" :key="order.id">
-                <div :draggable="manualEditMode" @dragstart="onDragStart(index, $event)" @dragover="onDragOver($event)"
-                    @drop="onDrop(index, $event)" @dragenter="$event.preventDefault()"
+                <div :draggable="manualEditMode && !order.isLocked" @dragstart="onDragStart(index, $event)"
+                    @dragover="onDragOver($event)" @drop="onDrop(index, $event)" @dragenter="$event.preventDefault()"
                     :class="[
-                        manualEditMode ? 'cursor-move border-dashed hover:border-blue-400 hover:shadow-md' : '',
-                        order.isCustom ? 'border-l-4 border-l-purple-400 bg-purple-50' : ''
+                        manualEditMode && !order.isLocked ?
+                        'cursor-move border-dashed hover:border-blue-400 hover:shadow-md' : '',
+                        order.isCustom ? 'border-l-4 border-l-purple-400 bg-purple-50' : '',
+                        order.isLocked ? 'border-red-300 bg-red-50 opacity-90' : ''
                     ]"
-                    class="route-card flex items-center p-3 lg:p-4 border rounded-lg transition-all duration-200">
+                    class="route-card flex items-center p-3 lg:p-4 border rounded-lg transition-all duration-200 relative">
 
                     <!-- Uchwyt do przeciągania -->
                     <div x-show="manualEditMode" class="mr-2 text-gray-400 cursor-move">
@@ -101,14 +103,23 @@
 
                     <!-- Kontrolki edycji ręcznej -->
                     <div x-show="manualEditMode" class="ml-2 flex flex-col gap-1">
-                        <button @click="moveStopUp(index)" :disabled="index === 0"
-                            :class="index === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-blue-100 cursor-pointer'"
+                        <button @click="toggleLock(index)"
+                            :class="order.isLocked ? 'bg-red-100 text-red-600 border-red-300' :
+                                'hover:bg-gray-200 text-gray-400 hover:text-gray-600'"
+                            class="p-1 rounded transition-colors border border-transparent"
+                            title="Zablokuj ten przystanek w tej pozycji">
+                            <i class="fas" :class="order.isLocked ? 'fa-lock' : 'fa-unlock'"></i>
+                        </button>
+
+                        <button @click="moveStopUp(index)" :disabled="index === 0 || order.isLocked"
+                            :class="(index === 0 || order.isLocked) ? 'opacity-30 cursor-not-allowed' :
+                            'hover:bg-blue-100 cursor-pointer'"
                             class="p-1 text-blue-600 rounded transition-colors">
                             <i class="fas fa-chevron-up text-xs"></i>
                         </button>
-                        <button @click="moveStopDown(index)" :disabled="index === orders.length - 1"
-                            :class="index === orders.length - 1 ? 'opacity-30 cursor-not-allowed' :
-                                'hover:bg-blue-100 cursor-pointer'"
+                        <button @click="moveStopDown(index)" :disabled="index === orders.length - 1 || order.isLocked"
+                            :class="(index === orders.length - 1 || order.isLocked) ? 'opacity-30 cursor-not-allowed' :
+                            'hover:bg-blue-100 cursor-pointer'"
                             class="p-1 text-blue-600 rounded transition-colors">
                             <i class="fas fa-chevron-down text-xs"></i>
                         </button>

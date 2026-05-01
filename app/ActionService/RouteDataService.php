@@ -164,6 +164,7 @@ class RouteDataService
             'is_complaint' => $order->is_complaint,
             'created_at' => $order->created_at->toISOString(),
             'updated_at' => $order->updated_at->toISOString(),
+            'service_time' => $order->service_time ?? 10,
         ];
     }
 

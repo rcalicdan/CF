@@ -30,10 +30,16 @@
                                             class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-50 {{ $client->id == $client_id ? 'bg-indigo-50' : '' }}">
                                             @php
                                                 $addressParts = array_filter([
-                                                    trim(($client->street_name ?? '') . ' ' . ($client->street_number ?? '')),
+                                                    trim(
+                                                        ($client->street_name ?? '') .
+                                                            ' ' .
+                                                            ($client->street_number ?? ''),
+                                                    ),
                                                     $client->city,
                                                 ]);
-                                                $clientLabel = $addressParts ? $client->full_name . ', ' . implode(', ', $addressParts) : $client->full_name;
+                                                $clientLabel = $addressParts
+                                                    ? $client->full_name . ', ' . implode(', ', $addressParts)
+                                                    : $client->full_name;
                                             @endphp
                                             <div>
                                                 <span class="block font-medium text-gray-900">{{ $clientLabel }}</span>
@@ -171,9 +177,23 @@
                             <span class="text-sm text-red-600">{{ __($message) }}</span>
                         @enderror
                     </x-forms.field>
+
                     <x-forms.field class="md:col-span-2" label="Schedule Date" name="schedule_date">
                         <x-forms.input type="datetime-local" name="schedule_date" wire:model="schedule_date" />
                     </x-forms.field>
+
+                    <x-forms.field class="md:col-span-2" label="Czas obsługi (minuty)" name="service_time">
+                        <select wire:model="service_time"
+                            class="block w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <option value="5">5 minut (Szybki odbiór)</option>
+                            <option value="10">10 minut (Standard)</option>
+                            <option value="15">15 minut (Średni)</option>
+                            <option value="20">20 minut (Dużo dywanów)</option>
+                            <option value="25">25 minut</option>
+                            <option value="30">30 minut (Skomplikowane)</option>
+                        </select>
+                    </x-forms.field>
+                    
                     <x-forms.field class="md:col-span-2" label="Complaint Order" name="is_complaint">
                         <div class="flex items-center">
                             <input type="checkbox" id="is_complaint" wire:model="is_complaint"

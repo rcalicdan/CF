@@ -3,6 +3,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="token" content="{{ auth()->user()->bearerToken() }}">
+    <meta name="vroom-speed-penalty" content="{{ env('VROOM_SPEED_PENALTY_PERCENT', 30) }}">
+    <meta name="vroom-stop-buffer" content="{{ env('VROOM_STOP_BUFFER_MINUTES', 5) }}">
     <title>{{ $title }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preload" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" as="style"
@@ -12,18 +14,18 @@
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style"
         onload="this.rel='stylesheet'">
     <link rel="stylesheet" href="/css/styles.css" />
-    
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js" defer></script>
-    
+
     @once
-    <script src="/js/route-data-service.js" defer></script>
-    <script src="/js/route-optimizer.js" defer></script>
-    <script src="/js/map-manager.js" defer></script>
-    <script src="/js/route-optimizer-service.js" defer></script>
-    <script src="/js/alpine-component.js" defer></script>
+        <script src="/js/route-data-service.js" defer></script>
+        <script src="/js/route-optimizer.js" defer></script>
+        <script src="/js/map-manager.js" defer></script>
+        <script src="/js/route-optimizer-service.js" defer></script>
+        <script src="/js/alpine-component.js" defer></script>
     @endonce
-    
+
     @stack('styles')
     @livewireStyles
     @vite(['resources/css/app.css', 'resources/js/app.js'])

@@ -6,6 +6,7 @@ use App\ActionService\EnumTranslationService;
 use App\Enums\OrderStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -20,7 +21,20 @@ class Order extends Model
         'total_amount',
         'is_complaint',
         'user_id',
+        'service_time',
+        'uuid',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
+    }
 
     public function casts()
     {
